@@ -1,12 +1,11 @@
 # Jukebox — Design
 
 ```
-     ██╗██╗   ██╗██╗  ██╗███████╗██████╗  ██████╗ ██╗  ██╗
-     ██║██║   ██║██║ ██╔╝██╔════╝██╔══██╗██╔═══██╗╚██╗██╔╝
-     ██║██║   ██║█████╔╝ █████╗  ██████╔╝██║   ██║ ╚███╔╝ 
-██   ██║██║   ██║██╔═██╗ ██╔══╝  ██╔══██╗██║   ██║ ██╔██╗ 
-╚█████╔╝╚██████╔╝██║  ██╗███████╗██████╔╝╚██████╔╝██╔╝ ██╗
- ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝
+     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
+     ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
+███  ███ ███   ███ ███▀▀██▄  ███▀▀▀   ███▀▀▀█▄ ███    ███   ▄███▄  
+███▄▄███ ███▄▄▄███ ███   ███ ███▄▄▄▄▄ ███▄▄▄██ ▀███▄▄███▀ ▄███▀███▄
+ ▀▀▀▀▀▀   ▀▀▀▀▀▀▀  ▀▀▀   ▀▀▀ ▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀    ▀▀▀▀▀▀   ▀▀▀   ▀▀▀
 ```
 
 **Status:** draft · **Scope:** mechanics, not framing
@@ -22,6 +21,7 @@ Read it as the bridge between "we decided this" and "here is how it works".
 | `README.md` | Product framing, install, stack tables, roadmap. Source of truth for user-facing copy. |
 | `CLAUDE.md` | Architecture invariants. Non-negotiable without an ADR. |
 | **`docs/design/DESIGN.md`** | **Mechanics: pipeline, schemas, protocol, scoring, failure modes.** |
+| `docs/design/SITE.md` | The site: information architecture, design system, copy deck. |
 | `docs/adr/` | Individual decisions, with context and consequences. **Supersedes this document on conflict.** |
 
 ### How to read the confidence markers
