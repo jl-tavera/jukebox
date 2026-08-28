@@ -36,20 +36,22 @@ export function CopyCommand() {
   }
 
   return (
-    <div className="flex items-stretch gap-0 rounded-[2px] border border-rule bg-surface">
-      <code className="flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto px-4 py-3.5 font-mono text-[0.8125rem] whitespace-nowrap text-ink">
-        <span className="shrink-0 select-none text-accent-ink" aria-hidden="true">
-          $
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-5">
+      <code className="min-w-0 max-w-full overflow-x-auto whitespace-nowrap text-[0.6875rem] sm:text-[0.9375rem]">
+        <span className="text-dim select-none" aria-hidden="true">
+          ${' '}
         </span>
         {INSTALL_COMMAND}
       </code>
+
       <button
         type="button"
         onClick={copy}
-        className="u-mono shrink-0 border-l border-rule px-4 text-muted transition-colors hover:bg-accent hover:text-on-accent"
+        className="shrink-0 self-center text-[0.75rem] text-dim transition-colors hover:text-ink sm:self-auto sm:text-[0.8125rem]"
       >
-        {LABEL[state]}
+        [{LABEL[state]}]
       </button>
+
       <span role="status" aria-live="polite" className="sr-only">
         {state === 'copied'
           ? 'Install command copied to clipboard'
