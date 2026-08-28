@@ -8,7 +8,7 @@ Sync your playlists. Own your music.
 
 Jukebox is an open-source CLI that mirrors your public playlists and downloads the matching tracks from open music libraries.
 
-You give it a playlist URL. It tracks the songs in that playlist and keeps a local folder in sync as the playlist changes — new tracks get downloaded, removed tracks get flagged. Audio comes from open catalogs (Jamendo, Free Music Archive, Internet Archive, ccMixter, Musopen) via their public APIs.
+You give it a playlist URL. It tracks the songs in that playlist and keeps a local folder in sync as the playlist changes — new tracks get downloaded, removed tracks get flagged.
 
 Spotify first. Apple Music and YouTube later — the design treats playlist sources as pluggable from day one.
 

@@ -130,5 +130,5 @@ Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/
 ## Further reading
 
 - `README.md` — product framing, install instructions, roadmap. Source of truth for user-facing copy.
-- `docs/DESIGN.md` — deeper design rationale.
+- `docs/design/DESIGN.md` — deeper design rationale.
 - `docs/adr/` — architecture decision records. Read those touching your area before changing it.
