@@ -4,3 +4,9 @@
 # Agent instructions - kept local, not published
 /CLAUDE.md
 /docs/agents/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+next-env.d.ts

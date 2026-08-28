@@ -114,7 +114,7 @@ Yellow appears in exactly four places. Anything beyond this list is a regression
 1. The `exact` tier fill in the ledger.
 2. The `probable` tier outline.
 3. The `$` sigil and the copy affordance on the install command.
-4. A 3px bar under the hero eyebrow and each section eyebrow.
+4. A 3px bar marking the hero and each section eyebrow.
 
 ### Typography
 
@@ -211,7 +211,7 @@ Not aspirations. A build that misses one of these is not finished.
 | Keyboard | Every link, the toggle, and the copy button reachable, with a visible focus ring in both themes |
 | Reduced motion | `prefers-reduced-motion: reduce` renders the static page, not a degraded animation |
 | Theme flash | None, on hard reload, in either theme |
-| Static export | `next build` emits `out/` and **no** server bundle |
+| Static export | `out/` is complete and serves standalone with no Next.js runtime |
 | Client JS | Three client components only: theme provider, toggle, copy button |
 
 The last two are the ones to actually verify rather than assume. A stray `"use client"` or a dynamic API is invisible in review and fatal to the §01 invariant.

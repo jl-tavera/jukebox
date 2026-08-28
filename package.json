@@ -1,0 +1,11 @@
+{
+  "name": "jukebox",
+  "private": true,
+  "workspaces": [
+    "site"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd site dev",
+    "build": "bun run --cwd site build"
+  }
+}
