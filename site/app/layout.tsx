@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeProvider } from 'next-themes'
 import { hero } from '@/lib/content'
 import './globals.css'
 
 // No webfont on purpose. The page renders in the visitor's system monospace,
-// which is the only stack guaranteed to carry the box-drawing glyphs the
+// which is the only stack guaranteed to carry the block-element glyphs the
 // wordmark is built from. See docs/design/SITE.md 03.
 
 export const metadata: Metadata = {
@@ -33,6 +33,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        {/* next-themes ships its own "use client", so it drops straight into
+            a server layout. Its inline script runs before paint, which is what
+            keeps a statically exported page from flashing the wrong theme. */}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

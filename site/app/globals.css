@@ -14,24 +14,21 @@
   --ground: #ffd400;
   --ink: #0b0b0a;
   --dim: #6b5b00;
-  --line: #c9a600;
 }
 
 .dark {
   --ground: #0b0b0a;
   --ink: #ffd400;
   --dim: #a89000;
-  --line: #3d3300;
 }
 
 @theme inline {
   --color-ground: var(--ground);
   --color-ink: var(--ink);
   --color-dim: var(--dim);
-  --color-line: var(--line);
 
   /* The visitor's own terminal font. A subsetted webfont risks dropping the
-   * box-drawing glyphs the wordmark is built from, and a per-glyph fallback
+   * block-element glyphs the wordmark is built from, and a per-glyph fallback
    * with different metrics shatters the art. */
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo,
     Consolas, "DejaVu Sans Mono", monospace;

@@ -1,18 +1,24 @@
 'use client'
 
-import { useCopy } from '@/lib/use-copy'
-import { cn } from '@/lib/utils'
+import { useEffect, useRef, useState } from 'react'
 
-const LABEL = {
+/**
+ * `failed` is a real state, not defensive padding: the Clipboard API is
+ * unavailable on insecure origins and blocked outright in some browsers.
+ * Reporting a success that did not happen is worse than reporting nothing.
+ */
+type State = 'idle' | 'copied' | 'failed'
+
+const LABEL: Record<State, string> = {
   idle: 'copy',
   copied: 'copied',
   failed: 'select it',
-} as const
+}
 
 export function CopyButton({
   value,
   what,
-  className,
+  className = '',
 }: {
   /** The full value. Never the truncated display string. */
   value: string
@@ -20,18 +26,34 @@ export function CopyButton({
   what: string
   className?: string
 }) {
-  const { state, copy } = useCopy()
+  const [state, setState] = useState<State>('idle')
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+
+  async function copy() {
+    if (timer.current) clearTimeout(timer.current)
+    try {
+      await navigator.clipboard.writeText(value)
+      setState('copied')
+    } catch {
+      setState('failed')
+    }
+    timer.current = setTimeout(() => setState('idle'), 2200)
+  }
 
   return (
     <>
       <button
         type="button"
-        onClick={() => copy(value)}
+        onClick={copy}
         aria-label={`Copy ${what}`}
-        className={cn(
-          'shrink-0 text-dim transition-colors hover:text-ink',
-          className,
-        )}
+        className={`shrink-0 text-dim transition-colors hover:text-ink ${className}`}
       >
         [{LABEL[state]}]
       </button>

@@ -92,7 +92,7 @@ export function isConfigured(address: string): boolean {
  * Middle-truncate for display only. A Monero address is 95 characters and
  * fits on no phone. The full value is always what reaches the clipboard.
  */
-export function truncateAddress(address: string, head = 10, tail = 6): string {
-  if (address.length <= head + tail + 1) return address
-  return `${address.slice(0, head)}…${address.slice(-tail)}`
+export function truncateAddress(address: string): string {
+  if (address.length <= 17) return address
+  return `${address.slice(0, 10)}…${address.slice(-6)}`
 }

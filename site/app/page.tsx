@@ -1,7 +1,7 @@
-import { CopyCommand } from '@/components/copy-command'
+import { CopyButton } from '@/components/copy-button'
 import { Donate } from '@/components/donate'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { WORDMARK, hero } from '@/lib/content'
+import { INSTALL_COMMAND, WORDMARK, hero } from '@/lib/content'
 
 export default function Home() {
   return (
@@ -20,8 +20,18 @@ export default function Home() {
         {hero.lede}
       </p>
 
-      <div className="mt-11">
-        <CopyCommand />
+      <div className="mt-11 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-5">
+        <code className="min-w-0 max-w-full overflow-x-auto whitespace-nowrap text-[0.6875rem] sm:text-[0.9375rem]">
+          <span className="text-dim select-none" aria-hidden="true">
+            ${' '}
+          </span>
+          {INSTALL_COMMAND}
+        </code>
+        <CopyButton
+          value={INSTALL_COMMAND}
+          what="install command"
+          className="self-center text-[0.75rem] sm:self-auto sm:text-[0.8125rem]"
+        />
       </div>
 
       <div className="mt-1.5" aria-hidden="true">

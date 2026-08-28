@@ -130,7 +130,6 @@ Yellow is the **ground**, not an accent. There is no third colour and no accent 
 | `--ground` | `#ffd400` | `#0b0b0a` | Page background |
 | `--ink` | `#0b0b0a` | `#ffd400` | Wordmark, headline, command |
 | `--dim` | `#6b5b00` | `#a89000` | Secondary text, the `$` sigil, the two controls |
-| `--line` | `#c9a600` | `#3d3300` | Reserved for rules; unused today |
 
 `--dim` is checked in both directions: `#6b5b00` on yellow ≈ 5.1:1, `#a89000` on black ≈ 5.4:1. Both clear AA. Selection inverts to `--ink` on `--ground`, the way a terminal selection does. The focus ring is `--ink`, which is full contrast in either theme by construction.
 
@@ -232,7 +231,8 @@ The first is the one to actually measure rather than eyeball — a per-glyph fon
 - **No webfont.** See §03. If one arrives, the wordmark must be excluded from it.
 - **No CMS.** Four strings do not need a content layer.
 - **No dependency on the API.** The page renders identically when `api.jukebox.dev` is down, because it never calls it.
-- **No component library sprawl.** `components.json` and `cn()` exist so `shadcn add` works when something needs it. Today nothing does.
+- **No component library sprawl.** There is no `components.json` and no `cn()` helper, because there are no shadcn components — a config file and a class-merging utility kept for a hypothetical future are two files that do nothing today. `shadcn init` regenerates both in one command the first time a component is genuinely wanted. `README.md`'s stack table still names shadcn/ui, and that stays true as intent.
+- **No token without a consumer.** A palette entry or utility that nothing references is deleted, not left in place as a reservation. `--line` was carried for a while as "reserved for rules"; it was removed once it became clear nothing drew any.
 
 ---
 
