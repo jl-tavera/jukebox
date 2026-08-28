@@ -1,2 +1,6 @@
 # Claude Code local config, skills and session state
 .claude/
+
+# Agent instructions - kept local, not published
+/CLAUDE.md
+/docs/agents/
