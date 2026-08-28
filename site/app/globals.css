@@ -82,13 +82,20 @@
     background-color: rgb(0 0 0 / 0.6);
   }
 
-  /* The wordmark. Sized so 58 characters always fit the viewport: monospace
-   * advance is ~0.6em, so the block is ~34.8em wide. */
+  /* The wordmark. Sized so 67 characters always fit the viewport: monospace
+   * advance is ~0.6em, so the block is ~40.2em wide. The 25px cap lands it
+   * at ~1005px on a wide screen. */
   .u-art {
     display: block;
     white-space: pre;
-    font-size: clamp(5px, 2.4vw, 30px);
+    font-size: clamp(5px, 2vw, 25px);
     line-height: 1;
+    /* Adjacent block glyphs each rasterise in their own cell, and at
+     * fractional cell widths the boundaries leave sub-pixel gaps that let the
+     * ground bleed through as hairlines. A hair of negative tracking overlaps
+     * the cells and closes them. Applied uniformly, so every row still
+     * measures the same width. */
+    letter-spacing: -0.03em;
     /* Block characters sit edge to edge, so subpixel antialiasing paints
      * colour fringes along every internal seam. Grayscale AA removes them. */
     -webkit-font-smoothing: antialiased;

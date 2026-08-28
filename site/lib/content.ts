@@ -5,19 +5,20 @@
  */
 
 /**
- * The wordmark, copied byte-for-byte from docs/design/DESIGN.md L4-9.
+ * The wordmark, copied byte-for-byte from the banner at the top of
+ * docs/design/DESIGN.md. Generated, never hand-typed: two of these lines
+ * carry trailing spaces and hand-copying has already dropped them once.
  *
- * Kept as a template literal because two lines carry trailing spaces and one
- * carries a leading space; losing them shears the letterforms. Built from box
- * drawing and block characters, which is why the page uses the system
- * monospace stack rather than a subsetted webfont - see docs/design/SITE.md 03.
+ * Built entirely from Block Elements - full, half and quarter blocks
+ * (U+2580-U+259F). Those glyphs fall outside a subsetted latin webfont, and
+ * a per-glyph fallback with different metrics shears the art apart, which is
+ * why the page uses the system monospace stack - see docs/design/SITE.md 03.
  */
-export const WORDMARK = `     ██╗██╗   ██╗██╗  ██╗███████╗██████╗  ██████╗ ██╗  ██╗
-     ██║██║   ██║██║ ██╔╝██╔════╝██╔══██╗██╔═══██╗╚██╗██╔╝
-     ██║██║   ██║█████╔╝ █████╗  ██████╔╝██║   ██║ ╚███╔╝ 
-██   ██║██║   ██║██╔═██╗ ██╔══╝  ██╔══██╗██║   ██║ ██╔██╗ 
-╚█████╔╝╚██████╔╝██║  ██╗███████╗██████╔╝╚██████╔╝██╔╝ ██╗
- ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝`
+export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
+     ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
+███  ███ ███   ███ ███▀▀██▄  ███▀▀▀   ███▀▀▀█▄ ███    ███   ▄███▄  
+███▄▄███ ███▄▄▄███ ███   ███ ███▄▄▄▄▄ ███▄▄▄██ ▀███▄▄███▀ ▄███▀███▄
+ ▀▀▀▀▀▀   ▀▀▀▀▀▀▀  ▀▀▀   ▀▀▀ ▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀    ▀▀▀▀▀▀   ▀▀▀   ▀▀▀`
 
 export const INSTALL_COMMAND = 'curl -fsSL https://jukebox.dev/install.sh | sh'
 
