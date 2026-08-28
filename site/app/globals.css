@@ -61,27 +61,25 @@
 }
 
 @layer components {
-  /* The donate disclosure. The default triangle is replaced by the
-   * [donate] / [close] label, swapped on the open state alone - no JS. */
-  summary {
-    list-style: none;
-    cursor: pointer;
+  /* The donate modal. No `display` utilities belong on the element - the
+   * dialog's own open/closed display behaviour has to survive. Padding sits
+   * on the inner wrapper so a click landing on the dialog itself is
+   * unambiguously a backdrop click. */
+  .u-dialog {
+    margin: auto;
+    padding: 0;
+    width: min(31rem, calc(100vw - 2.5rem));
+    border: 1px solid var(--ink);
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-mono);
   }
 
-  summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .u-when-open {
-    display: none;
-  }
-
-  details[open] .u-when-closed {
-    display: none;
-  }
-
-  details[open] .u-when-open {
-    display: inline;
+  /* ::backdrop sits in the top layer and cannot be relied on to inherit the
+   * theme custom properties, so this is a literal that reads correctly over
+   * both the yellow and the black ground. */
+  .u-dialog::backdrop {
+    background-color: rgb(0 0 0 / 0.6);
   }
 
   /* The wordmark. Sized so 58 characters always fit the viewport: monospace

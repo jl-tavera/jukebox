@@ -85,22 +85,33 @@ Centred, vertically and horizontally. Five elements and nothing around them.
 
 The theme toggle is the single piece of chrome. It is there because dark and light are both first-class (§05) and a visitor with no control could only ever see whichever one their OS picked.
 
-### The donate disclosure
+### The donate modal
 
-`[donate]` expands a list of wallet addresses in place. At rest the page is unchanged, which is the point — a donation ask should be findable without being the first thing anyone reads.
+`[donate]` sits under the cursor and opens a modal. At rest the page is unchanged, which is the point — a donation ask should be findable without being the first thing anyone reads.
 
 ```
-  ── support ─────────────────────────────
-
-  btc   bc1qxy0801…q4k9   [copy]
-  eth   jukebox.eth       [copy]
-        also base · arbitrum · optimism · polygon · usdc
-  sol   7Xv9pK22nQ…pQ2m   [copy]
-        also usdc
-  xmr   not configured
+  ┌──────────────────────────────────────────────┐
+  │  support jukebox                    [close]  │
+  │                                              │
+  │  ┌────────────────────────────────────────┐  │
+  │  │ example addresses — not live yet.      │  │
+  │  │ these are deliberately invalid and     │  │
+  │  │ every wallet will reject them.         │  │
+  │  └────────────────────────────────────────┘  │
+  │                                              │
+  │  btc   bc1qEXAMPL…D0q4k9           [copy]    │
+  │  eth   0xEXAMPLEo…funds0           [copy]    │
+  │        also base · arbitrum · optimism ·     │
+  │        polygon · usdc                        │
+  │  sol   EXAMPLEonl…send0l           [copy]    │
+  │        also usdc                             │
+  │  xmr   4EXAMPLEon…000000           [copy]    │
+  └──────────────────────────────────────────────┘
 ```
 
-Built on native `<details>` / `<summary>`, not React state: keyboard support and correct semantics come free, it works with JavaScript disabled, and the block stays a server component. Only the copy buttons cross into the client. The default triangle is replaced by the `[donate]` / `[close]` label, swapped on `details[open]` alone.
+Native `<dialog>` opened with `showModal()`, not a hand-rolled overlay. Focus trapping, Escape to close, returning focus to the trigger, and making the rest of the page inert all come from the platform — and those are precisely the parts of a modal most often got wrong by hand. Padding lives on an inner wrapper so a click landing on the dialog element itself is unambiguously a backdrop click.
+
+Two CSS constraints worth knowing before editing it: **no `display` utility may go on the dialog**, or its open/closed behaviour breaks; and `::backdrop` sits in the top layer where it cannot be relied on to inherit the theme custom properties, so its colour is a literal chosen to read over both grounds.
 
 **Static addresses, not a hosted processor.** NOWPayments or Coinbase Commerce would cover more coins, but both mean a third-party script and a fee, and §07 says this page talks to nobody but Cloudflare. Four lines cover nearly everyone once the EVM row is an ENS name (one string for Ethereum, Base, Arbitrum, Optimism and Polygon) and the EVM and Solana rows accept USDC — which is what most people mean when they want to give a fixed amount rather than a volatile fraction of a coin. See §08 if that stops being enough.
 
@@ -193,7 +204,8 @@ Not aspirations. A build that misses one of these is not finished.
 
 | Check | Requirement |
 |---|---|
-| **No copyable placeholder** | An address that is still a placeholder renders `not configured` with **no copy button**. A wrong crypto address loses money permanently, so a donor must not be able to put one on their clipboard. |
+| **Example addresses must be unsendable** | While `DONATIONS_ARE_EXAMPLES` is true, every address must break its own chain's encoding — mixed case in bech32, non-hex after `0x`, base58-excluded characters like `0`, `O`, `I`, `l`. A wallet then rejects them before a send can happen. A warning banner is not sufficient on its own; the value itself has to be unsendable. |
+| **No copyable placeholder** | An address still wrapped in angle brackets renders `not configured` with **no copy button**. A wrong crypto address loses money permanently, so a donor must not be able to put one on their clipboard. |
 | **Clipboard carries the full address** | Rows display a middle-truncated address; the copied value is always the complete string. Verify by capturing the argument to `clipboard.writeText`, not by eye. |
 | **Wordmark integrity** | All six `<pre>` lines render at **identical width** at every viewport. Unequal widths mean a glyph fell back to another font. |
 | Wordmark fit | `<pre>` never wraps and never overflows its box |

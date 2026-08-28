@@ -38,39 +38,51 @@ export interface Donation {
 }
 
 /**
- * Placeholders until real addresses exist.
+ * Flip to false once real addresses replace the examples below. Drives the
+ * warning shown inside the donate modal.
+ */
+export const DONATIONS_ARE_EXAMPLES = true
+
+/**
+ * Example addresses, deliberately INVALID.
  *
  * A crypto address sent to the wrong place is gone permanently, with no
- * recourse, so these are written in angle brackets to be unmistakable and
- * isConfigured() below keeps any unfilled row from rendering a copy button.
- * Shipping a half-filled list is therefore safe rather than dangerous.
+ * recourse. These are the right shape and length so the layout is honest,
+ * but each one breaks its own chain's encoding rules - uppercase inside a
+ * bech32 string, non-hex characters after 0x, base58-excluded characters
+ * such as 0 and l - so a wallet rejects them before any send can happen.
+ *
+ * That is the safeguard: not a notice someone might skip past, but a value
+ * that cannot be sent to. Replace with real addresses and set
+ * DONATIONS_ARE_EXAMPLES to false.
  */
 export const donations: readonly Donation[] = [
   {
     chain: 'btc',
     label: 'Bitcoin',
-    address: '<paste-btc-address>',
+    address: 'bc1qEXAMPLEonlyNOTaREALaddressDOnotSEND0q4k9',
   },
   {
     chain: 'eth',
     label: 'Ethereum',
-    address: '<paste-eth-address-or-ens>',
+    address: '0xEXAMPLEonlyNOTaREALaddressDOnotSENDfunds0',
     note: 'also base · arbitrum · optimism · polygon · usdc',
   },
   {
     chain: 'sol',
     label: 'Solana',
-    address: '<paste-sol-address>',
+    address: 'EXAMPLEonlyNOTaREALsolanaADDRESSdoNOTsend0l',
     note: 'also usdc',
   },
   {
     chain: 'xmr',
     label: 'Monero',
-    address: '<paste-xmr-address>',
+    address:
+      '4EXAMPLEonlyNOTaREALmoneroADDRESSdoNOTsendANYfundsHEREthisISanEXAMPLEvalueONLY0000000000000000',
   },
 ]
 
-/** A placeholder is anything still wrapped in angle brackets. */
+/** A row still wrapped in angle brackets never renders a copy button. */
 export function isConfigured(address: string): boolean {
   return !address.startsWith('<')
 }
