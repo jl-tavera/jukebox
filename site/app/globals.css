@@ -61,6 +61,29 @@
 }
 
 @layer components {
+  /* The donate disclosure. The default triangle is replaced by the
+   * [donate] / [close] label, swapped on the open state alone - no JS. */
+  summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .u-when-open {
+    display: none;
+  }
+
+  details[open] .u-when-closed {
+    display: none;
+  }
+
+  details[open] .u-when-open {
+    display: inline;
+  }
+
   /* The wordmark. Sized so 58 characters always fit the viewport: monospace
    * advance is ~0.6em, so the block is ~34.8em wide. */
   .u-art {

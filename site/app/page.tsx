@@ -1,4 +1,5 @@
 import { CopyCommand } from '@/components/copy-command'
+import { Donate } from '@/components/donate'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { WORDMARK, hero } from '@/lib/content'
 
@@ -28,6 +29,8 @@ export default function Home() {
           █
         </span>
       </div>
+
+      <Donate />
     </main>
   )
 }
