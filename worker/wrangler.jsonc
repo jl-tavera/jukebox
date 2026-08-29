@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jukebox-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-29",
+
+  // Resource ids are deliberately absent. A binding declared without one is
+  // provisioned by `wrangler deploy`, which writes the id back into this file
+  // (ADR-0002). That deploy, and the staging/production blocks that go with it,
+  // are #13's work; tests run against Miniflare-backed local bindings and need
+  // no id at all.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "jukebox",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "RESOLUTION_QUEUE",
+        "queue": "jukebox-resolution"
+      }
+    ]
+  }
+}
