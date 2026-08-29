@@ -84,7 +84,7 @@ Bun is the pick because `bun:sqlite` is built into the runtime — no native mod
 | | |
 |---|---|
 | Contract | OpenAPI spec → generated types for both sides |
-| IaC | Terraform (Cloudflare provider) |
+| IaC | Wrangler (Cloudflare) |
 | CI/CD | GitHub Actions |
 | Distribution | GitHub Releases + `curl \| sh` |
 
@@ -100,7 +100,7 @@ jukebox/
 ├── worker/               Hono on Cloudflare Workers
 ├── site/                 Next.js static export
 ├── schema/               OpenAPI spec + generated types
-├── infra/                Terraform
+├── infra/                Exported zone config
 ├── docs/                 DESIGN.md, adr/
 ├── .github/workflows/    CI/CD
 └── package.json          Bun workspaces root
@@ -112,7 +112,7 @@ Flat top level, one directory per concern.
 
 `schema/` is the contract between client and server — both sides generate types from it, neither one owns it. Anything shared between the CLI and the worker goes here.
 
-`infra/` covers the whole system, not just the backend: DNS, storage buckets, and zone settings that front the site as well as the API.
+`infra/` holds exported zone-scoped config — the WAF and rate-limit rules read back from the API. It stays empty until those rules exist.
 
 ---
 
@@ -127,7 +127,7 @@ Everything runs on Cloudflare.
 | KV | Hot cache — most requests are served from here |
 | Queues | Background matching and playlist refresh |
 | Cron Triggers | Scheduled refresh on a fixed upstream budget |
-| R2 | Terraform state, database backups |
+| R2 | Database backups |
 
 ### Two Workers, not one
 
@@ -153,11 +153,13 @@ The API URL is **not** compiled into the binary. On boot, the CLI reads a static
 
 This gives us three things: the ability to move the backend without breaking installed binaries, a version gate for breaking API changes, and a kill switch that shows users a real message during an outage instead of cryptic errors.
 
-### IaC split
+### Ownership split
 
-Terraform owns what's created once — D1 database, KV namespace, queues, R2 buckets, DNS records, WAF and rate-limit rules. Wrangler owns what changes constantly — Worker code, bindings, routes, crons.
+Wrangler owns everything Worker-scoped — D1, KV, queues, R2 buckets, Worker code, bindings, routes, crons. Bindings are declared in `wrangler.jsonc`, and `wrangler deploy` provisions whatever is missing and writes the resource ids back into the config.
 
-The main payoff is that staging and production are structurally identical: one module, two `.tfvars` files.
+The dashboard owns the few zone-scoped rules — WAF and rate limiting — with their live config exported into `infra/`, so a change nobody wrote down still shows up as a git diff.
+
+Bindings are non-inheritable, so staging and production are each declared in full. That is what keeps them identical.
 
 ---
 
@@ -173,6 +175,7 @@ The main payoff is that staging and production are structurally identical: one m
 | Cloudflare over Railway/VPS | Four services fit in one $5 plan; Railway bills each separately |
 | Next.js static export, not SSR | Landing page needs no server; static assets are free |
 | Two Workers, not one | Install script and discovery must survive an API outage |
+| Wrangler over Terraform | Auto-provisioning covers every Worker resource; only WAF and rate limiting fall outside it |
 
 ---
 
