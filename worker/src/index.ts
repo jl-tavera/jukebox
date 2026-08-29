@@ -122,8 +122,11 @@ app.get('/playlists/:id/tracks', async (c) => {
  * by `POST /playlists` and done here, which is what keeps upstream usage
  * proportional to Playlists rather than to the people adding them.
  *
- * A message that throws fails its batch and is delivered again. Retry limits
- * and the dead-letter queue that catches what keeps failing are #12's.
+ * A message that throws fails its batch and is delivered again. How many ride
+ * in a batch, how many attempts they get, and where one lands once it has run
+ * out of them are all declared in wrangler.jsonc. What is still #12's is
+ * deciding when to throw at all -- the Unreachable and Gone states this
+ * consumer does not yet reach.
  */
 const queue = async (batch: MessageBatch<ResolutionMessage>, env: Env): Promise<void> => {
   for (const message of batch.messages) {
