@@ -19,6 +19,12 @@ export type CreatePlaylistResponse = components['schemas']['CreatePlaylistRespon
 /** The poll response: the Playlist is tracked, but has no Tracks yet. */
 export type PendingTracks = components['schemas']['PendingTracks']
 
+/** A Playlist's Tracks at one Version. Also the shape of the stored snapshot. */
+export type PlaylistTracks = components['schemas']['PlaylistTracks']
+
+/** An entry in a Playlist as its Source describes it. Metadata, never a file. */
+export type Track = components['schemas']['Track']
+
 /** Source name and the Source's own id, joined by a colon. See ADR-0001. */
 export type PlaylistId = components['schemas']['PlaylistId']
 

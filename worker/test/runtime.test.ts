@@ -20,8 +20,8 @@ describe('the Workers test runtime', () => {
   })
 
   it('serves the Resolution queue', async () => {
-    // Nothing consumes this yet -- the consumer arrives with the Resolution
-    // pipeline (#10). A missing binding throws here, so the send is the assertion.
+    // What the consumer does with a message is asserted in resolution.test.ts.
+    // Here a missing binding throws, so the send is the assertion.
     await expect(env.RESOLUTION_QUEUE.send({ id: 'spotify:abc' })).resolves.not.toThrow()
   })
 })

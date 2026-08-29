@@ -58,6 +58,24 @@ paths:
           schema:
             $ref: '#/components/schemas/PlaylistId'
       responses:
+        '200':
+          description: |
+            The Tracks of the Playlist, as of the Version naming this snapshot.
+          headers:
+            ETag:
+              description: |
+                The Playlist's Version, quoted. Strong, because it names an
+                immutable snapshot exactly rather than an equivalent one. Send
+                it back as `If-None-Match` on the next sync.
+              required: true
+              schema:
+                type: string
+                examples:
+                  - '"1"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistTracks'
         '202':
           description: |
             Resolution has not completed, so the Playlist has no Tracks yet.
@@ -97,6 +115,70 @@ components:
         status:
           $ref: '#/components/schemas/PlaylistStatus'
 
+    PlaylistTracks:
+      type: object
+      description: |
+        A Playlist's Tracks at one Version. The same document is what the server
+        stores, so the bytes served are the bytes written.
+      required: [version, skipped, tracks]
+      properties:
+        version:
+          type: integer
+          description: |
+            The Playlist's Version, and the ETag this answer carries. It moves
+            whenever the Playlist's contents change, and it is the whole of the
+            client's "am I current?".
+        skipped:
+          type: integer
+          description: |
+            How many entries the Source offered that are not Tracks -- podcast
+            episodes, local files, entries it will no longer serve. They are
+            left out of `tracks`, and counted here so that a shorter list than
+            the Source shows does not read as data loss.
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+
+    Track:
+      type: object
+      description: |
+        An entry in a Playlist as its Source describes it. Metadata, never a
+        file.
+      required:
+        [sourceTrackId, title, artists, album, durationMs, isrc, position, coverImageUrl]
+      properties:
+        sourceTrackId:
+          type: string
+          description: The Track's id within its Source.
+        title:
+          type: string
+        artists:
+          type: array
+          description: Always an array, including when there is one artist.
+          items:
+            type: string
+        album:
+          type: [string, 'null']
+        durationMs:
+          type: [integer, 'null']
+        isrc:
+          type: [string, 'null']
+          description: |
+            The recording's ISRC when the Source exposes one. Matching's
+            strongest signal, carried now so Matching needs no re-read later.
+        position:
+          type: integer
+          description: |
+            The Source's own index for this entry, kept as it is. Skipped
+            entries therefore leave visible gaps rather than renumbering what
+            follows them.
+        coverImageUrl:
+          type: [string, 'null']
+          description: |
+            The largest cover image the Source offers, destined for file tags.
+            Downscaling later is possible where upscaling is not.
+
     PendingTracks:
       type: object
       description: |
@@ -122,8 +204,10 @@ components:
       type: string
       description: |
         Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`.
-        Grows as the responses that emit them arrive: `ok` lands with the Tracks
-        response, `unreachable` and `gone` with the failure states.
+        Grows as the responses that emit them arrive. The Tracks response
+        carries a Version rather than a status, so `ok` waits for the answer
+        that names one -- creating a Playlist already resolved -- and
+        `unreachable` and `gone` for the failure states.
       enum:
         - pending
 
