@@ -39,6 +39,10 @@ _Avoid_: Provider, platform, service
 An entry in a playlist as the source describes it: title, artists, album, duration, ISRC, cover image, position. A track is metadata, never a file.
 _Avoid_: Song, item, entry
 
+**Skipped**:
+How many entries a source offered that never became tracks — podcast episodes, local files, entries the source will no longer serve. Counted rather than dropped silently, so a list shorter than the source's does not read as data loss. Position keeps the source's own index, so a skip leaves a visible gap rather than renumbering what follows.
+_Avoid_: Dropped, filtered, ignored; and the client's per-track `skipped` state (that is a track whose match has tier `none` — this is an entry that never became one)
+
 **Catalog**:
 An open music service holding openly licensed, downloadable recordings — Jamendo, Free Music Archive, Internet Archive, ccMixter, Musopen.
 _Avoid_: Library, provider
