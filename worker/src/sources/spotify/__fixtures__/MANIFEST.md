@@ -16,6 +16,11 @@ confines to `worker/src/sources/spotify/`. It encodes the donors and the trim ru
 loudly if a donor stops exhibiting the shape it was chosen for. Update this file when either
 changes.
 
+`network.ts` is its sibling and is here for the same reason: it is Spotify standing still, answering
+the token request and a playlist read out of the files beside it so that a test can drive a whole
+Resolution without a network. It knows the endpoints and the bearer, so it belongs behind the same
+boundary. Nothing under `src/` imports it, so none of it reaches the deployed worker.
+
 ## Why these exist
 
 Issue #8 exists to settle one assumption before anything is built on it: that the **Client
@@ -116,7 +121,9 @@ Established from the live payloads, not from the documentation:
 - **Null entry** — the entry's `item` is `null` (as is the duplicate `track` the trim removes).
 - **Podcast episode** — `item.type === "episode"`; no `album`, no `artists`, no `external_ids`;
   carries `show`. But only when the request asked for it — see finding 5.
-- **Cover image** — `album.images` is ordered 640, 300, 64.
+- **Cover image** — `album.images` is ordered widest first. Usually 640/300/64, but not always: one
+  entry (`several-artists.json` index 29) offers 1280/1280/640. So the largest is *selected* by width
+  rather than taken from the front — see finding 6.
 
 ## Findings
 
@@ -151,6 +158,21 @@ Each contradicts either Spotify's published documentation or an assumption in sp
    `artists` rather than on `type` would emit a podcast episode as a Track. **#11 should build its
    own page URLs from `offset` rather than following `next`**, or re-append the parameter.
    `capture.ts` asserts the link still drops it, so the day that changes, this finding fails loudly.
+
+6. **A cover image is not optional in practice either, and "largest" is not "first" by definition.**
+   Two separate things, both found by #11 building against these files.
+
+   Empty `album.images` occurs four times across every fixture, and all four are entries that get
+   skipped — the local files and the episode. *No real catalog track lacking a cover exists here*, so
+   `coverImageUrl: null` is unreachable from the captured evidence, exactly as finding 3 describes for
+   ISRC. The normalized shape's `string | null` stays correct; the branch is written for the shape, not
+   for a case any test drives.
+
+   Separately, `images` is ordered widest-first in every one of these responses, so selecting the
+   largest and taking the first agree on all of them — no fixture can tell the two apart. #11 selects
+   by width regardless, because the criterion is the largest and the ordering is a convention rather
+   than a documented guarantee. That behaviour is pinned by a small constructed input in
+   `worker/test/spotify-normalize.test.ts`, which says so where it is written.
 
 ## Donor churn
 

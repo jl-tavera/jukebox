@@ -1,0 +1,12 @@
+# Copy to `.dev.vars` and fill in, for `wrangler dev`. Never commit the filled
+# copy -- `.gitignore` covers `.dev.vars`, and only this example is allowed
+# through.
+#
+# Both come from a Spotify app at https://developer.spotify.com/dashboard. The
+# Client Credentials flow needs no user and no redirect URI: Jukebox only ever
+# reads public playlists.
+#
+# A deployed worker gets them from `wrangler secret put` instead, per
+# environment. `wrangler.jsonc` names them under `secrets.required`.
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=

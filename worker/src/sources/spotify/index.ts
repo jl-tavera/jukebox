@@ -1,15 +1,11 @@
 import type { PlaylistSource } from '../registry'
+import { normalize } from './normalize'
+import type { ItemsPage } from './payloads'
 
 /**
  * The Spotify Source adapter. Reached only through the registry: nothing
  * outside this directory imports it, which is what makes Apple Music additive
  * rather than an audit of every call site.
- *
- * `claims` and `parse` are real; `fetch` and `normalize` are #11's, and refuse
- * loudly until then. A Spotify Playlist added today is therefore tracked and
- * its Resolution fails -- which is the true state of things, and better said
- * out loud than hidden behind an interface member every call site has to guard
- * for. The stub Source is what exercises the Resolution path meanwhile.
  */
 
 /**
@@ -66,7 +62,95 @@ const sourceIdFrom = (input: string): string | undefined => {
   return SOURCE_ID_PATTERN.test(sourceId) ? sourceId : undefined
 }
 
-export const spotify: PlaylistSource = {
+const ACCOUNTS = 'https://accounts.spotify.com/api/token'
+const API = 'https://api.spotify.com/v1'
+
+/** Spotify caps this at 50, so a longer playlist is more than one request. */
+const PAGE_SIZE = 50
+
+/**
+ * A token for the Client Credentials flow -- no user, no redirect, no consent
+ * screen, which is what lets a worker nobody is logged into read a public
+ * playlist. DESIGN section 10 rules out user OAuth, so this is the only flow
+ * Jukebox has.
+ *
+ * One token per Resolution. Caching them in KV is a later optimisation, correct
+ * to make when the scheduled refresh fans out widely enough for the token
+ * endpoint to matter.
+ */
+const accessToken = async (env: Env): Promise<string> => {
+  const id = env.SPOTIFY_CLIENT_ID
+  const secret = env.SPOTIFY_CLIENT_SECRET
+
+  // Said plainly and early. Without this the request goes out as
+  // `Basic ` + btoa('undefined:undefined') and comes back 401, which reads as
+  // a credential Spotify rejected rather than one that was never delivered.
+  if (!id || !secret) {
+    throw new Error(
+      'SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET are not set on this worker. ' +
+        'Deployed environments get them from `wrangler secret put`; local ones read .dev.vars.',
+    )
+  }
+
+  const response = await fetch(ACCOUNTS, {
+    method: 'POST',
+    headers: {
+      // `btoa`, not `Buffer`: `nodejs_compat` is off, and turning it on to
+      // encode 60 characters would be a runtime-wide change for nothing.
+      authorization: `Basic ${btoa(`${id}:${secret}`)}`,
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Spotify would not issue a token: ${response.status}`)
+  }
+
+  const { access_token } = await response.json<{ access_token: string }>()
+  return access_token
+}
+
+/**
+ * One request's worth of playlist entries.
+ *
+ * The page is addressed by `offset` rather than by following the `next` link
+ * Spotify puts in its own answer. That link drops `additional_types=episode`,
+ * so a walk that follows it verbatim sees true episode shapes on the first
+ * page and track-shaped episodes on every one after -- MANIFEST.md finding 5.
+ * Addressing pages ourselves means every page is asked for the same way.
+ *
+ * The query is written out rather than built with `URLSearchParams`, which
+ * percent-encodes the comma into `track%2Cepisode`. Spotify accepts that, but
+ * every captured response was taken with this exact query, and a request that
+ * differs from the one the fixtures describe is one nothing has evidence
+ * about.
+ *
+ * `additional_types=track,episode` fixes the *shape* of an episode entry, not
+ * whether one appears -- without it an episode still arrives typed "episode"
+ * but wearing a track's clothes. `normalize` says why that matters.
+ *
+ * No market is named. DESIGN section 05 caches one answer for every caller,
+ * and a region-scoped response would quietly make that cache region-specific.
+ */
+const itemsPage = async (sourceId: string, offset: number, bearer: string): Promise<ItemsPage> => {
+  const address =
+    `${API}/playlists/${sourceId}/items` +
+    `?offset=${offset}&limit=${PAGE_SIZE}&additional_types=track,episode`
+
+  const response = await fetch(address, { headers: { authorization: `Bearer ${bearer}` } })
+
+  // Thrown rather than answered, so the Resolution fails and the queue delivers
+  // it again. Telling a 404 (the Playlist is Gone) apart from a 503 (try later)
+  // is #12's, and until then every failure is treated as worth retrying.
+  if (!response.ok) {
+    throw new Error(`Spotify would not serve playlist ${sourceId}: ${response.status}`)
+  }
+
+  return response.json<ItemsPage>()
+}
+
+export const spotify: PlaylistSource<ItemsPage[]> = {
   id: 'spotify',
 
   claims: (url) => sourceIdFrom(url) !== undefined,
@@ -81,11 +165,17 @@ export const spotify: PlaylistSource = {
     return { sourceId }
   },
 
-  fetch: () => {
-    throw new Error('reading a playlist from Spotify is not written yet')
-  },
+  /**
+   * The one expensive call, reached only from the Resolution consumer.
+   *
+   * The pages are answered rather than flattened here, so what `normalize`
+   * reads is what Spotify actually said and in the order it was asked for.
+   *
+   * One page today. A playlist longer than 50 entries is read as far as its
+   * first page and no further -- #12 adds the walk, where the criterion for it
+   * lives, and this returning a list is the shape that walk pushes into.
+   */
+  fetch: async (sourceId, env) => [await itemsPage(sourceId, 0, await accessToken(env))],
 
-  normalize: () => {
-    throw new Error('normalizing a Spotify playlist is not written yet')
-  },
+  normalize,
 }
