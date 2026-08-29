@@ -1,5 +1,6 @@
 import { createExecutionContext, createMessageBatch, getQueueResult } from 'cloudflare:test'
 import { env, exports } from 'cloudflare:workers'
+import { vi } from 'vitest'
 import worker from '../src/index'
 import type { ResolutionMessage } from '../src/resolution'
 
@@ -38,4 +39,26 @@ export const resolvePlaylist = async (id: string, bindings: Partial<Env> = {}) =
   await worker.queue(batch, { ...env, ...bindings })
 
   return getQueueResult(batch, ctx)
+}
+
+/**
+ * Runs `work` with the network standing still.
+ *
+ * The same trick as `bindings` above, at the same kind of boundary: global
+ * `fetch` is where a Source is reached, so it is where a Source can be stood
+ * in for, and nothing is added to the worker's own code to make it testable.
+ * The spy is removed however `work` ends, so one test cannot leave the network
+ * replaced for the next.
+ */
+export const insteadOfTheNetwork = async <T>(
+  answer: typeof globalThis.fetch,
+  work: () => Promise<T>,
+): Promise<T> => {
+  const network = vi.spyOn(globalThis, 'fetch').mockImplementation(answer)
+
+  try {
+    return await work()
+  } finally {
+    network.mockRestore()
+  }
 }

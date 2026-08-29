@@ -55,6 +55,24 @@
     ]
   },
 
+  // Reading a playlist from Spotify needs a client id and secret, which is the
+  // whole reason Resolution is the worker's job rather than the CLI's: a
+  // credential in a distributed binary is a credential anyone can read out of
+  // it.
+  //
+  // Naming them here rather than leaving them to be inferred is what makes
+  // `wrangler types` deterministic. With this list, generation reads it and
+  // stops; without it, wrangler falls back to whatever `.dev.vars` happens to
+  // hold -- which is gitignored, so the file a developer generates and the file
+  // CI generates would differ, and `types --check` would fail on a commit that
+  // is correct.
+  //
+  // The values never appear here. `wrangler secret put` delivers them to a
+  // deployed worker; `.dev.vars` holds them for `wrangler dev`.
+  "secrets": {
+    "required": ["SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET"]
+  },
+
   // Bindings are non-inheritable, so each environment declares every one of
   // them. That is what keeps staging and production from drifting apart: the
   // config format, rather than a tool watching for it (ADR-0002).
@@ -90,6 +108,16 @@
             "queue": "jukebox-resolution"
           }
         ]
+      },
+
+      // Empty, and deliberately present rather than omitted. No test reaches
+      // Spotify, so this surface holds no credential -- the tests that drive a
+      // Resolution hand the consumer one of their own, the same way they stand
+      // in for global `fetch`. Saying so keeps `wrangler types` off the
+      // `.dev.vars` fallback here too, and stops wrangler warning on every run
+      // about a secret this environment is not supposed to have.
+      "secrets": {
+        "required": []
       }
     },
 
@@ -126,6 +154,9 @@
             "dead_letter_queue": "jukebox-resolution-staging-dlq"
           }
         ]
+      },
+      "secrets": {
+        "required": ["SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET"]
       }
     },
 
@@ -158,6 +189,9 @@
             "dead_letter_queue": "jukebox-resolution-production-dlq"
           }
         ]
+      },
+      "secrets": {
+        "required": ["SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET"]
       }
     }
   }
