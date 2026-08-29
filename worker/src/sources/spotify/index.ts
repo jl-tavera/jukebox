@@ -5,10 +5,11 @@ import type { PlaylistSource } from '../registry'
  * outside this directory imports it, which is what makes Apple Music additive
  * rather than an audit of every call site.
  *
- * This slice implements the two members that need no network -- `claims` and
- * `parse`. `revision`, `fetch` and `normalize` arrive with Resolution (#11),
- * so the interface grows a member at a time rather than being stubbed ahead of
- * its first use.
+ * `claims` and `parse` are real; `fetch` and `normalize` are #11's, and refuse
+ * loudly until then. A Spotify Playlist added today is therefore tracked and
+ * its Resolution fails -- which is the true state of things, and better said
+ * out loud than hidden behind an interface member every call site has to guard
+ * for. The stub Source is what exercises the Resolution path meanwhile.
  */
 
 /**
@@ -78,5 +79,13 @@ export const spotify: PlaylistSource = {
     // Playlist with no id.
     if (sourceId === undefined) throw new Error('no Spotify playlist in this URL')
     return { sourceId }
+  },
+
+  fetch: () => {
+    throw new Error('reading a playlist from Spotify is not written yet')
+  },
+
+  normalize: () => {
+    throw new Error('normalizing a Spotify playlist is not written yet')
   },
 }

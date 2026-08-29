@@ -67,6 +67,55 @@ export interface components {
             status: components["schemas"]["PlaylistStatus"];
         };
         /**
+         * @description A Playlist's Tracks at one Version. The same document is what the server
+         *     stores, so the bytes served are the bytes written.
+         */
+        PlaylistTracks: {
+            /**
+             * @description The Playlist's Version, and the ETag this answer carries. It moves
+             *     whenever the Playlist's contents change, and it is the whole of the
+             *     client's "am I current?".
+             */
+            version: number;
+            /**
+             * @description How many entries the Source offered that are not Tracks -- podcast
+             *     episodes, local files, entries it will no longer serve. They are
+             *     left out of `tracks`, and counted here so that a shorter list than
+             *     the Source shows does not read as data loss.
+             */
+            skipped: number;
+            tracks: components["schemas"]["Track"][];
+        };
+        /**
+         * @description An entry in a Playlist as its Source describes it. Metadata, never a
+         *     file.
+         */
+        Track: {
+            /** @description The Track's id within its Source. */
+            sourceTrackId: string;
+            title: string;
+            /** @description Always an array, including when there is one artist. */
+            artists: string[];
+            album: string | null;
+            durationMs: number | null;
+            /**
+             * @description The recording's ISRC when the Source exposes one. Matching's
+             *     strongest signal, carried now so Matching needs no re-read later.
+             */
+            isrc: string | null;
+            /**
+             * @description The Source's own index for this entry, kept as it is. Skipped
+             *     entries therefore leave visible gaps rather than renumbering what
+             *     follows them.
+             */
+            position: number;
+            /**
+             * @description The largest cover image the Source offers, destined for file tags.
+             *     Downscaling later is possible where upscaling is not.
+             */
+            coverImageUrl: string | null;
+        };
+        /**
          * @description Deliberately not an empty track list: a Playlist with no Tracks yet and
          *     a Playlist that resolved to nothing are different answers, and a client
          *     that cannot tell them apart stops polling too early.
@@ -84,8 +133,10 @@ export interface components {
         PlaylistId: string;
         /**
          * @description Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`.
-         *     Grows as the responses that emit them arrive: `ok` lands with the Tracks
-         *     response, `unreachable` and `gone` with the failure states.
+         *     Grows as the responses that emit them arrive. The Tracks response
+         *     carries a Version rather than a status, so `ok` waits for the answer
+         *     that names one -- creating a Playlist already resolved -- and
+         *     `unreachable` and `gone` for the failure states.
          * @enum {string}
          */
         PlaylistStatus: "pending";
@@ -160,6 +211,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description The Tracks of the Playlist, as of the Version naming this snapshot. */
+            200: {
+                headers: {
+                    /**
+                     * @description The Playlist's Version, quoted. Strong, because it names an
+                     *     immutable snapshot exactly rather than an equivalent one. Send
+                     *     it back as `If-None-Match` on the next sync.
+                     */
+                    ETag: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistTracks"];
+                };
+            };
             /**
              * @description Resolution has not completed, so the Playlist has no Tracks yet.
              *     This is the poll response: ask again.

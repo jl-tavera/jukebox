@@ -137,3 +137,68 @@ describe('the addresses a person can paste', () => {
     expect(((await response.json()) as ErrorEnvelope).error.code).toBe('invalid_url')
   })
 })
+
+/**
+ * The queue is the boundary Resolution crosses, the way global `fetch` is the
+ * boundary a Source crosses. It is watched here for the same reason: what the
+ * worker hands to it is observable, and nothing else in the response says
+ * whether Resolution was asked for once, twice or not at all.
+ */
+describe('the Resolution a new Playlist asks for', () => {
+  it('enqueues exactly one', async () => {
+    const enqueued = vi.spyOn(env.RESOLUTION_QUEUE, 'send')
+
+    try {
+      await createPlaylist('https://open.spotify.com/playlist/2JxNo3xcSFEXUdU7CrKgYn')
+
+      expect(enqueued).toHaveBeenCalledTimes(1)
+      expect(enqueued).toHaveBeenCalledWith({ id: 'spotify:2JxNo3xcSFEXUdU7CrKgYn' })
+    } finally {
+      enqueued.mockRestore()
+    }
+  })
+
+  it('asks for none at all when the Playlist is already tracked', async () => {
+    const url = 'https://open.spotify.com/playlist/1AAAAAAAAAAAAAAAAAAAAA'
+    await createPlaylist(url)
+
+    const enqueued = vi.spyOn(env.RESOLUTION_QUEUE, 'send')
+
+    try {
+      // Re-adding is harmless, and that has to reach the queue too: a Playlist
+      // resolved once must not be resolved again by someone rerunning the
+      // command, or upstream usage stops being proportional to Playlists.
+      const again = await createPlaylist(url)
+
+      expect(again.status).toBe(202)
+      expect(enqueued).not.toHaveBeenCalled()
+    } finally {
+      enqueued.mockRestore()
+    }
+  })
+})
+
+/**
+ * The registry stops being a list of one. Which adapter answers is decided by
+ * the addresses themselves, not by a branch in the route -- the property that
+ * makes Apple Music additive rather than an audit of every call site.
+ */
+describe('a registry holding more than one Source', () => {
+  it('reaches the stub Source by its own address', async () => {
+    const response = await createPlaylist('stub:playlist:small-fixed-set')
+
+    expect(response.status).toBe(202)
+    expect(await response.json()).toEqual({
+      id: 'stub:small-fixed-set',
+      status: 'pending',
+    })
+  })
+
+  it('still reaches Spotify for a Spotify address', async () => {
+    const response = await createPlaylist(
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    )
+
+    expect(await response.json()).toMatchObject({ id: 'spotify:37i9dQZF1DXcBWIGoYBM5M' })
+  })
+})
