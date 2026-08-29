@@ -132,14 +132,18 @@ export interface components {
          */
         PlaylistId: string;
         /**
-         * @description Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`.
-         *     Grows as the responses that emit them arrive. The Tracks response
-         *     carries a Version rather than a status, so `ok` waits for the answer
-         *     that names one -- creating a Playlist already resolved -- and
-         *     `unreachable` and `gone` for the failure states.
+         * @description Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`,
+         *     as far as an answer carrying one can say.
+         *
+         *     These two and no more. `CONTEXT.md` also names Unreachable and Gone, and
+         *     neither will appear here: a Playlist in either state has no Tracks to
+         *     serve, so it is answered with an error envelope and a code the client
+         *     branches on -- `source_unavailable` and `playlist_gone` -- rather than
+         *     with a success body describing a state. A status says "here, or nearly
+         *     here"; a code says "not coming, and why".
          * @enum {string}
          */
-        PlaylistStatus: "pending";
+        PlaylistStatus: "pending" | "ok";
         /**
          * @description The shared error envelope. Every error response on every endpoint uses
          *     it. `message` is written for a human and printed verbatim by the CLI, so
@@ -153,11 +157,12 @@ export interface components {
             };
         };
         /**
-         * @description Stable, machine-readable. Grows as endpoints are added: `playlist_gone`
-         *     and `source_unavailable` arrive with the failure states.
+         * @description Stable, machine-readable, and what the CLI branches on. Each answers a
+         *     different question about what the caller should do next: correct the
+         *     address, add the Playlist first, stop tracking it, or try again later.
          * @enum {string}
          */
-        ErrorCode: "invalid_url" | "playlist_not_found";
+        ErrorCode: "invalid_url" | "playlist_not_found" | "playlist_gone" | "source_unavailable";
     };
     responses: never;
     parameters: never;
@@ -180,6 +185,18 @@ export interface operations {
             };
         };
         responses: {
+            /**
+             * @description Tracked, and already resolved. The caller can fetch its Tracks
+             *     immediately rather than polling for a Resolution that has happened.
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePlaylistResponse"];
+                };
+            };
             /** @description Tracked. Resolution has not run yet, so there are no Tracks. */
             202: {
                 headers: {
@@ -191,6 +208,32 @@ export interface operations {
             };
             /** @description No Source adapter claims this URL. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Tracked, and its Source refuses it. The same answer the Tracks
+             *     endpoint gives, so a caller never has to poll to learn a state that
+             *     will not change.
+             */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Tracked, and its Source could not be read for a reason believed
+             *     temporary. Nothing is asked of the Source here; the Resolution that
+             *     failed is either still being retried or has been set aside.
+             */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -220,6 +263,13 @@ export interface operations {
                      *     it back as `If-None-Match` on the next sync.
                      */
                     ETag: string;
+                    /**
+                     * @description `no-cache`: hold this answer, but revalidate before using it.
+                     *     Without it a shared cache may apply heuristic freshness and
+                     *     stop revalidating, at which point a Version that moves never
+                     *     reaches the client at all.
+                     */
+                    "Cache-Control": string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -239,11 +289,53 @@ export interface operations {
                 };
             };
             /**
+             * @description The `If-None-Match` sent matches the current Version, so the caller
+             *     already holds this answer and none is sent. This is the sync that
+             *     should be overwhelmingly the most common one: serving it reads a
+             *     single cache key and touches no database.
+             */
+            304: {
+                headers: {
+                    /** @description The Version the caller was found to be holding, quoted. */
+                    ETag: string;
+                    /** @description `no-cache`, as on the 200 this revalidates. */
+                    "Cache-Control": string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
              * @description Nothing is tracking a Playlist under this id. Ids are derived from
              *     the URL, so this is a Playlist that was never added -- not one whose
              *     Resolution failed, which has its own answers.
              */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description The Source will not serve this Playlist and retrying will not help
+             *     -- it was deleted, made private, or is curated by the Source itself
+             *     and closed to other apps. The Source does not distinguish the three,
+             *     so neither does this, and the message names the likely causes.
+             */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Resolution failed for a reason believed temporary, and there are no
+             *     Tracks to serve yet. Worth asking again.
+             */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

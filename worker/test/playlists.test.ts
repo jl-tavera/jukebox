@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { describe, expect, it, vi } from 'vitest'
 import type { ErrorEnvelope } from '@jukebox/schema'
-import { createPlaylist } from './api'
+import { createPlaylist, resolvePlaylist } from './api'
 
 describe('POST /playlists', () => {
   it('rejects a URL that no Source claims', async () => {
@@ -158,20 +158,46 @@ describe('the Resolution a new Playlist asks for', () => {
     }
   })
 
-  it('asks for none at all when the Playlist is already tracked', async () => {
+  it('asks for none at all when the Playlist is already resolved', async () => {
+    await createPlaylist('stub:playlist:already-resolved')
+    await resolvePlaylist('stub:already-resolved')
+
+    const enqueued = vi.spyOn(env.RESOLUTION_QUEUE, 'send')
+
+    try {
+      // The property this suite has always been about, now testable against a
+      // Playlist that really has been resolved: rerunning the command must not
+      // cost the Source anything, or upstream usage stops being proportional to
+      // Playlists. The answer says so too, so the client skips polling.
+      const again = await createPlaylist('stub:playlist:already-resolved')
+
+      expect(again.status).toBe(200)
+      expect(await again.json()).toEqual({ id: 'stub:already-resolved', status: 'ok' })
+      expect(enqueued).not.toHaveBeenCalled()
+    } finally {
+      enqueued.mockRestore()
+    }
+  })
+
+  it('asks again when the Playlist is still Pending', async () => {
     const url = 'https://open.spotify.com/playlist/1AAAAAAAAAAAAAAAAAAAAA'
     await createPlaylist(url)
 
     const enqueued = vi.spyOn(env.RESOLUTION_QUEUE, 'send')
 
     try {
-      // Re-adding is harmless, and that has to reach the queue too: a Playlist
-      // resolved once must not be resolved again by someone rerunning the
-      // command, or upstream usage stops being proportional to Playlists.
+      // This one deviates from the contract in spec #5, which says a re-add of
+      // a Pending Playlist enqueues nothing. Nothing can tell a Playlist whose
+      // Resolution is in flight from one whose enqueue failed after its row was
+      // written, and the second sits Pending for ever with nothing coming --
+      // the only state in the system with no way out of itself. So the add
+      // asks again, and the cost is bounded twice over: only for the seconds a
+      // Playlist is Pending, and a Resolution that finds what is already there
+      // writes nothing and moves no Version.
       const again = await createPlaylist(url)
 
       expect(again.status).toBe(202)
-      expect(enqueued).not.toHaveBeenCalled()
+      expect(enqueued).toHaveBeenCalledTimes(1)
     } finally {
       enqueued.mockRestore()
     }

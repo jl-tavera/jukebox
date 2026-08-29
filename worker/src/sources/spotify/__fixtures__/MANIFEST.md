@@ -51,7 +51,9 @@ About 214 KB in total.
 These are raw Source responses, so they are named for what Spotify returns, not for the domain
 state they become. Both 404s map to **Gone** (`CONTEXT.md`: "the source will not serve this
 playlist, and retrying will not help… deleted, made private, or curated by the source itself"),
-which the API surfaces as `playlist_gone`. That mapping is #12's work, not the fixtures'.
+which the API surfaces as `playlist_gone`. The adapter now makes that mapping: a 404 and nothing
+else is thrown as `PlaylistGone`, so the Resolution is acknowledged rather than retried. That the
+two captures are byte-identical is the evidence for one answer covering all three causes.
 
 ### Two fixtures are not verbatim captures
 
@@ -155,9 +157,12 @@ Each contradicts either Spotify's published documentation or an assumption in sp
    The trap: `next`, `previous` and `href` all echo `additional_types=track`, dropping `episode`.
    So a walk that follows `next` verbatim gets true episode shapes on page one and track-shaped
    episodes from page two on. A `normalize()` that discriminates on the presence of `album` or
-   `artists` rather than on `type` would emit a podcast episode as a Track. **#11 should build its
-   own page URLs from `offset` rather than following `next`**, or re-append the parameter.
-   `capture.ts` asserts the link still drops it, so the day that changes, this finding fails loudly.
+   `artists` rather than on `type` would emit a podcast episode as a Track. **The adapter builds
+   its own page URLs from `offset` rather than following `next`.** `capture.ts` asserts the link
+   still drops the parameter, so the day that changes, this finding fails loudly.
+
+   What the walk does read from `next` is whether it is null, which is a different question from
+   where it points -- only the second is the one this finding says not to take Spotify's word for.
 
 6. **A cover image is not optional in practice either, and "largest" is not "first" by definition.**
    Two separate things, both found by #11 building against these files.
@@ -172,7 +177,7 @@ Each contradicts either Spotify's published documentation or an assumption in sp
    largest and taking the first agree on all of them — no fixture can tell the two apart. #11 selects
    by width regardless, because the criterion is the largest and the ordering is a convention rather
    than a documented guarantee. That behaviour is pinned by a small constructed input in
-   `worker/test/spotify-normalize.test.ts`, which says so where it is written.
+   `worker/src/sources/spotify/normalize.test.ts`, which says so where it is written.
 
 ## Donor churn
 
