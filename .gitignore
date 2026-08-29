@@ -22,12 +22,3 @@ site/CLAUDE.md
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
-
-# Terraform: state is in R2, tfvars may carry account ids
-.terraform/
-.terraform.lock.hcl
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
-crash.log
