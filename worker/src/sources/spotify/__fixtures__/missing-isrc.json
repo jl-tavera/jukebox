@@ -1,0 +1,71 @@
+{
+  "_derived": "Derived. external_ids was emptied on a real entry from playlist 6M6POvx8hfKqsM1G8z1Pz5. Unlike a local file it keeps is_local:false, a non-null id and its album images, so it reaches the isrc:null branch as a real catalog track would. No such track was found across 91 public playlists (finding 3).",
+  "href": "https://api.spotify.com/v1/playlists/6M6POvx8hfKqsM1G8z1Pz5/items?offset=0&limit=50&additional_types=track,episode",
+  "limit": 50,
+  "next": null,
+  "offset": 0,
+  "previous": null,
+  "total": 1,
+  "items": [
+    {
+      "added_at": "2024-02-23T18:00:18Z",
+      "is_local": false,
+      "item": {
+        "id": "33QRau26GpW2wI24c4Qsj5",
+        "name": "Midnight Ride (L4D2)",
+        "type": "track",
+        "uri": "spotify:track:33QRau26GpW2wI24c4Qsj5",
+        "duration_ms": 331610,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 42,
+        "preview_url": null,
+        "external_ids": {},
+        "artists": [
+          {
+            "id": "5TRlSMKbGvjBvkHgVAO90Q",
+            "name": "StingingMeat5",
+            "type": "artist",
+            "uri": "spotify:artist:5TRlSMKbGvjBvkHgVAO90Q"
+          }
+        ],
+        "album": {
+          "id": "5T6rWngRhrLqtmW5ALEvZT",
+          "name": "Midnight Ride (L4D2)",
+          "uri": "spotify:album:5T6rWngRhrLqtmW5ALEvZT",
+          "album_type": "single",
+          "release_date": "2023-11-17",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b2a0168f92243294c26969b8",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b2a0168f92243294c26969b8",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b2a0168f92243294c26969b8",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    }
+  ]
+}

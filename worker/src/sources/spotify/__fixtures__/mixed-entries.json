@@ -1,0 +1,283 @@
+{
+  "_composed": "Composed. No single public playlist holds an episode, a local file and a null entry together. Every entry below is a real, unmodified capture: the tracks, the local file and the null entry from playlist 6M6POvx8hfKqsM1G8z1Pz5, the episode from 2JxNo3xcSFEXUdU7CrKgYn. Only their co-location is constructed.",
+  "href": "https://api.spotify.com/v1/playlists/6M6POvx8hfKqsM1G8z1Pz5/items?offset=0&limit=50&additional_types=track,episode",
+  "limit": 50,
+  "next": null,
+  "offset": 0,
+  "previous": null,
+  "total": 6,
+  "items": [
+    {
+      "added_at": "2024-02-23T18:00:18Z",
+      "is_local": false,
+      "item": {
+        "id": "33QRau26GpW2wI24c4Qsj5",
+        "name": "Midnight Ride (L4D2)",
+        "type": "track",
+        "uri": "spotify:track:33QRau26GpW2wI24c4Qsj5",
+        "duration_ms": 331610,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 42,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "QZWFE2395032"
+        },
+        "artists": [
+          {
+            "id": "5TRlSMKbGvjBvkHgVAO90Q",
+            "name": "StingingMeat5",
+            "type": "artist",
+            "uri": "spotify:artist:5TRlSMKbGvjBvkHgVAO90Q"
+          }
+        ],
+        "album": {
+          "id": "5T6rWngRhrLqtmW5ALEvZT",
+          "name": "Midnight Ride (L4D2)",
+          "uri": "spotify:album:5T6rWngRhrLqtmW5ALEvZT",
+          "album_type": "single",
+          "release_date": "2023-11-17",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b2a0168f92243294c26969b8",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b2a0168f92243294c26969b8",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b2a0168f92243294c26969b8",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-12-08T16:13:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7k8hz6Duh5ePmIOSvvSmkH",
+        "name": "Episode 1 - My Language Learning Story and the Secret to Learning a New Language",
+        "type": "episode",
+        "uri": "spotify:episode:7k8hz6Duh5ePmIOSvvSmkH",
+        "duration_ms": 872858,
+        "explicit": false,
+        "release_date": "2020-09-29",
+        "is_externally_hosted": false,
+        "languages": [
+          "en-US"
+        ],
+        "images": [
+          {
+            "height": 640,
+            "url": "https://i.scdn.co/image/ab6765630000ba8a876baeb5c3fa774887508c0f",
+            "width": 640
+          },
+          {
+            "height": 300,
+            "url": "https://i.scdn.co/image/ab67656300005f1f876baeb5c3fa774887508c0f",
+            "width": 300
+          },
+          {
+            "height": 64,
+            "url": "https://i.scdn.co/image/ab6765630000f68d876baeb5c3fa774887508c0f",
+            "width": 64
+          }
+        ],
+        "show": {
+          "id": "2gjwbj7cxdacUu8SYO7kJT",
+          "name": "Learn Everyday English",
+          "type": "show",
+          "uri": "spotify:show:2gjwbj7cxdacUu8SYO7kJT"
+        },
+        "available_markets": [
+          "AD",
+          "AE"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-06-30T01:07:43Z",
+      "is_local": false,
+      "item": {
+        "id": "1KrpXYLMCJ8GaDSz61FQNU",
+        "name": "Re: Your Brains",
+        "type": "track",
+        "uri": "spotify:track:1KrpXYLMCJ8GaDSz61FQNU",
+        "duration_ms": 272746,
+        "explicit": false,
+        "track_number": 13,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 44,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ushm90616155"
+        },
+        "artists": [
+          {
+            "id": "292sg99iIOc93zcd30r4Oz",
+            "name": "Jonathan Coulton",
+            "type": "artist",
+            "uri": "spotify:artist:292sg99iIOc93zcd30r4Oz"
+          }
+        ],
+        "album": {
+          "id": "40mdjMWKqerii9vlN0lvGf",
+          "name": "Thing a Week Two",
+          "uri": "spotify:album:40mdjMWKqerii9vlN0lvGf",
+          "album_type": "album",
+          "release_date": "2006-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273329074c1fad207aa1986c61e",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02329074c1fad207aa1986c61e",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851329074c1fad207aa1986c61e",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-06-25T03:08:40Z",
+      "is_local": true,
+      "item": {
+        "id": null,
+        "name": "taank",
+        "type": "track",
+        "uri": "spotify:local:::taank:78",
+        "duration_ms": 78000,
+        "explicit": false,
+        "track_number": 0,
+        "disc_number": 0,
+        "is_local": true,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {},
+        "artists": [
+          {
+            "id": null,
+            "name": "",
+            "type": "artist",
+            "uri": null
+          }
+        ],
+        "album": {
+          "id": null,
+          "name": "",
+          "uri": null,
+          "album_type": null,
+          "release_date": null,
+          "release_date_precision": null,
+          "images": [],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2024-04-08T21:10:55Z",
+      "is_local": false,
+      "item": null
+    },
+    {
+      "added_at": "2023-06-30T01:07:47Z",
+      "is_local": false,
+      "item": {
+        "id": "59V7DzfcDkxuSlWEG634jm",
+        "name": "Still Alive",
+        "type": "track",
+        "uri": "spotify:track:59V7DzfcDkxuSlWEG634jm",
+        "duration_ms": 177373,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 1,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "QM5WW1501090"
+        },
+        "artists": [
+          {
+            "id": "10erGh5UbLL0KsXf1eRfGC",
+            "name": "GLaDOS",
+            "type": "artist",
+            "uri": "spotify:artist:10erGh5UbLL0KsXf1eRfGC"
+          },
+          {
+            "id": "292sg99iIOc93zcd30r4Oz",
+            "name": "Jonathan Coulton",
+            "type": "artist",
+            "uri": "spotify:artist:292sg99iIOc93zcd30r4Oz"
+          }
+        ],
+        "album": {
+          "id": "7wu2JsRi6rSyd1HCrkm8Dz",
+          "name": "The Orange Box (Original Soundtrack)",
+          "uri": "spotify:album:7wu2JsRi6rSyd1HCrkm8Dz",
+          "album_type": "compilation",
+          "release_date": "2007-11-01",
+          "release_date_precision": "day",
+          "total_tracks": 19,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2736f0a14ae06c98f5ca20f6ecf",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e026f0a14ae06c98f5ca20f6ecf",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048516f0a14ae06c98f5ca20f6ecf",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    }
+  ]
+}
