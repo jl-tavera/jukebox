@@ -13,8 +13,38 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a tracked Playlist from its public URL. */
+        /**
+         * Create a tracked Playlist from its public URL.
+         * @description Nothing is read from the Source here. The Playlist is recorded and the
+         *     caller gets an id back immediately; Resolution happens out of band,
+         *     which is what keeps upstream usage proportional to Playlists rather
+         *     than to callers.
+         *
+         *     Re-adding a Playlist already tracked is harmless and returns the same
+         *     id: the id is derived from the URL, so no lookup decides this.
+         */
         post: operations["createPlaylist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/playlists/{id}/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The Tracks of a Playlist, as its Source describes them.
+         * @description One call answers both "is it ready" and "here they are", so the CLI's
+         *     poll loop and its fetch are the same request.
+         */
+        get: operations["getPlaylistTracks"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -32,6 +62,33 @@ export interface components {
              */
             url: string;
         };
+        CreatePlaylistResponse: {
+            id: components["schemas"]["PlaylistId"];
+            status: components["schemas"]["PlaylistStatus"];
+        };
+        /**
+         * @description Deliberately not an empty track list: a Playlist with no Tracks yet and
+         *     a Playlist that resolved to nothing are different answers, and a client
+         *     that cannot tell them apart stops polling too early.
+         */
+        PendingTracks: {
+            /** @constant */
+            status: "pending";
+        };
+        /**
+         * @description The Source name and the Playlist's id within that Source, joined by a
+         *     colon. Deterministic, which is what makes creating a Playlist
+         *     idempotent without a lookup. See docs/adr/0001-namespaced-playlist-ids.md.
+         * @example spotify:3cEYpjA9oz9GiPac4AsH4n
+         */
+        PlaylistId: string;
+        /**
+         * @description Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`.
+         *     Grows as the responses that emit them arrive: `ok` lands with the Tracks
+         *     response, `unreachable` and `gone` with the failure states.
+         * @enum {string}
+         */
+        PlaylistStatus: "pending";
         /**
          * @description The shared error envelope. Every error response on every endpoint uses
          *     it. `message` is written for a human and printed verbatim by the CLI, so
@@ -46,10 +103,10 @@ export interface components {
         };
         /**
          * @description Stable, machine-readable. Grows as endpoints are added: `playlist_gone`
-         *     and `source_unavailable` arrive with the responses that emit them.
+         *     and `source_unavailable` arrive with the failure states.
          * @enum {string}
          */
-        ErrorCode: "invalid_url";
+        ErrorCode: "invalid_url" | "playlist_not_found";
     };
     responses: never;
     parameters: never;
@@ -72,8 +129,55 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Tracked. Resolution has not run yet, so there are no Tracks. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePlaylistResponse"];
+                };
+            };
             /** @description No Source adapter claims this URL. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getPlaylistTracks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["PlaylistId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /**
+             * @description Resolution has not completed, so the Playlist has no Tracks yet.
+             *     This is the poll response: ask again.
+             */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingTracks"];
+                };
+            };
+            /**
+             * @description Nothing is tracking a Playlist under this id. Ids are derived from
+             *     the URL, so this is a Playlist that was never added -- not one whose
+             *     Resolution failed, which has its own answers.
+             */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

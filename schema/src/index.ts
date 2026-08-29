@@ -13,3 +13,14 @@ export type ErrorEnvelope = components['schemas']['Error']
 export type ErrorCode = components['schemas']['ErrorCode']
 
 export type CreatePlaylistRequest = components['schemas']['CreatePlaylistRequest']
+
+export type CreatePlaylistResponse = components['schemas']['CreatePlaylistResponse']
+
+/** The poll response: the Playlist is tracked, but has no Tracks yet. */
+export type PendingTracks = components['schemas']['PendingTracks']
+
+/** Source name and the Source's own id, joined by a colon. See ADR-0001. */
+export type PlaylistId = components['schemas']['PlaylistId']
+
+/** Where a Playlist is in its lifecycle: `CONTEXT.md`'s Pending / Unreachable / Gone. */
+export type PlaylistStatus = components['schemas']['PlaylistStatus']

@@ -16,6 +16,14 @@ paths:
     post:
       operationId: createPlaylist
       summary: Create a tracked Playlist from its public URL.
+      description: |
+        Nothing is read from the Source here. The Playlist is recorded and the
+        caller gets an id back immediately; Resolution happens out of band,
+        which is what keeps upstream usage proportional to Playlists rather
+        than to callers.
+
+        Re-adding a Playlist already tracked is harmless and returns the same
+        id: the id is derived from the URL, so no lookup decides this.
       requestBody:
         required: true
         content:
@@ -23,8 +31,46 @@ paths:
             schema:
               $ref: '#/components/schemas/CreatePlaylistRequest'
       responses:
+        '202':
+          description: Tracked. Resolution has not run yet, so there are no Tracks.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePlaylistResponse'
         '400':
           description: No Source adapter claims this URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /playlists/{id}/tracks:
+    get:
+      operationId: getPlaylistTracks
+      summary: The Tracks of a Playlist, as its Source describes them.
+      description: |
+        One call answers both "is it ready" and "here they are", so the CLI's
+        poll loop and its fetch are the same request.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PlaylistId'
+      responses:
+        '202':
+          description: |
+            Resolution has not completed, so the Playlist has no Tracks yet.
+            This is the poll response: ask again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTracks'
+        '404':
+          description: |
+            Nothing is tracking a Playlist under this id. Ids are derived from
+            the URL, so this is a Playlist that was never added -- not one whose
+            Resolution failed, which has its own answers.
           content:
             application/json:
               schema:
@@ -41,6 +87,45 @@ components:
           description: The playlist's public URL on its Source.
           examples:
             - https://open.spotify.com/playlist/3cEYpjA9oz9GiPac4AsH4n
+
+    CreatePlaylistResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/PlaylistId'
+        status:
+          $ref: '#/components/schemas/PlaylistStatus'
+
+    PendingTracks:
+      type: object
+      description: |
+        Deliberately not an empty track list: a Playlist with no Tracks yet and
+        a Playlist that resolved to nothing are different answers, and a client
+        that cannot tell them apart stops polling too early.
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: pending
+
+    PlaylistId:
+      type: string
+      description: |
+        The Source name and the Playlist's id within that Source, joined by a
+        colon. Deterministic, which is what makes creating a Playlist
+        idempotent without a lookup. See docs/adr/0001-namespaced-playlist-ids.md.
+      examples:
+        - spotify:3cEYpjA9oz9GiPac4AsH4n
+
+    PlaylistStatus:
+      type: string
+      description: |
+        Where a Playlist is in its lifecycle, in the vocabulary of `CONTEXT.md`.
+        Grows as the responses that emit them arrive: `ok` lands with the Tracks
+        response, `unreachable` and `gone` with the failure states.
+      enum:
+        - pending
 
     Error:
       type: object
@@ -64,6 +149,7 @@ components:
       type: string
       description: |
         Stable, machine-readable. Grows as endpoints are added: `playlist_gone`
-        and `source_unavailable` arrive with the responses that emit them.
+        and `source_unavailable` arrive with the failure states.
       enum:
         - invalid_url
+        - playlist_not_found
