@@ -4,11 +4,15 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-29",
 
-  // Resource ids are deliberately absent. A binding declared without one is
-  // provisioned by `wrangler deploy`, which writes the id back into this file
-  // (ADR-0002). That deploy, and the staging/production blocks that go with it,
-  // are #13's work; tests run against Miniflare-backed local bindings and need
-  // no id at all.
+  // The top level is the surface `wrangler dev` runs; vitest reads the `test`
+  // environment below. Staging and production share no resource name with this
+  // block, so a bare `wrangler deploy` cannot reach either of them -- it
+  // deploys this block, onto resources of its own.
+  //
+  // No binding here or below carries an id. `wrangler deploy` provisions what
+  // is missing and writes the id back into this file, which is what makes the
+  // file the infrastructure record: a deploy that provisions must be committed
+  // (ADR-0002).
   "d1_databases": [
     {
       "binding": "DB",
@@ -27,6 +31,126 @@
         "binding": "RESOLUTION_QUEUE",
         "queue": "jukebox-resolution"
       }
+    ],
+
+    // One Playlist per delivery. The consumer walks a batch and acknowledges
+    // nothing message by message, so a throw sends the whole batch round again
+    // -- and a batch of several would re-resolve Playlists that had already
+    // succeeded, moving their Version with nothing having changed.
+    //
+    // What still fails after three attempts lands in the dead-letter queue,
+    // which deliberately has no consumer: a Resolution nobody can complete
+    // should sit somewhere it can be read rather than disappear.
+    "consumers": [
+      {
+        "queue": "jukebox-resolution",
+        "max_batch_size": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "jukebox-resolution-dlq"
+      }
     ]
+  },
+
+  // Bindings are non-inheritable, so each environment declares every one of
+  // them. That is what keeps staging and production from drifting apart: the
+  // config format, rather than a tool watching for it (ADR-0002).
+  "env": {
+    // The surface vitest runs against, and the one thing it must not share with
+    // the others: a live consumer. `POST /playlists` really enqueues during a
+    // test, so a subscribed worker would resolve a Playlist no test asked it to
+    // resolve, on its own schedule and into whichever test's isolated storage
+    // happened to be current. The tests drive the consumer through the worker's
+    // own entry point instead -- see test/api.ts.
+    //
+    // Never deployed. Nothing here names a staging or production resource, so
+    // deploying it by accident could reach neither. The queue name it shares
+    // with the top level is the local one both already run against.
+    "test": {
+      "name": "jukebox-api-test",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "jukebox-test",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "CACHE"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "RESOLUTION_QUEUE",
+            "queue": "jukebox-resolution"
+          }
+        ]
+      }
+    },
+
+    "staging": {
+      "name": "jukebox-api-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "jukebox-staging",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "CACHE"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "RESOLUTION_QUEUE",
+            "queue": "jukebox-resolution-staging"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "jukebox-resolution-staging",
+            "max_batch_size": 1,
+            "max_retries": 3,
+            "dead_letter_queue": "jukebox-resolution-staging-dlq"
+          }
+        ]
+      }
+    },
+
+    "production": {
+      "name": "jukebox-api-production",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "jukebox-production",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "CACHE"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "RESOLUTION_QUEUE",
+            "queue": "jukebox-resolution-production"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "jukebox-resolution-production",
+            "max_batch_size": 1,
+            "max_retries": 3,
+            "dead_letter_queue": "jukebox-resolution-production-dlq"
+          }
+        ]
+      }
+    }
   }
 }
