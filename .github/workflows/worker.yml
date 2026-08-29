@@ -1,0 +1,41 @@
+name: worker
+
+# Path-filtered so touching the landing page never runs the API's checks.
+# GitHub Actions does not expand YAML anchors, so the list is written twice.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'schema/**'
+      - '.github/workflows/worker.yml'
+      - 'package.json'
+      - 'bun.lock'
+  pull_request:
+    paths:
+      - 'worker/**'
+      - 'schema/**'
+      - '.github/workflows/worker.yml'
+      - 'package.json'
+      - 'bun.lock'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      # Both generated artefacts are committed so a clone typechecks without a
+      # build step. These two steps are what stop them drifting from their source.
+      - name: The committed types match openapi.yaml
+        run: |
+          bun run --cwd schema generate
+          git diff --exit-code -- schema/src/generated.ts
+      - name: The committed bindings match wrangler.jsonc
+        run: bun run --cwd worker types --check
+
+      - run: bun run --cwd schema typecheck
+      - run: bun run --cwd worker typecheck
+      - run: bun run --cwd worker test

@@ -1,0 +1,6 @@
+# Both files are regenerated and then diffed against what is committed -- by CI,
+# and by anyone running the same checks locally. Without a fixed line ending the
+# generators write LF onto a CRLF checkout and the diff fires on every Windows
+# machine, reporting drift that is not there.
+schema/src/generated.ts          text eol=lf
+worker/worker-configuration.d.ts text eol=lf

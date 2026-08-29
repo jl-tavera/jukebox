@@ -2,7 +2,9 @@
   "name": "jukebox",
   "private": true,
   "workspaces": [
-    "site"
+    "schema",
+    "site",
+    "worker"
   ],
   "scripts": {
     "dev": "bun run --cwd site dev",
