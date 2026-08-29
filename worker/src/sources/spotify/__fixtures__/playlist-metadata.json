@@ -1,0 +1,26 @@
+{
+  "id": "3cEYpjA9oz9GiPac4AsH4n",
+  "name": "Spotify Web API Testing playlist",
+  "description": "A playlist for testing pourposes",
+  "owner": {
+    "display_name": "JMPerez²",
+    "external_urls": {
+      "spotify": "https://open.spotify.com/user/jmperezperez"
+    },
+    "href": "https://api.spotify.com/v1/users/jmperezperez",
+    "id": "jmperezperez",
+    "type": "user",
+    "uri": "spotify:user:jmperezperez"
+  },
+  "public": true,
+  "collaborative": false,
+  "snapshot_id": "AAAAEur2+1I6iINI0+04uFfVLiVJraUQ",
+  "uri": "spotify:playlist:3cEYpjA9oz9GiPac4AsH4n",
+  "images": [
+    {
+      "height": null,
+      "url": "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da848d0ce13d55f634e290f744ba",
+      "width": null
+    }
+  ]
+}

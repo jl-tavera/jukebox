@@ -1,0 +1,1212 @@
+{
+  "href": "https://api.spotify.com/v1/playlists/03Xz4NcdaWjZq2T6sKNLui/items?offset=50&limit=50&additional_types=track",
+  "limit": 50,
+  "next": null,
+  "offset": 50,
+  "previous": "https://api.spotify.com/v1/playlists/03Xz4NcdaWjZq2T6sKNLui/items?offset=0&limit=50&additional_types=track",
+  "total": 69,
+  "items": [
+    {
+      "added_at": "2024-09-10T19:05:40Z",
+      "is_local": false,
+      "item": {
+        "id": "1FG7ZjnuT0O9CsDKOxND0E",
+        "name": "Que nada nos pare (lo más importante)",
+        "type": "track",
+        "uri": "spotify:track:1FG7ZjnuT0O9CsDKOxND0E",
+        "duration_ms": 185331,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 3,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES65D2200011"
+        },
+        "artists": [
+          {
+            "id": "7JrMDzLZQ25BJwc4tD8jl8",
+            "name": "ELYELLA",
+            "type": "artist",
+            "uri": "spotify:artist:7JrMDzLZQ25BJwc4tD8jl8"
+          },
+          {
+            "id": "5Q30fhTc0Sl0Q4C5dOjhhQ",
+            "name": "La La Love You",
+            "type": "artist",
+            "uri": "spotify:artist:5Q30fhTc0Sl0Q4C5dOjhhQ"
+          }
+        ],
+        "album": {
+          "id": "4iuBFpPCkt7HdDjSMdhDEp",
+          "name": "Que nada nos pare (lo más importante)",
+          "uri": "spotify:album:4iuBFpPCkt7HdDjSMdhDEp",
+          "album_type": "single",
+          "release_date": "2022-06-30",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273be868219517b05cf48dfe259",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02be868219517b05cf48dfe259",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851be868219517b05cf48dfe259",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "4mftylShLvF36Cje2mukRb",
+        "name": "Sin mirar",
+        "type": "track",
+        "uri": "spotify:track:4mftylShLvF36Cje2mukRb",
+        "duration_ms": 233198,
+        "explicit": false,
+        "track_number": 10,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 38,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100996"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7FpIZZ5VVM2g60CK6Ytw96",
+        "name": "Supersubmarina",
+        "type": "track",
+        "uri": "spotify:track:7FpIZZ5VVM2g60CK6Ytw96",
+        "duration_ms": 253017,
+        "explicit": false,
+        "track_number": 11,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100997"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "5QH6yy8AvKqCzUygXA3Ew0",
+        "name": "Artificial",
+        "type": "track",
+        "uri": "spotify:track:5QH6yy8AvKqCzUygXA3Ew0",
+        "duration_ms": 231380,
+        "explicit": false,
+        "track_number": 6,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 47,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100992"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7aXb7v2GueOaYa0n4IbLnM",
+        "name": "LUCES DE CIUDAD (feat. Álvaro De Luna, Dani Fernández)",
+        "type": "track",
+        "uri": "spotify:track:7aXb7v2GueOaYa0n4IbLnM",
+        "duration_ms": 163401,
+        "explicit": false,
+        "track_number": 11,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 54,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152300604"
+        },
+        "artists": [
+          {
+            "id": "6X8uzem5Dbl4l2so4CeexD",
+            "name": "Nil Moliner",
+            "type": "artist",
+            "uri": "spotify:artist:6X8uzem5Dbl4l2so4CeexD"
+          },
+          {
+            "id": "5N3YDBGT2gUzXgLDTwPRi5",
+            "name": "Álvaro De Luna",
+            "type": "artist",
+            "uri": "spotify:artist:5N3YDBGT2gUzXgLDTwPRi5"
+          },
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "3Af46goeGBVqhNN8a1C5f5",
+          "name": "Lugar Paraíso",
+          "uri": "spotify:album:3Af46goeGBVqhNN8a1C5f5",
+          "album_type": "album",
+          "release_date": "2023-10-27",
+          "release_date_precision": "day",
+          "total_tracks": 16,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273206e78b39b5c49d19f098d29",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02206e78b39b5c49d19f098d29",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851206e78b39b5c49d19f098d29",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "0OQIi0mUyCwyAvMoRFyuzh",
+        "name": "Plan fatal",
+        "type": "track",
+        "uri": "spotify:track:0OQIi0mUyCwyAvMoRFyuzh",
+        "duration_ms": 221196,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 50,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100990"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "5EnaxC9amhXY55ezw87SL8",
+        "name": "Bailemos",
+        "type": "track",
+        "uri": "spotify:track:5EnaxC9amhXY55ezw87SL8",
+        "duration_ms": 210468,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 69,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5151802563"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "2jis8I5ZUWtDqV1E0S0NgR",
+          "name": "Incendios",
+          "uri": "spotify:album:2jis8I5ZUWtDqV1E0S0NgR",
+          "album_type": "album",
+          "release_date": "2019-05-24",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273befd5de288e54eacc0072c86",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02befd5de288e54eacc0072c86",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851befd5de288e54eacc0072c86",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "6RM3IZHeEwhvTXxfquDbZN",
+        "name": "Lo Siento",
+        "type": "track",
+        "uri": "spotify:track:6RM3IZHeEwhvTXxfquDbZN",
+        "duration_ms": 228573,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 60,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5702200994"
+        },
+        "artists": [
+          {
+            "id": "57s0ep3eNSg81D7ZxiuHbC",
+            "name": "Viva Suecia",
+            "type": "artist",
+            "uri": "spotify:artist:57s0ep3eNSg81D7ZxiuHbC"
+          },
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "6ngQjvcKpIuJ9yIFhmuuSZ",
+          "name": "El Amor De La Clase Que Sea",
+          "uri": "spotify:album:6ngQjvcKpIuJ9yIFhmuuSZ",
+          "album_type": "album",
+          "release_date": "2022-10-06",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b44457cf24aab471ac0d5709",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b44457cf24aab471ac0d5709",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b44457cf24aab471ac0d5709",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "0s1mNkEzKyhDGViTUHbGuP",
+        "name": "Criminal",
+        "type": "track",
+        "uri": "spotify:track:0s1mNkEzKyhDGViTUHbGuP",
+        "duration_ms": 168292,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 42,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152400552"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "1crmL9xEqGoRsR2nk1nl8n",
+          "name": "Criminal",
+          "uri": "spotify:album:1crmL9xEqGoRsR2nk1nl8n",
+          "album_type": "single",
+          "release_date": "2024-06-21",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273f5dfd8e7afdfd8e4aee5346f",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02f5dfd8e7afdfd8e4aee5346f",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851f5dfd8e7afdfd8e4aee5346f",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "0uOxKY91hTmnJOxGPGpJtd",
+        "name": "Todo cambia",
+        "type": "track",
+        "uri": "spotify:track:0uOxKY91hTmnJOxGPGpJtd",
+        "duration_ms": 210127,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 58,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152400004"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "2rwGnAgqgUU3mYtY5pscXd",
+          "name": "Todo cambia",
+          "uri": "spotify:album:2rwGnAgqgUU3mYtY5pscXd",
+          "album_type": "single",
+          "release_date": "2024-01-18",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273331a219c853c83ad9f0d3929",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02331a219c853c83ad9f0d3929",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851331a219c853c83ad9f0d3929",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "0mJ2qmDI2X4wrSIIBrvvpN",
+        "name": "Sin Vergüenza",
+        "type": "track",
+        "uri": "spotify:track:0mJ2qmDI2X4wrSIIBrvvpN",
+        "duration_ms": 216325,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 66,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5022201837"
+        },
+        "artists": [
+          {
+            "id": "2Wwiu1wnq1W8AMYbWuRFDH",
+            "name": "Arde Bogotá",
+            "type": "artist",
+            "uri": "spotify:artist:2Wwiu1wnq1W8AMYbWuRFDH"
+          },
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "4XhcpNHC7raU2baY1ZPNmx",
+          "name": "Sin Vergüenza",
+          "uri": "spotify:album:4XhcpNHC7raU2baY1ZPNmx",
+          "album_type": "single",
+          "release_date": "2022-07-07",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273d1334e62e9bcd68001cefa68",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02d1334e62e9bcd68001cefa68",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851d1334e62e9bcd68001cefa68",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7KODAM1FhH9QgqNeXVM6ow",
+        "name": "Perdón por no llamar",
+        "type": "track",
+        "uri": "spotify:track:7KODAM1FhH9QgqNeXVM6ow",
+        "duration_ms": 222494,
+        "explicit": false,
+        "track_number": 7,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 46,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100993"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "0JJw1ghkoEu3Yat1uOSjAE",
+        "name": "Me has invitado a bailar",
+        "type": "track",
+        "uri": "spotify:track:0JJw1ghkoEu3Yat1uOSjAE",
+        "duration_ms": 192906,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 63,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152400714"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "2dtz3wrC1FrShzjLEy6xDp",
+          "name": "Me has invitado a bailar",
+          "uri": "spotify:album:2dtz3wrC1FrShzjLEy6xDp",
+          "album_type": "single",
+          "release_date": "2024-08-23",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273481b407a715cdfee7cefa6fe",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02481b407a715cdfee7cefa6fe",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851481b407a715cdfee7cefa6fe",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "5wqwUPr7DbRT6FogXVmWWj",
+        "name": "Si tus piernas",
+        "type": "track",
+        "uri": "spotify:track:5wqwUPr7DbRT6FogXVmWWj",
+        "duration_ms": 244935,
+        "explicit": false,
+        "track_number": 8,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 61,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100994"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "2LDLjhqLnE8e9ojNe2JPd1",
+        "name": "Frío",
+        "type": "track",
+        "uri": "spotify:track:2LDLjhqLnE8e9ojNe2JPd1",
+        "duration_ms": 221035,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 54,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100865"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7MzSrKgdY5N1kWtXWfoCcK",
+        "name": "Grace (feat. Alberto Jiménez)",
+        "type": "track",
+        "uri": "spotify:track:7MzSrKgdY5N1kWtXWfoCcK",
+        "duration_ms": 194258,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 44,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100688"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          },
+          {
+            "id": "2vatwv7v4N8qGprzbk72W7",
+            "name": "Alberto Jiménez",
+            "type": "artist",
+            "uri": "spotify:artist:2vatwv7v4N8qGprzbk72W7"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "6eBZtd2TWU71glxaJEFEU7",
+        "name": "Guarda una parte",
+        "type": "track",
+        "uri": "spotify:track:6eBZtd2TWU71glxaJEFEU7",
+        "duration_ms": 222543,
+        "explicit": false,
+        "track_number": 9,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 48,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100995"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-10T19:06:48Z",
+      "is_local": false,
+      "item": {
+        "id": "7JFa80j5Cw6DMf8RISgd0t",
+        "name": "Clima Tropical",
+        "type": "track",
+        "uri": "spotify:track:7JFa80j5Cw6DMf8RISgd0t",
+        "duration_ms": 209614,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 66,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100360"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-09-11T20:00:06Z",
+      "is_local": false,
+      "item": {
+        "id": "3bE8SznOXJ990MK1ElQnfr",
+        "name": "Algo Sencillito",
+        "type": "track",
+        "uri": "spotify:track:3bE8SznOXJ990MK1ElQnfr",
+        "duration_ms": 177338,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 52,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ESUM72301629"
+        },
+        "artists": [
+          {
+            "id": "2NeFajzkAQ4UfviWdzf0pK",
+            "name": "Marta Santos",
+            "type": "artist",
+            "uri": "spotify:artist:2NeFajzkAQ4UfviWdzf0pK"
+          }
+        ],
+        "album": {
+          "id": "6JTVBic97VnhVXw7A7KFWF",
+          "name": "Poquito a Poquito",
+          "uri": "spotify:album:6JTVBic97VnhVXw7A7KFWF",
+          "album_type": "album",
+          "release_date": "2023-10-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2734365c4921467f821cf27eff8",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e024365c4921467f821cf27eff8",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048514365c4921467f821cf27eff8",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    }
+  ]
+}

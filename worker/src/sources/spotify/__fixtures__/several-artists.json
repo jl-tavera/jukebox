@@ -1,0 +1,2573 @@
+{
+  "href": "https://api.spotify.com/v1/playlists/7JQrxQmrwXvOnCdx7LNs07/items?offset=0&limit=50&additional_types=track",
+  "limit": 50,
+  "next": null,
+  "offset": 0,
+  "previous": null,
+  "total": 40,
+  "items": [
+    {
+      "added_at": "2025-09-10T03:33:13Z",
+      "is_local": false,
+      "item": {
+        "id": "1pxKqkKtHS9d1iDa74To03",
+        "name": "Debut",
+        "type": "track",
+        "uri": "spotify:track:1pxKqkKtHS9d1iDa74To03",
+        "duration_ms": 123281,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72407139"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "48t47MKCsynkPx3rRg7EWr",
+          "name": "SIS (Soft Is Strong)",
+          "uri": "spotify:album:48t47MKCsynkPx3rRg7EWr",
+          "album_type": "single",
+          "release_date": "2024-08-16",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ae505d79ebf40fb207b6d4e0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ae505d79ebf40fb207b6d4e0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ae505d79ebf40fb207b6d4e0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-12-26T12:41:39Z",
+      "is_local": false,
+      "item": {
+        "id": "3NyZXtW72Gb42RaqLt7fh9",
+        "name": "Touch",
+        "type": "track",
+        "uri": "spotify:track:3NyZXtW72Gb42RaqLt7fh9",
+        "duration_ms": 129882,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 61,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72407248"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "48t47MKCsynkPx3rRg7EWr",
+          "name": "SIS (Soft Is Strong)",
+          "uri": "spotify:album:48t47MKCsynkPx3rRg7EWr",
+          "album_type": "single",
+          "release_date": "2024-08-16",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ae505d79ebf40fb207b6d4e0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ae505d79ebf40fb207b6d4e0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ae505d79ebf40fb207b6d4e0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:13Z",
+      "is_local": false,
+      "item": {
+        "id": "3zUxQpCyUrfEjz6Y07yg4b",
+        "name": "My Way",
+        "type": "track",
+        "uri": "spotify:track:3zUxQpCyUrfEjz6Y07yg4b",
+        "duration_ms": 154987,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 81,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72407250"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "48t47MKCsynkPx3rRg7EWr",
+          "name": "SIS (Soft Is Strong)",
+          "uri": "spotify:album:48t47MKCsynkPx3rRg7EWr",
+          "album_type": "single",
+          "release_date": "2024-08-16",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ae505d79ebf40fb207b6d4e0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ae505d79ebf40fb207b6d4e0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ae505d79ebf40fb207b6d4e0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:13Z",
+      "is_local": false,
+      "item": {
+        "id": "2Ih0CPdyK7SwbTUUkpun16",
+        "name": "Tonight I Might",
+        "type": "track",
+        "uri": "spotify:track:2Ih0CPdyK7SwbTUUkpun16",
+        "duration_ms": 156233,
+        "explicit": true,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 77,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72407251"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "48t47MKCsynkPx3rRg7EWr",
+          "name": "SIS (Soft Is Strong)",
+          "uri": "spotify:album:48t47MKCsynkPx3rRg7EWr",
+          "album_type": "single",
+          "release_date": "2024-08-16",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ae505d79ebf40fb207b6d4e0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ae505d79ebf40fb207b6d4e0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ae505d79ebf40fb207b6d4e0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:13Z",
+      "is_local": false,
+      "item": {
+        "id": "5Kx8X5HLUm14hBwEFP6i6Y",
+        "name": "I'm Pretty",
+        "type": "track",
+        "uri": "spotify:track:5Kx8X5HLUm14hBwEFP6i6Y",
+        "duration_ms": 142656,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 76,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72407249"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "48t47MKCsynkPx3rRg7EWr",
+          "name": "SIS (Soft Is Strong)",
+          "uri": "spotify:album:48t47MKCsynkPx3rRg7EWr",
+          "album_type": "single",
+          "release_date": "2024-08-16",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ae505d79ebf40fb207b6d4e0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ae505d79ebf40fb207b6d4e0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ae505d79ebf40fb207b6d4e0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-12-26T12:40:37Z",
+      "is_local": false,
+      "item": {
+        "id": "794MnAJvd8c84vWQxdFLAN",
+        "name": "Gnarly",
+        "type": "track",
+        "uri": "spotify:track:794MnAJvd8c84vWQxdFLAN",
+        "duration_ms": 137316,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503410"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4llrXTk6u4QYI1j7KHIsCx",
+          "name": "BEAUTIFUL CHAOS",
+          "uri": "spotify:album:4llrXTk6u4QYI1j7KHIsCx",
+          "album_type": "single",
+          "release_date": "2025-06-27",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273864febc2f9da1295d34ca1e2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02864febc2f9da1295d34ca1e2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851864febc2f9da1295d34ca1e2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-12-26T12:40:37Z",
+      "is_local": false,
+      "item": {
+        "id": "55hTqqpz8k2TNRLhHKbbDx",
+        "name": "Gabriela",
+        "type": "track",
+        "uri": "spotify:track:55hTqqpz8k2TNRLhHKbbDx",
+        "duration_ms": 197226,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503465"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4llrXTk6u4QYI1j7KHIsCx",
+          "name": "BEAUTIFUL CHAOS",
+          "uri": "spotify:album:4llrXTk6u4QYI1j7KHIsCx",
+          "album_type": "single",
+          "release_date": "2025-06-27",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273864febc2f9da1295d34ca1e2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02864febc2f9da1295d34ca1e2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851864febc2f9da1295d34ca1e2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:00Z",
+      "is_local": false,
+      "item": {
+        "id": "2f1WulnyiYYnseSQWI8Oi9",
+        "name": "Gameboy",
+        "type": "track",
+        "uri": "spotify:track:2f1WulnyiYYnseSQWI8Oi9",
+        "duration_ms": 185598,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 77,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503467"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4llrXTk6u4QYI1j7KHIsCx",
+          "name": "BEAUTIFUL CHAOS",
+          "uri": "spotify:album:4llrXTk6u4QYI1j7KHIsCx",
+          "album_type": "single",
+          "release_date": "2025-06-27",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273864febc2f9da1295d34ca1e2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02864febc2f9da1295d34ca1e2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851864febc2f9da1295d34ca1e2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:00Z",
+      "is_local": false,
+      "item": {
+        "id": "6oDFDGaAayXd8HXmynsgPv",
+        "name": "Mean Girls",
+        "type": "track",
+        "uri": "spotify:track:6oDFDGaAayXd8HXmynsgPv",
+        "duration_ms": 216701,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 76,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503466"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4llrXTk6u4QYI1j7KHIsCx",
+          "name": "BEAUTIFUL CHAOS",
+          "uri": "spotify:album:4llrXTk6u4QYI1j7KHIsCx",
+          "album_type": "single",
+          "release_date": "2025-06-27",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273864febc2f9da1295d34ca1e2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02864febc2f9da1295d34ca1e2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851864febc2f9da1295d34ca1e2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:00Z",
+      "is_local": false,
+      "item": {
+        "id": "4vyQ2NdodXhtMGsaaMBqSt",
+        "name": "M.I.A",
+        "type": "track",
+        "uri": "spotify:track:4vyQ2NdodXhtMGsaaMBqSt",
+        "duration_ms": 129683,
+        "explicit": true,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 83,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503468"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4llrXTk6u4QYI1j7KHIsCx",
+          "name": "BEAUTIFUL CHAOS",
+          "uri": "spotify:album:4llrXTk6u4QYI1j7KHIsCx",
+          "album_type": "single",
+          "release_date": "2025-06-27",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273864febc2f9da1295d34ca1e2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02864febc2f9da1295d34ca1e2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851864febc2f9da1295d34ca1e2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-01-02T05:03:17Z",
+      "is_local": false,
+      "item": {
+        "id": "3THVfoVD5kdCxPviVaCPi7",
+        "name": "Internet Girl",
+        "type": "track",
+        "uri": "spotify:track:3THVfoVD5kdCxPviVaCPi7",
+        "duration_ms": 163831,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 84,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72512688"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4yQ0HUnygkBjf33hvA71MF",
+          "name": "Internet Girl",
+          "uri": "spotify:album:4yQ0HUnygkBjf33hvA71MF",
+          "album_type": "single",
+          "release_date": "2026-01-02",
+          "release_date_precision": "day",
+          "total_tracks": 2,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27376cf80e10aea7ef055e34ea3",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0276cf80e10aea7ef055e34ea3",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485176cf80e10aea7ef055e34ea3",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-14T04:00:24Z",
+      "is_local": false,
+      "item": {
+        "id": "3Llk4nt8zllnISDLmYvKi6",
+        "name": "PINKY UP",
+        "type": "track",
+        "uri": "spotify:track:3Llk4nt8zllnISDLmYvKi6",
+        "duration_ms": 131437,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 76,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72601592"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2d0AkZUJV30oIOJAeEyzC6",
+          "name": "WILD",
+          "uri": "spotify:album:2d0AkZUJV30oIOJAeEyzC6",
+          "album_type": "single",
+          "release_date": "2026-08-14",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735631546bdc010851494d88ba",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025631546bdc010851494d88ba",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515631546bdc010851494d88ba",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-14T04:00:24Z",
+      "is_local": false,
+      "item": {
+        "id": "7oWkK4yK2saSHAqMtcPVXI",
+        "name": "Animal",
+        "type": "track",
+        "uri": "spotify:track:7oWkK4yK2saSHAqMtcPVXI",
+        "duration_ms": 158494,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 78,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72602757"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2d0AkZUJV30oIOJAeEyzC6",
+          "name": "WILD",
+          "uri": "spotify:album:2d0AkZUJV30oIOJAeEyzC6",
+          "album_type": "single",
+          "release_date": "2026-08-14",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735631546bdc010851494d88ba",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025631546bdc010851494d88ba",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515631546bdc010851494d88ba",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-14T04:00:24Z",
+      "is_local": false,
+      "item": {
+        "id": "6oUUmBcUbZa5O48V5pjgAD",
+        "name": "Hootie Frutti",
+        "type": "track",
+        "uri": "spotify:track:6oUUmBcUbZa5O48V5pjgAD",
+        "duration_ms": 140720,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 91,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72602758"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2d0AkZUJV30oIOJAeEyzC6",
+          "name": "WILD",
+          "uri": "spotify:album:2d0AkZUJV30oIOJAeEyzC6",
+          "album_type": "single",
+          "release_date": "2026-08-14",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735631546bdc010851494d88ba",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025631546bdc010851494d88ba",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515631546bdc010851494d88ba",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-14T04:00:24Z",
+      "is_local": false,
+      "item": {
+        "id": "6G38IZWN4qvVqxavzepr0I",
+        "name": "Bel Air",
+        "type": "track",
+        "uri": "spotify:track:6G38IZWN4qvVqxavzepr0I",
+        "duration_ms": 210498,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 83,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72602759"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2d0AkZUJV30oIOJAeEyzC6",
+          "name": "WILD",
+          "uri": "spotify:album:2d0AkZUJV30oIOJAeEyzC6",
+          "album_type": "single",
+          "release_date": "2026-08-14",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735631546bdc010851494d88ba",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025631546bdc010851494d88ba",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515631546bdc010851494d88ba",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-14T04:00:24Z",
+      "is_local": false,
+      "item": {
+        "id": "2Pv93rSb7vy3yVOWkLQ7h4",
+        "name": "That Way",
+        "type": "track",
+        "uri": "spotify:track:2Pv93rSb7vy3yVOWkLQ7h4",
+        "duration_ms": 176241,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 84,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72602760"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2d0AkZUJV30oIOJAeEyzC6",
+          "name": "WILD",
+          "uri": "spotify:album:2d0AkZUJV30oIOJAeEyzC6",
+          "album_type": "single",
+          "release_date": "2026-08-14",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735631546bdc010851494d88ba",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025631546bdc010851494d88ba",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515631546bdc010851494d88ba",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-08-17T07:01:00Z",
+      "is_local": true,
+      "item": {
+        "id": null,
+        "name": "Unloveu",
+        "type": "track",
+        "uri": "spotify:local:KATSEYE:WILD:Unloveu:231",
+        "duration_ms": 231000,
+        "explicit": false,
+        "track_number": 0,
+        "disc_number": 0,
+        "is_local": true,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {},
+        "artists": [
+          {
+            "id": null,
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": null
+          }
+        ],
+        "album": {
+          "id": null,
+          "name": "WILD",
+          "uri": null,
+          "album_type": null,
+          "release_date": null,
+          "release_date_precision": null,
+          "images": [],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:10Z",
+      "is_local": false,
+      "item": {
+        "id": "5tw1Ob0E4iRY8pjvgFk7oU",
+        "name": "Flame (from the Netflix Series \"Jentry Chau vs the Underworld\")",
+        "type": "track",
+        "uri": "spotify:track:5tw1Ob0E4iRY8pjvgFk7oU",
+        "duration_ms": 134509,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 74,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "QZ8BZ2410985"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "4eXphk6GWepEqGb9HsE0sk",
+          "name": "Flame (from the Netflix Series \"Jentry Chau vs the Underworld\")",
+          "uri": "spotify:album:4eXphk6GWepEqGb9HsE0sk",
+          "album_type": "single",
+          "release_date": "2024-11-14",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273afcb65bc0b37eef094789ef0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02afcb65bc0b37eef094789ef0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851afcb65bc0b37eef094789ef0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-25T03:04:06Z",
+      "is_local": false,
+      "item": {
+        "id": "6NarlZxW2farAip5P0Ig9p",
+        "name": "Time Lapse",
+        "type": "track",
+        "uri": "spotify:track:6NarlZxW2farAip5P0Ig9p",
+        "duration_ms": 199653,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 66,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "KRF702500112"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "0a0LC99zZ0UArr1fFrt49U",
+          "name": "GOOD BOY (Original Television Soundtrack), Pt. 6",
+          "uri": "spotify:album:0a0LC99zZ0UArr1fFrt49U",
+          "album_type": "single",
+          "release_date": "2025-07-06",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2732182ca01a2d0a0d934b2d2eb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e022182ca01a2d0a0d934b2d2eb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048512182ca01a2d0a0d934b2d2eb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-02-26T23:12:31Z",
+      "is_local": false,
+      "item": {
+        "id": "7hEKlcqyoj3oOH0jtJveIS",
+        "name": "Monster High Fright Song",
+        "type": "track",
+        "uri": "spotify:track:7hEKlcqyoj3oOH0jtJveIS",
+        "duration_ms": 163461,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 74,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USRH12503419"
+        },
+        "artists": [
+          {
+            "id": "43niWwvn8OX1HmJLXu4aLV",
+            "name": "Monster High",
+            "type": "artist",
+            "uri": "spotify:artist:43niWwvn8OX1HmJLXu4aLV"
+          },
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "6HoB8dDlgkJJXl9tH1qBaY",
+            "name": "Mattel",
+            "type": "artist",
+            "uri": "spotify:artist:6HoB8dDlgkJJXl9tH1qBaY"
+          }
+        ],
+        "album": {
+          "id": "5xGIPK8xElAjIBhP4TVyE3",
+          "name": "Monster High Fright Song",
+          "uri": "spotify:album:5xGIPK8xElAjIBhP4TVyE3",
+          "album_type": "single",
+          "release_date": "2025-03-30",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2730cf2ee03801be9f5b312da01",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e020cf2ee03801be9f5b312da01",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048510cf2ee03801be9f5b312da01",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-12T04:18:06Z",
+      "is_local": false,
+      "item": {
+        "id": "6fl4Gu0lJm5hc8FM5JzCZD",
+        "name": "ICONIC BY MISTAKE",
+        "type": "track",
+        "uri": "spotify:track:6fl4Gu0lJm5hc8FM5JzCZD",
+        "duration_ms": 177982,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 92,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USA2P2633014"
+        },
+        "artists": [
+          {
+            "id": "4SpbR6yFEvexJuaBpgAU5p",
+            "name": "LE SSERAFIM",
+            "type": "artist",
+            "uri": "spotify:artist:4SpbR6yFEvexJuaBpgAU5p"
+          },
+          {
+            "id": "36cgvBn0aadzOijnjjwqMN",
+            "name": "ILLIT",
+            "type": "artist",
+            "uri": "spotify:artist:36cgvBn0aadzOijnjjwqMN"
+          },
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "7yys068oxBNuFHNbF8HMam",
+          "name": "ICONIC BY MISTAKE",
+          "uri": "spotify:album:7yys068oxBNuFHNbF8HMam",
+          "album_type": "single",
+          "release_date": "2026-06-12",
+          "release_date_precision": "day",
+          "total_tracks": 3,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27355886e2f0784a2b7b62b7fe7",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0255886e2f0784a2b7b62b7fe7",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485155886e2f0784a2b7b62b7fe7",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-12T04:18:06Z",
+      "is_local": false,
+      "item": {
+        "id": "1PdN2pC5LYxnapVB8h6C6r",
+        "name": "ICONIC BY MISTAKE",
+        "type": "track",
+        "uri": "spotify:track:1PdN2pC5LYxnapVB8h6C6r",
+        "duration_ms": 177982,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 76,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USA2P2633015"
+        },
+        "artists": [
+          {
+            "id": "4SpbR6yFEvexJuaBpgAU5p",
+            "name": "LE SSERAFIM",
+            "type": "artist",
+            "uri": "spotify:artist:4SpbR6yFEvexJuaBpgAU5p"
+          },
+          {
+            "id": "36cgvBn0aadzOijnjjwqMN",
+            "name": "ILLIT",
+            "type": "artist",
+            "uri": "spotify:artist:36cgvBn0aadzOijnjjwqMN"
+          },
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "7yys068oxBNuFHNbF8HMam",
+          "name": "ICONIC BY MISTAKE",
+          "uri": "spotify:album:7yys068oxBNuFHNbF8HMam",
+          "album_type": "single",
+          "release_date": "2026-06-12",
+          "release_date_precision": "day",
+          "total_tracks": 3,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27355886e2f0784a2b7b62b7fe7",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0255886e2f0784a2b7b62b7fe7",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485155886e2f0784a2b7b62b7fe7",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:11Z",
+      "is_local": false,
+      "item": {
+        "id": "6VG3H64odw9YFcvY0NUZpL",
+        "name": "Touch (ft. YEONJUN of TOMORROW X TOGETHER)",
+        "type": "track",
+        "uri": "spotify:track:6VG3H64odw9YFcvY0NUZpL",
+        "duration_ms": 129882,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 72,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72411208"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "2Mo2yHjmrDRZW7yRuJwR2w",
+            "name": "YEONJUN",
+            "type": "artist",
+            "uri": "spotify:artist:2Mo2yHjmrDRZW7yRuJwR2w"
+          }
+        ],
+        "album": {
+          "id": "3ohHp2OASdUUB5ryLhvKpU",
+          "name": "Touch (ft. YEONJUN of TOMORROW X TOGETHER)",
+          "uri": "spotify:album:3ohHp2OASdUUB5ryLhvKpU",
+          "album_type": "single",
+          "release_date": "2024-10-11",
+          "release_date_precision": "day",
+          "total_tracks": 2,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735223b9eade57195e39f63ddd",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025223b9eade57195e39f63ddd",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515223b9eade57195e39f63ddd",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:09Z",
+      "is_local": false,
+      "item": {
+        "id": "1cmh5hGilxnY6VxtkwSmyA",
+        "name": "Touch (Holiday Version)",
+        "type": "track",
+        "uri": "spotify:track:1cmh5hGilxnY6VxtkwSmyA",
+        "duration_ms": 130505,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 49,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72412350"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "0RuVX5vjthUQj0eyaPxFWC",
+          "name": "Touch (Holiday Version)",
+          "uri": "spotify:album:0RuVX5vjthUQj0eyaPxFWC",
+          "album_type": "single",
+          "release_date": "2024-11-22",
+          "release_date_precision": "day",
+          "total_tracks": 3,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2739dbeeaf8a86f40d35b0be7ce",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e029dbeeaf8a86f40d35b0be7ce",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048519dbeeaf8a86f40d35b0be7ce",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-12-01T07:15:39Z",
+      "is_local": false,
+      "item": {
+        "id": "4lpRqTVtUNmZ31PSq4lH98",
+        "name": "Gnarly - Clean Edit",
+        "type": "track",
+        "uri": "spotify:track:4lpRqTVtUNmZ31PSq4lH98",
+        "duration_ms": 137581,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 65,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72503411"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "2h98KUNEJEL1NNfG4IbrDp",
+          "name": "Gnarly (Clean Edit)",
+          "uri": "spotify:album:2h98KUNEJEL1NNfG4IbrDp",
+          "album_type": "single",
+          "release_date": "2025-04-30",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2738a7d8d09aba33c0a771efc9f",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e028a7d8d09aba33c0a771efc9f",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048518a7d8d09aba33c0a771efc9f",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3wAvAVwMbUG3Bw23M8KMke",
+        "name": "Gnarly - Ice Spice Remix",
+        "type": "track",
+        "uri": "spotify:track:3wAvAVwMbUG3Bw23M8KMke",
+        "duration_ms": 137309,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 74,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72506046"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "3LZZPxNDGDFVSIPqf4JuEf",
+            "name": "Ice Spice",
+            "type": "artist",
+            "uri": "spotify:artist:3LZZPxNDGDFVSIPqf4JuEf"
+          }
+        ],
+        "album": {
+          "id": "3aC2oeSUYvBKXkTr6RDIwX",
+          "name": "Gnarly (Ice Spice Remix)",
+          "uri": "spotify:album:3aC2oeSUYvBKXkTr6RDIwX",
+          "album_type": "single",
+          "release_date": "2025-06-06",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2734a2dbf33628509e8142c7364",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e024a2dbf33628509e8142c7364",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048514a2dbf33628509e8142c7364",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:33:04Z",
+      "is_local": false,
+      "item": {
+        "id": "371c1NI1cEdJS6aEkeBixN",
+        "name": "Gnarly - Lara of KATSEYE x Lancey Foux x Slush Puppy Remix",
+        "type": "track",
+        "uri": "spotify:track:371c1NI1cEdJS6aEkeBixN",
+        "duration_ms": 137528,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72506094"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "2LakckgvXEtJlKOYP6BO11",
+            "name": "Lancey Foux",
+            "type": "artist",
+            "uri": "spotify:artist:2LakckgvXEtJlKOYP6BO11"
+          },
+          {
+            "id": "58eJhHRICp87T2IFcP0bYh",
+            "name": "Slush Puppy",
+            "type": "artist",
+            "uri": "spotify:artist:58eJhHRICp87T2IFcP0bYh"
+          }
+        ],
+        "album": {
+          "id": "7g4rltRLWrPRD8Iv5PKnoO",
+          "name": "Gnarly (Lara of KATSEYE x Lancey Foux x Slush Puppy Remix)",
+          "uri": "spotify:album:7g4rltRLWrPRD8Iv5PKnoO",
+          "album_type": "single",
+          "release_date": "2025-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2735dbbc4094579385d7b48342c",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e025dbbc4094579385d7b48342c",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048515dbbc4094579385d7b48342c",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:58Z",
+      "is_local": false,
+      "item": {
+        "id": "31C7psknR5LicjpCqtH9aw",
+        "name": "Gabriela (with Young Miko) - Young Miko Remix",
+        "type": "track",
+        "uri": "spotify:track:31C7psknR5LicjpCqtH9aw",
+        "duration_ms": 198809,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 70,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72508305"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "3qsKSpcV3ncke3hw52JSMB",
+            "name": "Young Miko",
+            "type": "artist",
+            "uri": "spotify:artist:3qsKSpcV3ncke3hw52JSMB"
+          }
+        ],
+        "album": {
+          "id": "787QaYqz3Cfh4XcM4EeEv1",
+          "name": "Gabriela (with Young Miko) [Young Miko Remix]",
+          "uri": "spotify:album:787QaYqz3Cfh4XcM4EeEv1",
+          "album_type": "single",
+          "release_date": "2025-08-08",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273a758efd0008b9c78e1c008c6",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02a758efd0008b9c78e1c008c6",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851a758efd0008b9c78e1c008c6",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-11-11T14:54:21Z",
+      "is_local": false,
+      "item": {
+        "id": "0VodPyDs7Uw9UpeRp22vq6",
+        "name": "M.I.A - VALORANT Game Changers Version",
+        "type": "track",
+        "uri": "spotify:track:0VodPyDs7Uw9UpeRp22vq6",
+        "duration_ms": 129587,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 65,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72511729"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "3wrFoI9EVjWg6m8xXeWr5t",
+            "name": "VALORANT",
+            "type": "artist",
+            "uri": "spotify:artist:3wrFoI9EVjWg6m8xXeWr5t"
+          }
+        ],
+        "album": {
+          "id": "4w96kbeZiq2Q2n8dDAVi4K",
+          "name": "M.I.A (VALORANT Game Changers Version)",
+          "uri": "spotify:album:4w96kbeZiq2Q2n8dDAVi4K",
+          "album_type": "single",
+          "release_date": "2025-09-04",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2736aa2abf1afc153481e6c42a3",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e026aa2abf1afc153481e6c42a3",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048516aa2abf1afc153481e6c42a3",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-03-21T20:16:11Z",
+      "is_local": false,
+      "item": {
+        "id": "2E0lqOSuobhLTaCv4LEjnx",
+        "name": "Internet Girl - Live From THE BEAUTIFUL CHAOS TOUR",
+        "type": "track",
+        "uri": "spotify:track:2E0lqOSuobhLTaCv4LEjnx",
+        "duration_ms": 168343,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 51,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUV72505388"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "5eXw6YfqtJ6QizVkTYFQ5u",
+          "name": "Internet Girl (Live From THE BEAUTIFUL CHAOS TOUR)",
+          "uri": "spotify:album:5eXw6YfqtJ6QizVkTYFQ5u",
+          "album_type": "single",
+          "release_date": "2026-01-02",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 720,
+              "url": "https://i.scdn.co/image/ab6742d3000053b79fd6084bb1c8b4191205c4e8",
+              "width": 1280
+            },
+            {
+              "height": 720,
+              "url": "https://i.scdn.co/image/ab6742d3000053b79fd6084bb1c8b4191205c4e8",
+              "width": 1280
+            },
+            {
+              "height": 360,
+              "url": "https://i.scdn.co/image/ab6742d3000052b79fd6084bb1c8b4191205c4e8",
+              "width": 640
+            }
+          ],
+          "available_markets": [
+            "AD",
+            "AM"
+          ]
+        },
+        "available_markets": [
+          "AD",
+          "AM"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-04-09T18:04:13Z",
+      "is_local": false,
+      "item": {
+        "id": "4oggeZ0GoF5Cnf5srt0vQF",
+        "name": "PINKY UP - Clean Edit",
+        "type": "track",
+        "uri": "spotify:track:4oggeZ0GoF5Cnf5srt0vQF",
+        "duration_ms": 131437,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 63,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72601593"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "1JlM4qJwF4XxdyISbshZzW",
+          "name": "PINKY UP (Clean Edit)",
+          "uri": "spotify:album:1JlM4qJwF4XxdyISbshZzW",
+          "album_type": "single",
+          "release_date": "2026-04-08",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273e3a90ebea80d3586f998b34c",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02e3a90ebea80d3586f998b34c",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851e3a90ebea80d3586f998b34c",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:57Z",
+      "is_local": false,
+      "item": {
+        "id": "0BPoLI9ZjzAhnHCiGXGE9b",
+        "name": "Gnarly - Extended Version",
+        "type": "track",
+        "uri": "spotify:track:0BPoLI9ZjzAhnHCiGXGE9b",
+        "duration_ms": 233229,
+        "explicit": true,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72507423"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "6XF8wsqdbLWIBnLgcoEpYu",
+          "name": "BEAUTIFUL CHAOS: The Remixes",
+          "uri": "spotify:album:6XF8wsqdbLWIBnLgcoEpYu",
+          "album_type": "single",
+          "release_date": "2025-09-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27382fde4d024a41e75e609bc57",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0282fde4d024a41e75e609bc57",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485182fde4d024a41e75e609bc57",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:57Z",
+      "is_local": false,
+      "item": {
+        "id": "4RDjICyqCGESHT7jLSO5AF",
+        "name": "Gabriela - JULiA LEWiS Reggaeton Remix",
+        "type": "track",
+        "uri": "spotify:track:4RDjICyqCGESHT7jLSO5AF",
+        "duration_ms": 181703,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 51,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72509086"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "2qcYVZNPHcOpwMUYZvA7Lw",
+            "name": "JULiA LEWiS",
+            "type": "artist",
+            "uri": "spotify:artist:2qcYVZNPHcOpwMUYZvA7Lw"
+          }
+        ],
+        "album": {
+          "id": "6XF8wsqdbLWIBnLgcoEpYu",
+          "name": "BEAUTIFUL CHAOS: The Remixes",
+          "uri": "spotify:album:6XF8wsqdbLWIBnLgcoEpYu",
+          "album_type": "single",
+          "release_date": "2025-09-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27382fde4d024a41e75e609bc57",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0282fde4d024a41e75e609bc57",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485182fde4d024a41e75e609bc57",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:57Z",
+      "is_local": false,
+      "item": {
+        "id": "6IRmkaHk0O21Q5HkSGyppc",
+        "name": "Gabriela - Extended Version",
+        "type": "track",
+        "uri": "spotify:track:6IRmkaHk0O21Q5HkSGyppc",
+        "duration_ms": 300801,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 55,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72507420"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "6XF8wsqdbLWIBnLgcoEpYu",
+          "name": "BEAUTIFUL CHAOS: The Remixes",
+          "uri": "spotify:album:6XF8wsqdbLWIBnLgcoEpYu",
+          "album_type": "single",
+          "release_date": "2025-09-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27382fde4d024a41e75e609bc57",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0282fde4d024a41e75e609bc57",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485182fde4d024a41e75e609bc57",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:57Z",
+      "is_local": false,
+      "item": {
+        "id": "4ph3ERW5vcdtGznsDTPDMm",
+        "name": "Gameboy - JULiA LEWiS Acoustic Remix",
+        "type": "track",
+        "uri": "spotify:track:4ph3ERW5vcdtGznsDTPDMm",
+        "duration_ms": 184531,
+        "explicit": false,
+        "track_number": 8,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 47,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72509087"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "2qcYVZNPHcOpwMUYZvA7Lw",
+            "name": "JULiA LEWiS",
+            "type": "artist",
+            "uri": "spotify:artist:2qcYVZNPHcOpwMUYZvA7Lw"
+          }
+        ],
+        "album": {
+          "id": "6XF8wsqdbLWIBnLgcoEpYu",
+          "name": "BEAUTIFUL CHAOS: The Remixes",
+          "uri": "spotify:album:6XF8wsqdbLWIBnLgcoEpYu",
+          "album_type": "single",
+          "release_date": "2025-09-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27382fde4d024a41e75e609bc57",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0282fde4d024a41e75e609bc57",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485182fde4d024a41e75e609bc57",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2025-09-10T03:32:57Z",
+      "is_local": false,
+      "item": {
+        "id": "0E54VXL7iDUmnwrZWJd6re",
+        "name": "Gameboy - Extended Version",
+        "type": "track",
+        "uri": "spotify:track:0E54VXL7iDUmnwrZWJd6re",
+        "duration_ms": 306000,
+        "explicit": false,
+        "track_number": 9,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 51,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72507421"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "6XF8wsqdbLWIBnLgcoEpYu",
+          "name": "BEAUTIFUL CHAOS: The Remixes",
+          "uri": "spotify:album:6XF8wsqdbLWIBnLgcoEpYu",
+          "album_type": "single",
+          "release_date": "2025-09-05",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27382fde4d024a41e75e609bc57",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0282fde4d024a41e75e609bc57",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485182fde4d024a41e75e609bc57",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-05T04:38:25Z",
+      "is_local": false,
+      "item": {
+        "id": "4H9cO4WjTIr7HMtP6Y5vqB",
+        "name": "PINKY UP - Club Remix",
+        "type": "track",
+        "uri": "spotify:track:4H9cO4WjTIr7HMtP6Y5vqB",
+        "duration_ms": 180540,
+        "explicit": true,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 50,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72604688"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "44kJG3Qy0qN3xmoogcJU2Z",
+            "name": "Fig Tape",
+            "type": "artist",
+            "uri": "spotify:artist:44kJG3Qy0qN3xmoogcJU2Z"
+          }
+        ],
+        "album": {
+          "id": "6SbW01YgpOGMmqTm8XoyBB",
+          "name": "PINKY UP: The Remixes",
+          "uri": "spotify:album:6SbW01YgpOGMmqTm8XoyBB",
+          "album_type": "single",
+          "release_date": "2026-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27302ca636dde0ccf699a4a14c2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0202ca636dde0ccf699a4a14c2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485102ca636dde0ccf699a4a14c2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-05T04:38:25Z",
+      "is_local": false,
+      "item": {
+        "id": "3gXNcUtToFdh3SG8dGlXd5",
+        "name": "PINKY UP - Sunset Remix",
+        "type": "track",
+        "uri": "spotify:track:3gXNcUtToFdh3SG8dGlXd5",
+        "duration_ms": 192717,
+        "explicit": true,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 52,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72604689"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "7qxLQ0CByGfbd3HdL7ilR8",
+            "name": "Frants",
+            "type": "artist",
+            "uri": "spotify:artist:7qxLQ0CByGfbd3HdL7ilR8"
+          },
+          {
+            "id": "44kJG3Qy0qN3xmoogcJU2Z",
+            "name": "Fig Tape",
+            "type": "artist",
+            "uri": "spotify:artist:44kJG3Qy0qN3xmoogcJU2Z"
+          }
+        ],
+        "album": {
+          "id": "6SbW01YgpOGMmqTm8XoyBB",
+          "name": "PINKY UP: The Remixes",
+          "uri": "spotify:album:6SbW01YgpOGMmqTm8XoyBB",
+          "album_type": "single",
+          "release_date": "2026-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27302ca636dde0ccf699a4a14c2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0202ca636dde0ccf699a4a14c2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485102ca636dde0ccf699a4a14c2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-05T04:38:25Z",
+      "is_local": false,
+      "item": {
+        "id": "7o6hR43FSGru6pmc9KofQU",
+        "name": "PINKY UP - Katwalk Remix",
+        "type": "track",
+        "uri": "spotify:track:7o6hR43FSGru6pmc9KofQU",
+        "duration_ms": 167989,
+        "explicit": true,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72604690"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          },
+          {
+            "id": "44kJG3Qy0qN3xmoogcJU2Z",
+            "name": "Fig Tape",
+            "type": "artist",
+            "uri": "spotify:artist:44kJG3Qy0qN3xmoogcJU2Z"
+          }
+        ],
+        "album": {
+          "id": "6SbW01YgpOGMmqTm8XoyBB",
+          "name": "PINKY UP: The Remixes",
+          "uri": "spotify:album:6SbW01YgpOGMmqTm8XoyBB",
+          "album_type": "single",
+          "release_date": "2026-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27302ca636dde0ccf699a4a14c2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0202ca636dde0ccf699a4a14c2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485102ca636dde0ccf699a4a14c2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2026-06-05T04:38:25Z",
+      "is_local": false,
+      "item": {
+        "id": "6wrGauVZdGnOVcEkNJaDN6",
+        "name": "PINKY UP - Techno Remix",
+        "type": "track",
+        "uri": "spotify:track:6wrGauVZdGnOVcEkNJaDN6",
+        "duration_ms": 225738,
+        "explicit": true,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 59,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM72604691"
+        },
+        "artists": [
+          {
+            "id": "3c0gDdb9lhnHGFtP4prQpn",
+            "name": "KATSEYE",
+            "type": "artist",
+            "uri": "spotify:artist:3c0gDdb9lhnHGFtP4prQpn"
+          }
+        ],
+        "album": {
+          "id": "6SbW01YgpOGMmqTm8XoyBB",
+          "name": "PINKY UP: The Remixes",
+          "uri": "spotify:album:6SbW01YgpOGMmqTm8XoyBB",
+          "album_type": "single",
+          "release_date": "2026-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 5,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27302ca636dde0ccf699a4a14c2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0202ca636dde0ccf699a4a14c2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485102ca636dde0ccf699a4a14c2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    }
+  ]
+}

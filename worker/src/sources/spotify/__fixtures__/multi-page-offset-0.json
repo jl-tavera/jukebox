@@ -1,0 +1,3110 @@
+{
+  "href": "https://api.spotify.com/v1/playlists/03Xz4NcdaWjZq2T6sKNLui/items?offset=0&limit=50&additional_types=track",
+  "limit": 50,
+  "next": "https://api.spotify.com/v1/playlists/03Xz4NcdaWjZq2T6sKNLui/items?offset=50&limit=50&additional_types=track",
+  "offset": 0,
+  "previous": null,
+  "total": 69,
+  "items": [
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "6T1071kNui4EUABJp4Dciq",
+        "name": "Chas! Y Aparezco A Tu Lado",
+        "type": "track",
+        "uri": "spotify:track:6T1071kNui4EUABJp4Dciq",
+        "duration_ms": 169066,
+        "explicit": false,
+        "track_number": 7,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 49,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5020900625"
+        },
+        "artists": [
+          {
+            "id": "61C3cEhdoJ9YiQSQSwYB4K",
+            "name": "Supersubmarina",
+            "type": "artist",
+            "uri": "spotify:artist:61C3cEhdoJ9YiQSQSwYB4K"
+          }
+        ],
+        "album": {
+          "id": "3LYJiRx2vxocmtxikxcnKN",
+          "name": "Electroviral",
+          "uri": "spotify:album:3LYJiRx2vxocmtxikxcnKN",
+          "album_type": "album",
+          "release_date": "2010-02-23",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b998581795f2cd5d8cd2ca05",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b998581795f2cd5d8cd2ca05",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b998581795f2cd5d8cd2ca05",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2ihCaVdNZmnHZWt0fvAM7B",
+        "name": "Little Talks",
+        "type": "track",
+        "uri": "spotify:track:2ihCaVdNZmnHZWt0fvAM7B",
+        "duration_ms": 266600,
+        "explicit": false,
+        "track_number": 6,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 84,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM71119106"
+        },
+        "artists": [
+          {
+            "id": "4dwdTW1Lfiq0cM8nBAqIIz",
+            "name": "Of Monsters and Men",
+            "type": "artist",
+            "uri": "spotify:artist:4dwdTW1Lfiq0cM8nBAqIIz"
+          }
+        ],
+        "album": {
+          "id": "4p9dVvZDaZliSjTCbFRhJy",
+          "name": "My Head Is An Animal",
+          "uri": "spotify:album:4p9dVvZDaZliSjTCbFRhJy",
+          "album_type": "album",
+          "release_date": "2012-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273cb3f67e8026e2e493a1e8262",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02cb3f67e8026e2e493a1e8262",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851cb3f67e8026e2e493a1e8262",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "1t9xsch2D9URgAFWuE7kc8",
+        "name": "El Baile",
+        "type": "track",
+        "uri": "spotify:track:1t9xsch2D9URgAFWuE7kc8",
+        "duration_ms": 248866,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 1,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES71G1508716"
+        },
+        "artists": [
+          {
+            "id": "2hazSY4Ef3aB9ATXW7F5w3",
+            "name": "IZAL",
+            "type": "artist",
+            "uri": "spotify:artist:2hazSY4Ef3aB9ATXW7F5w3"
+          }
+        ],
+        "album": {
+          "id": "4ApLmAxyvhQi7GGK5CMOgG",
+          "name": "Copacabana",
+          "uri": "spotify:album:4ApLmAxyvhQi7GGK5CMOgG",
+          "album_type": "album",
+          "release_date": "2015-09-18",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b642ea726261181fc4024817",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b642ea726261181fc4024817",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b642ea726261181fc4024817",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "67DveIUUjToBiKJwMnFZiJ",
+        "name": "Emborracharme",
+        "type": "track",
+        "uri": "spotify:track:67DveIUUjToBiKJwMnFZiJ",
+        "duration_ms": 212026,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 63,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5701201635"
+        },
+        "artists": [
+          {
+            "id": "3mOsjj1MhocRVwOejIZlTi",
+            "name": "Lori Meyers",
+            "type": "artist",
+            "uri": "spotify:artist:3mOsjj1MhocRVwOejIZlTi"
+          }
+        ],
+        "album": {
+          "id": "7cQBUtJwVAKluOLttrga9m",
+          "name": "Impronta",
+          "uri": "spotify:album:7cQBUtJwVAKluOLttrga9m",
+          "album_type": "album",
+          "release_date": "2013-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27316928b319c781f7e89a46645",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0216928b319c781f7e89a46645",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485116928b319c781f7e89a46645",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "6uIp5wIJ8itWmnfsR0oZA9",
+        "name": "Mi accidente preferido (con Juancho Sidecars y Sidecars)",
+        "type": "track",
+        "uri": "spotify:track:6uIp5wIJ8itWmnfsR0oZA9",
+        "duration_ms": 206260,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5151900025"
+        },
+        "artists": [
+          {
+            "id": "0QE9iXPzgSaBq34OqIZ4n2",
+            "name": "Despistaos",
+            "type": "artist",
+            "uri": "spotify:artist:0QE9iXPzgSaBq34OqIZ4n2"
+          },
+          {
+            "id": "0SbrR0n1dENC05Dg3Wt5wH",
+            "name": "Juancho Sidecars",
+            "type": "artist",
+            "uri": "spotify:artist:0SbrR0n1dENC05Dg3Wt5wH"
+          },
+          {
+            "id": "1OxGzd3ks0V8CVWtXT1VMj",
+            "name": "Sidecars",
+            "type": "artist",
+            "uri": "spotify:artist:1OxGzd3ks0V8CVWtXT1VMj"
+          }
+        ],
+        "album": {
+          "id": "1D9FhfZQdjkw70lexDBVcr",
+          "name": "Estamos enteros (Deluxe Edition)",
+          "uri": "spotify:album:1D9FhfZQdjkw70lexDBVcr",
+          "album_type": "album",
+          "release_date": "2020-01-24",
+          "release_date_precision": "day",
+          "total_tracks": 17,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273034130e38ef4d7e99028372c",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02034130e38ef4d7e99028372c",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851034130e38ef4d7e99028372c",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7qhuaYIafvH285FtQT71oQ",
+        "name": "Al Amanecer",
+        "type": "track",
+        "uri": "spotify:track:7qhuaYIafvH285FtQT71oQ",
+        "duration_ms": 159906,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "FR6V89702981"
+        },
+        "artists": [
+          {
+            "id": "7jnDSK1hbbcZdjapo2bHzY",
+            "name": "Los Fresones Rebeldes",
+            "type": "artist",
+            "uri": "spotify:artist:7jnDSK1hbbcZdjapo2bHzY"
+          }
+        ],
+        "album": {
+          "id": "7vG8ll827V8JHVbAV8Z3Il",
+          "name": "¡Es Que No Hay Manera!",
+          "uri": "spotify:album:7vG8ll827V8JHVbAV8Z3Il",
+          "album_type": "album",
+          "release_date": "1997-04-13",
+          "release_date_precision": "day",
+          "total_tracks": 16,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273218485f411f56bb4e1f16d5e",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02218485f411f56bb4e1f16d5e",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851218485f411f56bb4e1f16d5e",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3by1RwAsoZ6nNoMOCy11LM",
+        "name": "Superpoderes",
+        "type": "track",
+        "uri": "spotify:track:3by1RwAsoZ6nNoMOCy11LM",
+        "duration_ms": 179117,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 56,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021801182"
+        },
+        "artists": [
+          {
+            "id": "5Hsv8dUHHOdnn72q4XIVz7",
+            "name": "Leiva",
+            "type": "artist",
+            "uri": "spotify:artist:5Hsv8dUHHOdnn72q4XIVz7"
+          }
+        ],
+        "album": {
+          "id": "1T2uKSyUf7DBWOABtsmYLM",
+          "name": "Nuclear",
+          "uri": "spotify:album:1T2uKSyUf7DBWOABtsmYLM",
+          "album_type": "album",
+          "release_date": "2019-03-22",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273601ef19aa74603eee6ac19c1",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02601ef19aa74603eee6ac19c1",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851601ef19aa74603eee6ac19c1",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2F76kzOWgd3n6GwoKpRSTX",
+        "name": "A ver qué pasa - Estrella Damm 2021",
+        "type": "track",
+        "uri": "spotify:track:2F76kzOWgd3n6GwoKpRSTX",
+        "duration_ms": 232350,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 55,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ESA011750369"
+        },
+        "artists": [
+          {
+            "id": "7DOERbtkx9aTLvWzZSB0qx",
+            "name": "Rigoberta Bandini",
+            "type": "artist",
+            "uri": "spotify:artist:7DOERbtkx9aTLvWzZSB0qx"
+          }
+        ],
+        "album": {
+          "id": "0L5TueuRVaSnPuMCvqpH1c",
+          "name": "A ver qué pasa - Estrella Damm 2021",
+          "uri": "spotify:album:0L5TueuRVaSnPuMCvqpH1c",
+          "album_type": "single",
+          "release_date": "2021-06-16",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273e32db100ea15aa63dcdcfb68",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02e32db100ea15aa63dcdcfb68",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851e32db100ea15aa63dcdcfb68",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7ixB1UqUrV87IvACFJayXy",
+        "name": "Supersubmarina",
+        "type": "track",
+        "uri": "spotify:track:7ixB1UqUrV87IvACFJayXy",
+        "duration_ms": 246693,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 57,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5020800671"
+        },
+        "artists": [
+          {
+            "id": "61C3cEhdoJ9YiQSQSwYB4K",
+            "name": "Supersubmarina",
+            "type": "artist",
+            "uri": "spotify:artist:61C3cEhdoJ9YiQSQSwYB4K"
+          }
+        ],
+        "album": {
+          "id": "3LYJiRx2vxocmtxikxcnKN",
+          "name": "Electroviral",
+          "uri": "spotify:album:3LYJiRx2vxocmtxikxcnKN",
+          "album_type": "album",
+          "release_date": "2010-02-23",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b998581795f2cd5d8cd2ca05",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b998581795f2cd5d8cd2ca05",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b998581795f2cd5d8cd2ca05",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5zHvsFZoCzLmhbRbYDkg42",
+        "name": "La Revolución Sexual",
+        "type": "track",
+        "uri": "spotify:track:5zHvsFZoCzLmhbRbYDkg42",
+        "duration_ms": 274160,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 2,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES6640700035"
+        },
+        "artists": [
+          {
+            "id": "2Ynst7DZrEJnlaMM41ZCxd",
+            "name": "La Casa Azul",
+            "type": "artist",
+            "uri": "spotify:artist:2Ynst7DZrEJnlaMM41ZCxd"
+          }
+        ],
+        "album": {
+          "id": "6136J8VjN76qt3frhLedzK",
+          "name": "La Revolución Sexual",
+          "uri": "spotify:album:6136J8VjN76qt3frhLedzK",
+          "album_type": "album",
+          "release_date": "2007-11-03",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273fead9af722d0862748c48293",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02fead9af722d0862748c48293",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851fead9af722d0862748c48293",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2F75mXaavRl0hm3rtM15cq",
+        "name": "Disparos",
+        "type": "track",
+        "uri": "spotify:track:2F75mXaavRl0hm3rtM15cq",
+        "duration_ms": 230723,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 61,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5151900112"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "2jis8I5ZUWtDqV1E0S0NgR",
+          "name": "Incendios",
+          "uri": "spotify:album:2jis8I5ZUWtDqV1E0S0NgR",
+          "album_type": "album",
+          "release_date": "2019-05-24",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273befd5de288e54eacc0072c86",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02befd5de288e54eacc0072c86",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851befd5de288e54eacc0072c86",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "1ozbWlTQASs311dSO5R6vp",
+        "name": "Lucha De Gigantes",
+        "type": "track",
+        "uri": "spotify:track:1ozbWlTQASs311dSO5R6vp",
+        "duration_ms": 206880,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 55,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5701000984"
+        },
+        "artists": [
+          {
+            "id": "6VCoG3MG7ZKRxDjaYOvtrF",
+            "name": "Love of Lesbian",
+            "type": "artist",
+            "uri": "spotify:artist:6VCoG3MG7ZKRxDjaYOvtrF"
+          },
+          {
+            "id": "7uLePkJ2f0MwEcphODfkuu",
+            "name": "Zahara",
+            "type": "artist",
+            "uri": "spotify:artist:7uLePkJ2f0MwEcphODfkuu"
+          }
+        ],
+        "album": {
+          "id": "3qcDcfZbiPkWFXwobesAvy",
+          "name": "Lucha De Gigantes",
+          "uri": "spotify:album:3qcDcfZbiPkWFXwobesAvy",
+          "album_type": "single",
+          "release_date": "2010-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2736cbaab9a0791a44ca7c44d49",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e026cbaab9a0791a44ca7c44d49",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048516cbaab9a0791a44ca7c44d49",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AE",
+            "AR"
+          ]
+        },
+        "available_markets": [
+          "AE",
+          "AR"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7EwISik6EOmK1CZhs68nsg",
+        "name": "Años 80",
+        "type": "track",
+        "uri": "spotify:track:7EwISik6EOmK1CZhs68nsg",
+        "duration_ms": 220840,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 61,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5150011001"
+        },
+        "artists": [
+          {
+            "id": "6qDVOAIlTaSd7HuVtkfce1",
+            "name": "Los Piratas",
+            "type": "artist",
+            "uri": "spotify:artist:6qDVOAIlTaSd7HuVtkfce1"
+          }
+        ],
+        "album": {
+          "id": "0YfgHaj6rcEzXIIVDj42ev",
+          "name": "Ultrasónica",
+          "uri": "spotify:album:0YfgHaj6rcEzXIIVDj42ev",
+          "album_type": "album",
+          "release_date": "2001",
+          "release_date_precision": "year",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273fa6be7db6daaa2197a866fa3",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02fa6be7db6daaa2197a866fa3",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851fa6be7db6daaa2197a866fa3",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5zNlrLpJFZt3RvRe9A0Hed",
+        "name": "Mi Religión",
+        "type": "track",
+        "uri": "spotify:track:5zNlrLpJFZt3RvRe9A0Hed",
+        "duration_ms": 191379,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 61,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5151900569"
+        },
+        "artists": [
+          {
+            "id": "6X8uzem5Dbl4l2so4CeexD",
+            "name": "Nil Moliner",
+            "type": "artist",
+            "uri": "spotify:artist:6X8uzem5Dbl4l2so4CeexD"
+          }
+        ],
+        "album": {
+          "id": "659edmkQvKqcBjN76GPRcM",
+          "name": "Bailando en la batalla",
+          "uri": "spotify:album:659edmkQvKqcBjN76GPRcM",
+          "album_type": "album",
+          "release_date": "2020-02-21",
+          "release_date_precision": "day",
+          "total_tracks": 14,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27335de078552538e52bbce773e",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0235de078552538e52bbce773e",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485135de078552538e52bbce773e",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2pqRUZyX7LOC2FgoawYtG8",
+        "name": "Hora y Cuarto - Single Version",
+        "type": "track",
+        "uri": "spotify:track:2pqRUZyX7LOC2FgoawYtG8",
+        "duration_ms": 233456,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 34,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "MX1722101372"
+        },
+        "artists": [
+          {
+            "id": "5YekZn3GGnPIURNA6RG124",
+            "name": "Ana Torroja",
+            "type": "artist",
+            "uri": "spotify:artist:5YekZn3GGnPIURNA6RG124"
+          },
+          {
+            "id": "5ppm4jKbRPVMwuBO3DwnWB",
+            "name": "Alaska",
+            "type": "artist",
+            "uri": "spotify:artist:5ppm4jKbRPVMwuBO3DwnWB"
+          }
+        ],
+        "album": {
+          "id": "3j8ns8OLszeAGzbem3Ei6C",
+          "name": "Hora y Cuarto",
+          "uri": "spotify:album:3j8ns8OLszeAGzbem3Ei6C",
+          "album_type": "single",
+          "release_date": "2021-06-24",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27348fa231d6ac61b05436f5d07",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0248fa231d6ac61b05436f5d07",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485148fa231d6ac61b05436f5d07",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2u0cV9ctd6AcnMBbDFk88b",
+        "name": "Mundo imperfecto",
+        "type": "track",
+        "uri": "spotify:track:2u0cV9ctd6AcnMBbDFk88b",
+        "duration_ms": 188893,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 52,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152000361"
+        },
+        "artists": [
+          {
+            "id": "1OxGzd3ks0V8CVWtXT1VMj",
+            "name": "Sidecars",
+            "type": "artist",
+            "uri": "spotify:artist:1OxGzd3ks0V8CVWtXT1VMj"
+          }
+        ],
+        "album": {
+          "id": "6x344jhmhatHn4Qknm8CGp",
+          "name": "Ruido de fondo",
+          "uri": "spotify:album:6x344jhmhatHn4Qknm8CGp",
+          "album_type": "album",
+          "release_date": "2020-09-04",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273560c818f22ace9c23aa3ba5f",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02560c818f22ace9c23aa3ba5f",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851560c818f22ace9c23aa3ba5f",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "6yDz6zWwdAVIp76PqucsuJ",
+        "name": "Cuestión De Suerte",
+        "type": "track",
+        "uri": "spotify:track:6yDz6zWwdAVIp76PqucsuJ",
+        "duration_ms": 197146,
+        "explicit": false,
+        "track_number": 8,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 45,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5702101837"
+        },
+        "artists": [
+          {
+            "id": "3Zs59sqZJ6fWQqWbRC8bOP",
+            "name": "Natalia Lacunza",
+            "type": "artist",
+            "uri": "spotify:artist:3Zs59sqZJ6fWQqWbRC8bOP"
+          }
+        ],
+        "album": {
+          "id": "2J5ARQTTYCX2j7WTDA6HKK",
+          "name": "Tiene Que Ser Para Mí",
+          "uri": "spotify:album:2J5ARQTTYCX2j7WTDA6HKK",
+          "album_type": "album",
+          "release_date": "2022-06-09",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b9ebfc73755d333d7b147ca2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b9ebfc73755d333d7b147ca2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b9ebfc73755d333d7b147ca2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5Bz0wuD5IyyEsJKdUySQ2t",
+        "name": "Me Amo",
+        "type": "track",
+        "uri": "spotify:track:5Bz0wuD5IyyEsJKdUySQ2t",
+        "duration_ms": 197133,
+        "explicit": false,
+        "track_number": 8,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5400780420"
+        },
+        "artists": [
+          {
+            "id": "6VCoG3MG7ZKRxDjaYOvtrF",
+            "name": "Love of Lesbian",
+            "type": "artist",
+            "uri": "spotify:artist:6VCoG3MG7ZKRxDjaYOvtrF"
+          }
+        ],
+        "album": {
+          "id": "5C0eW0XXXbVRwOD3KiltKK",
+          "name": "Cuentos Chinos para Niños del Japón",
+          "uri": "spotify:album:5C0eW0XXXbVRwOD3KiltKK",
+          "album_type": "album",
+          "release_date": "2007-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 14,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b390327692f540f163127bc6",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b390327692f540f163127bc6",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b390327692f540f163127bc6",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0XPayKZFFZA2PwSRNi1pVU",
+        "name": "Terriblemente Cruel",
+        "type": "track",
+        "uri": "spotify:track:0XPayKZFFZA2PwSRNi1pVU",
+        "duration_ms": 227599,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 65,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021300743"
+        },
+        "artists": [
+          {
+            "id": "5Hsv8dUHHOdnn72q4XIVz7",
+            "name": "Leiva",
+            "type": "artist",
+            "uri": "spotify:artist:5Hsv8dUHHOdnn72q4XIVz7"
+          }
+        ],
+        "album": {
+          "id": "61KvTpKxtT39nPe2FAhjxg",
+          "name": "Polvora",
+          "uri": "spotify:album:61KvTpKxtT39nPe2FAhjxg",
+          "album_type": "album",
+          "release_date": "2014-01-31",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27395649ce035808017fac68d1d",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0295649ce035808017fac68d1d",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485195649ce035808017fac68d1d",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3Y7PAH3mOqLGSMp5O5uZFj",
+        "name": "Película (Cap. 3)",
+        "type": "track",
+        "uri": "spotify:track:3Y7PAH3mOqLGSMp5O5uZFj",
+        "duration_ms": 252547,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 58,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "MXF011900150"
+        },
+        "artists": [
+          {
+            "id": "2aqFBHOpM9uIgBpUsdq09x",
+            "name": "Siddhartha",
+            "type": "artist",
+            "uri": "spotify:artist:2aqFBHOpM9uIgBpUsdq09x"
+          }
+        ],
+        "album": {
+          "id": "4XFeZO8Do9fdappVKRzbcH",
+          "name": "MEMORIA FUTURO",
+          "uri": "spotify:album:4XFeZO8Do9fdappVKRzbcH",
+          "album_type": "album",
+          "release_date": "2020-11-02",
+          "release_date_precision": "day",
+          "total_tracks": 10,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273e6773c98fbd4ac7c47c0ebc6",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02e6773c98fbd4ac7c47c0ebc6",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851e6773c98fbd4ac7c47c0ebc6",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5NQw5WJwKRPaaSDHXD04Fs",
+        "name": "Lady Madrid",
+        "type": "track",
+        "uri": "spotify:track:5NQw5WJwKRPaaSDHXD04Fs",
+        "duration_ms": 191586,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 63,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5020900283"
+        },
+        "artists": [
+          {
+            "id": "6mfK6Q2tzLMEchAr0e9Uzu",
+            "name": "Pereza",
+            "type": "artist",
+            "uri": "spotify:artist:6mfK6Q2tzLMEchAr0e9Uzu"
+          }
+        ],
+        "album": {
+          "id": "5E2LBAl6sq7k4TdAPqSCMH",
+          "name": "Aviones",
+          "uri": "spotify:album:5E2LBAl6sq7k4TdAPqSCMH",
+          "album_type": "album",
+          "release_date": "2009-08-25",
+          "release_date_precision": "day",
+          "total_tracks": 17,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27397a794492257515c4d6d601e",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0297a794492257515c4d6d601e",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485197a794492257515c4d6d601e",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "62JASMwWszQSm2lZaKvaa1",
+        "name": "Siempre Brilla El Sol",
+        "type": "track",
+        "uri": "spotify:track:62JASMwWszQSm2lZaKvaa1",
+        "duration_ms": 219066,
+        "explicit": false,
+        "track_number": 10,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5701601044"
+        },
+        "artists": [
+          {
+            "id": "3mOsjj1MhocRVwOejIZlTi",
+            "name": "Lori Meyers",
+            "type": "artist",
+            "uri": "spotify:artist:3mOsjj1MhocRVwOejIZlTi"
+          }
+        ],
+        "album": {
+          "id": "6BeoDtcSMpDzQq3qWQejbn",
+          "name": "En La Espiral",
+          "uri": "spotify:album:6BeoDtcSMpDzQq3qWQejbn",
+          "album_type": "album",
+          "release_date": "2017-02-17",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273a83b4700c500e70a742b7270",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02a83b4700c500e70a742b7270",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851a83b4700c500e70a742b7270",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "6ehhc5vtZ33S9lPBQ0bvPN",
+        "name": "Me Gusta La Vida",
+        "type": "track",
+        "uri": "spotify:track:6ehhc5vtZ33S9lPBQ0bvPN",
+        "duration_ms": 175893,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES71G2128854"
+        },
+        "artists": [
+          {
+            "id": "16UAI1WxiKCIKd4NHtFt2U",
+            "name": "Funambulista",
+            "type": "artist",
+            "uri": "spotify:artist:16UAI1WxiKCIKd4NHtFt2U"
+          }
+        ],
+        "album": {
+          "id": "3Yt0nEGXUPb9EjlGJ7cGSF",
+          "name": "Animal",
+          "uri": "spotify:album:3Yt0nEGXUPb9EjlGJ7cGSF",
+          "album_type": "album",
+          "release_date": "2022-11-18",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27328695ab77d2d856344be7339",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0228695ab77d2d856344be7339",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485128695ab77d2d856344be7339",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3u5GmyJP2MU3tEJgyiAG2T",
+        "name": "Indios y Vaqueros",
+        "type": "track",
+        "uri": "spotify:track:3u5GmyJP2MU3tEJgyiAG2T",
+        "duration_ms": 184000,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 59,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USHM81832893"
+        },
+        "artists": [
+          {
+            "id": "2rGri7YZ2eiCS58zgvmlQb",
+            "name": "Sinsinati",
+            "type": "artist",
+            "uri": "spotify:artist:2rGri7YZ2eiCS58zgvmlQb"
+          },
+          {
+            "id": "5N3YDBGT2gUzXgLDTwPRi5",
+            "name": "Álvaro De Luna",
+            "type": "artist",
+            "uri": "spotify:artist:5N3YDBGT2gUzXgLDTwPRi5"
+          }
+        ],
+        "album": {
+          "id": "2t9PxUaBK9Jk2G9vPOaqy5",
+          "name": "Indios y Vaqueros",
+          "uri": "spotify:album:2t9PxUaBK9Jk2G9vPOaqy5",
+          "album_type": "single",
+          "release_date": "2018-08-01",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273df73c6476673f2976ddd814f",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02df73c6476673f2976ddd814f",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851df73c6476673f2976ddd814f",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "70JnnNNAxPjvZGPwjJfX47",
+        "name": "El Fin del Mundo",
+        "type": "track",
+        "uri": "spotify:track:70JnnNNAxPjvZGPwjJfX47",
+        "duration_ms": 188093,
+        "explicit": false,
+        "track_number": 15,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 6,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES6061962001"
+        },
+        "artists": [
+          {
+            "id": "5Q30fhTc0Sl0Q4C5dOjhhQ",
+            "name": "La La Love You",
+            "type": "artist",
+            "uri": "spotify:artist:5Q30fhTc0Sl0Q4C5dOjhhQ"
+          },
+          {
+            "id": "31IVfzTQ5bAPL8XMrO6dVx",
+            "name": "Axolotes Mexicanos",
+            "type": "artist",
+            "uri": "spotify:artist:31IVfzTQ5bAPL8XMrO6dVx"
+          }
+        ],
+        "album": {
+          "id": "5RpGs1cIVJHLtn88LEdXjb",
+          "name": "La la Love You Bonus",
+          "uri": "spotify:album:5RpGs1cIVJHLtn88LEdXjb",
+          "album_type": "album",
+          "release_date": "2020-12-11",
+          "release_date_precision": "day",
+          "total_tracks": 18,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273113e94b862587c66b88efe31",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02113e94b862587c66b88efe31",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851113e94b862587c66b88efe31",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5sKdpvvNyRJifUmYLNiYys",
+        "name": "Viento de Cara",
+        "type": "track",
+        "uri": "spotify:track:5sKdpvvNyRJifUmYLNiYys",
+        "duration_ms": 257111,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 59,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021400360"
+        },
+        "artists": [
+          {
+            "id": "61C3cEhdoJ9YiQSQSwYB4K",
+            "name": "Supersubmarina",
+            "type": "artist",
+            "uri": "spotify:artist:61C3cEhdoJ9YiQSQSwYB4K"
+          }
+        ],
+        "album": {
+          "id": "1H12cM0oy1TMb5snNa040x",
+          "name": "Viento de Cara",
+          "uri": "spotify:album:1H12cM0oy1TMb5snNa040x",
+          "album_type": "album",
+          "release_date": "2014-09-22",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27377401a51a6548e70952ae233",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0277401a51a6548e70952ae233",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485177401a51a6548e70952ae233",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "71J4vM6OnOl9Bs99CaS2dq",
+        "name": "Dile a los demás",
+        "type": "track",
+        "uri": "spotify:track:71J4vM6OnOl9Bs99CaS2dq",
+        "duration_ms": 209925,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 64,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152100991"
+        },
+        "artists": [
+          {
+            "id": "0CVOcYvRcSvOXyuR4YGKaC",
+            "name": "Dani Fernández",
+            "type": "artist",
+            "uri": "spotify:artist:0CVOcYvRcSvOXyuR4YGKaC"
+          }
+        ],
+        "album": {
+          "id": "7jlqlUmgafE9UJSDIkV9EF",
+          "name": "Entre las dudas y el azar",
+          "uri": "spotify:album:7jlqlUmgafE9UJSDIkV9EF",
+          "album_type": "album",
+          "release_date": "2022-02-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273736bcd7fd05b4a0dc4733acb",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02736bcd7fd05b4a0dc4733acb",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851736bcd7fd05b4a0dc4733acb",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0p7ZuCBUYIDG8uDVOTHXvq",
+        "name": "No Gires",
+        "type": "track",
+        "uri": "spotify:track:0p7ZuCBUYIDG8uDVOTHXvq",
+        "duration_ms": 143623,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 42,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES24C1006101"
+        },
+        "artists": [
+          {
+            "id": "6kkQkBRrPcQGUN8g2grxwb",
+            "name": "Varry Brava",
+            "type": "artist",
+            "uri": "spotify:artist:6kkQkBRrPcQGUN8g2grxwb"
+          }
+        ],
+        "album": {
+          "id": "0kGIovQDoVKJmHxV88lEzb",
+          "name": "No Gires",
+          "uri": "spotify:album:0kGIovQDoVKJmHxV88lEzb",
+          "album_type": "single",
+          "release_date": "2010-05-25",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2738331b549674c05b16e5314ff",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e028331b549674c05b16e5314ff",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048518331b549674c05b16e5314ff",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "4aAfLSx9IthpC3Pw5pNk3E",
+        "name": "Como Si Fueras a Morir Mañana",
+        "type": "track",
+        "uri": "spotify:track:4aAfLSx9IthpC3Pw5pNk3E",
+        "duration_ms": 240984,
+        "explicit": false,
+        "track_number": 8,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 71,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021801187"
+        },
+        "artists": [
+          {
+            "id": "5Hsv8dUHHOdnn72q4XIVz7",
+            "name": "Leiva",
+            "type": "artist",
+            "uri": "spotify:artist:5Hsv8dUHHOdnn72q4XIVz7"
+          }
+        ],
+        "album": {
+          "id": "1T2uKSyUf7DBWOABtsmYLM",
+          "name": "Nuclear",
+          "uri": "spotify:album:1T2uKSyUf7DBWOABtsmYLM",
+          "album_type": "album",
+          "release_date": "2019-03-22",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273601ef19aa74603eee6ac19c1",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02601ef19aa74603eee6ac19c1",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851601ef19aa74603eee6ac19c1",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0WDAYiPgyIlAEaZ6sMR5T8",
+        "name": "Te Quiero un Poco",
+        "type": "track",
+        "uri": "spotify:track:0WDAYiPgyIlAEaZ6sMR5T8",
+        "duration_ms": 206129,
+        "explicit": false,
+        "track_number": 5,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021702711"
+        },
+        "artists": [
+          {
+            "id": "2LCcy9CZWwZ7Vvykt8IVVq",
+            "name": "Carlos Sadness",
+            "type": "artist",
+            "uri": "spotify:artist:2LCcy9CZWwZ7Vvykt8IVVq"
+          }
+        ],
+        "album": {
+          "id": "2ApLZfsw7yYrztoaNkwLe5",
+          "name": "Diferentes Tipos de Luz",
+          "uri": "spotify:album:2ApLZfsw7yYrztoaNkwLe5",
+          "album_type": "album",
+          "release_date": "2018-02-23",
+          "release_date_precision": "day",
+          "total_tracks": 14,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27309dd29315fa967c9390b8290",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0209dd29315fa967c9390b8290",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485109dd29315fa967c9390b8290",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "1sTsuZTdANkiFd7T34H3nb",
+        "name": "Human",
+        "type": "track",
+        "uri": "spotify:track:1sTsuZTdANkiFd7T34H3nb",
+        "duration_ms": 245373,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 80,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USUM70837367"
+        },
+        "artists": [
+          {
+            "id": "0C0XlULifJtAgn6ZNCW2eu",
+            "name": "The Killers",
+            "type": "artist",
+            "uri": "spotify:artist:0C0XlULifJtAgn6ZNCW2eu"
+          }
+        ],
+        "album": {
+          "id": "0Ug5scDXUIgGN8yanDBLQw",
+          "name": "Day & Age (Bonus Tracks)",
+          "uri": "spotify:album:0Ug5scDXUIgGN8yanDBLQw",
+          "album_type": "album",
+          "release_date": "2008-11-18",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273a43cd43ef4f3b2d5413b17f9",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02a43cd43ef4f3b2d5413b17f9",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851a43cd43ef4f3b2d5413b17f9",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5kScX8bR7ccdW9pxMOG0iy",
+        "name": "Todo lo Que Merezcas",
+        "type": "track",
+        "uri": "spotify:track:5kScX8bR7ccdW9pxMOG0iy",
+        "duration_ms": 237372,
+        "explicit": false,
+        "track_number": 7,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 38,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES07I1502401"
+        },
+        "artists": [
+          {
+            "id": "59bV1Zv97BwGJYy6O2SvUx",
+            "name": "Xoel López",
+            "type": "artist",
+            "uri": "spotify:artist:59bV1Zv97BwGJYy6O2SvUx"
+          }
+        ],
+        "album": {
+          "id": "3uE9pNoeClXRFCU1W17F7C",
+          "name": "Paramales",
+          "uri": "spotify:album:3uE9pNoeClXRFCU1W17F7C",
+          "album_type": "album",
+          "release_date": "2015-05-26",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273d78a9adde11eb017668c7e1c",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02d78a9adde11eb017668c7e1c",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851d78a9adde11eb017668c7e1c",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7Kn7TYpJT0fjv5he98acyq",
+        "name": "Hoy",
+        "type": "track",
+        "uri": "spotify:track:7Kn7TYpJT0fjv5he98acyq",
+        "duration_ms": 143896,
+        "explicit": true,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 34,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "QM6N22069736"
+        },
+        "artists": [
+          {
+            "id": "5RHjYsmfT5IskZMoU6UuCj",
+            "name": "DORA",
+            "type": "artist",
+            "uri": "spotify:artist:5RHjYsmfT5IskZMoU6UuCj"
+          }
+        ],
+        "album": {
+          "id": "5W7UsE6bg6hx9ygRaebphc",
+          "name": "Hoy",
+          "uri": "spotify:album:5W7UsE6bg6hx9ygRaebphc",
+          "album_type": "single",
+          "release_date": "2020-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273e4e07d7776bc77002fb6ff3f",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02e4e07d7776bc77002fb6ff3f",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851e4e07d7776bc77002fb6ff3f",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "541hgOF71B92Jpg4IU6kyx",
+        "name": "Turnedo",
+        "type": "track",
+        "uri": "spotify:track:541hgOF71B92Jpg4IU6kyx",
+        "duration_ms": 278333,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 63,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5150518002"
+        },
+        "artists": [
+          {
+            "id": "3qUrABCNqnkb5gc2YmPVzP",
+            "name": "Ivan Ferreiro",
+            "type": "artist",
+            "uri": "spotify:artist:3qUrABCNqnkb5gc2YmPVzP"
+          }
+        ],
+        "album": {
+          "id": "6684lqRy7QCfQCNVc4Ohxp",
+          "name": "Canciones para el tiempo y la distancia",
+          "uri": "spotify:album:6684lqRy7QCfQCNVc4Ohxp",
+          "album_type": "album",
+          "release_date": "2005-04-12",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273c9d75becad0ea6752b80453d",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02c9d75becad0ea6752b80453d",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851c9d75becad0ea6752b80453d",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0bVfrh5DSaZPcoj4mE5zOj",
+        "name": "Noche Oscura (feat. Leiva)",
+        "type": "track",
+        "uri": "spotify:track:0bVfrh5DSaZPcoj4mE5zOj",
+        "duration_ms": 230360,
+        "explicit": false,
+        "track_number": 7,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 47,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152001282"
+        },
+        "artists": [
+          {
+            "id": "3wpNKcE7grYUIRKCMpmBOb",
+            "name": "Depedro",
+            "type": "artist",
+            "uri": "spotify:artist:3wpNKcE7grYUIRKCMpmBOb"
+          },
+          {
+            "id": "5Hsv8dUHHOdnn72q4XIVz7",
+            "name": "Leiva",
+            "type": "artist",
+            "uri": "spotify:artist:5Hsv8dUHHOdnn72q4XIVz7"
+          }
+        ],
+        "album": {
+          "id": "4Q090vwZsEDwv0GdxcgXPd",
+          "name": "Máquina de piedad",
+          "uri": "spotify:album:4Q090vwZsEDwv0GdxcgXPd",
+          "album_type": "album",
+          "release_date": "2021-10-22",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2732d42798090ad268b29734dd5",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e022d42798090ad268b29734dd5",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048512d42798090ad268b29734dd5",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0eTNLIPzgURsXMdgX4cdpJ",
+        "name": "LN Granada",
+        "type": "track",
+        "uri": "spotify:track:0eTNLIPzgURsXMdgX4cdpJ",
+        "duration_ms": 191746,
+        "explicit": false,
+        "track_number": 6,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 56,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5020900621"
+        },
+        "artists": [
+          {
+            "id": "61C3cEhdoJ9YiQSQSwYB4K",
+            "name": "Supersubmarina",
+            "type": "artist",
+            "uri": "spotify:artist:61C3cEhdoJ9YiQSQSwYB4K"
+          }
+        ],
+        "album": {
+          "id": "3LYJiRx2vxocmtxikxcnKN",
+          "name": "Electroviral",
+          "uri": "spotify:album:3LYJiRx2vxocmtxikxcnKN",
+          "album_type": "album",
+          "release_date": "2010-02-23",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b998581795f2cd5d8cd2ca05",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b998581795f2cd5d8cd2ca05",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b998581795f2cd5d8cd2ca05",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "1iBZ1b5ULbGnyhq5Xhpqql",
+        "name": "Una Foto en Blanco y Negro",
+        "type": "track",
+        "uri": "spotify:track:1iBZ1b5ULbGnyhq5Xhpqql",
+        "duration_ms": 214093,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES6082010201"
+        },
+        "artists": [
+          {
+            "id": "4cA5JN7tiNZ8afYeuSQj5h",
+            "name": "David Otero",
+            "type": "artist",
+            "uri": "spotify:artist:4cA5JN7tiNZ8afYeuSQj5h"
+          },
+          {
+            "id": "40Ippe6JeofRURQ4nbF8DT",
+            "name": "Taburete",
+            "type": "artist",
+            "uri": "spotify:artist:40Ippe6JeofRURQ4nbF8DT"
+          }
+        ],
+        "album": {
+          "id": "52oVpyhcJHLqp82OCEJudc",
+          "name": "Otero y Yo",
+          "uri": "spotify:album:52oVpyhcJHLqp82OCEJudc",
+          "album_type": "album",
+          "release_date": "2021-03-05",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b4d5f3c3c32c4accc9b4bf12",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b4d5f3c3c32c4accc9b4bf12",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b4d5f3c3c32c4accc9b4bf12",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3hlWUNjAlbZ6nOjAbrivBv",
+        "name": "Princesas",
+        "type": "track",
+        "uri": "spotify:track:3hlWUNjAlbZ6nOjAbrivBv",
+        "duration_ms": 216999,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 69,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5020500059"
+        },
+        "artists": [
+          {
+            "id": "6mfK6Q2tzLMEchAr0e9Uzu",
+            "name": "Pereza",
+            "type": "artist",
+            "uri": "spotify:artist:6mfK6Q2tzLMEchAr0e9Uzu"
+          }
+        ],
+        "album": {
+          "id": "6TFvbSAqnlvjOSkuryxUKe",
+          "name": "Animales",
+          "uri": "spotify:album:6TFvbSAqnlvjOSkuryxUKe",
+          "album_type": "album",
+          "release_date": "2005-04-07",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2730bf6f5fb8b6b5017823d76b4",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e020bf6f5fb8b6b5017823d76b4",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048510bf6f5fb8b6b5017823d76b4",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0qRE2t4scDRFsBgBXsQIH9",
+        "name": "Todo Estaba Bien",
+        "type": "track",
+        "uri": "spotify:track:0qRE2t4scDRFsBgBXsQIH9",
+        "duration_ms": 188222,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 58,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5022000191"
+        },
+        "artists": [
+          {
+            "id": "2LCcy9CZWwZ7Vvykt8IVVq",
+            "name": "Carlos Sadness",
+            "type": "artist",
+            "uri": "spotify:artist:2LCcy9CZWwZ7Vvykt8IVVq"
+          },
+          {
+            "id": "0i5iO6icb7kxg48thi9gBM",
+            "name": "Manuel Medrano",
+            "type": "artist",
+            "uri": "spotify:artist:0i5iO6icb7kxg48thi9gBM"
+          }
+        ],
+        "album": {
+          "id": "1hNj4AB6pbahegd5dBYPV7",
+          "name": "Tropical Jesus",
+          "uri": "spotify:album:1hNj4AB6pbahegd5dBYPV7",
+          "album_type": "album",
+          "release_date": "2020-06-19",
+          "release_date_precision": "day",
+          "total_tracks": 13,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273e53bbcfc982d092624d7f124",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02e53bbcfc982d092624d7f124",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851e53bbcfc982d092624d7f124",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "52Pxn490S6sTjhXgyfeSbk",
+        "name": "La sonrisa intacta",
+        "type": "track",
+        "uri": "spotify:track:52Pxn490S6sTjhXgyfeSbk",
+        "duration_ms": 206872,
+        "explicit": false,
+        "track_number": 3,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5152001119"
+        },
+        "artists": [
+          {
+            "id": "6rRTrEHzGSDqhmFJQrNFMO",
+            "name": "Shinova",
+            "type": "artist",
+            "uri": "spotify:artist:6rRTrEHzGSDqhmFJQrNFMO"
+          }
+        ],
+        "album": {
+          "id": "4piRk2tPj42dFRdfMwBU0J",
+          "name": "La buena suerte",
+          "uri": "spotify:album:4piRk2tPj42dFRdfMwBU0J",
+          "album_type": "album",
+          "release_date": "2021-02-26",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2733b93c2c33e020e41766764d0",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e023b93c2c33e020e41766764d0",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048513b93c2c33e020e41766764d0",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "0m0HaxmlOkzi0Yby75t2o7",
+        "name": "Mi Realidad",
+        "type": "track",
+        "uri": "spotify:track:0m0HaxmlOkzi0Yby75t2o7",
+        "duration_ms": 191973,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 56,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5701000280"
+        },
+        "artists": [
+          {
+            "id": "3mOsjj1MhocRVwOejIZlTi",
+            "name": "Lori Meyers",
+            "type": "artist",
+            "uri": "spotify:artist:3mOsjj1MhocRVwOejIZlTi"
+          }
+        ],
+        "album": {
+          "id": "1Wi1sETJXV9JCa5KycSuBA",
+          "name": "Cuando El Destino Nos Alcance",
+          "uri": "spotify:album:1Wi1sETJXV9JCa5KycSuBA",
+          "album_type": "album",
+          "release_date": "2010-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2734e0ed1c44bd81562287833b2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e024e0ed1c44bd81562287833b2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048514e0ed1c44bd81562287833b2",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2vig2NyRFXJmLddVIePsFw",
+        "name": "Puta Vida",
+        "type": "track",
+        "uri": "spotify:track:2vig2NyRFXJmLddVIePsFw",
+        "duration_ms": 170413,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5021100259"
+        },
+        "artists": [
+          {
+            "id": "61C3cEhdoJ9YiQSQSwYB4K",
+            "name": "Supersubmarina",
+            "type": "artist",
+            "uri": "spotify:artist:61C3cEhdoJ9YiQSQSwYB4K"
+          }
+        ],
+        "album": {
+          "id": "4uDnDpIdsP0eQ74DjnB9Yb",
+          "name": "Realimentacion",
+          "uri": "spotify:album:4uDnDpIdsP0eQ74DjnB9Yb",
+          "album_type": "single",
+          "release_date": "2011-05-24",
+          "release_date_precision": "day",
+          "total_tracks": 4,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273f3b2d5e6cc378288f7652380",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02f3b2d5e6cc378288f7652380",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851f3b2d5e6cc378288f7652380",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3UzrxjmO8YZyz7NUSrOvss",
+        "name": "Abrázame",
+        "type": "track",
+        "uri": "spotify:track:3UzrxjmO8YZyz7NUSrOvss",
+        "duration_ms": 160466,
+        "explicit": false,
+        "track_number": 7,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 44,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5150518006"
+        },
+        "artists": [
+          {
+            "id": "3qUrABCNqnkb5gc2YmPVzP",
+            "name": "Ivan Ferreiro",
+            "type": "artist",
+            "uri": "spotify:artist:3qUrABCNqnkb5gc2YmPVzP"
+          }
+        ],
+        "album": {
+          "id": "6684lqRy7QCfQCNVc4Ohxp",
+          "name": "Canciones para el tiempo y la distancia",
+          "uri": "spotify:album:6684lqRy7QCfQCNVc4Ohxp",
+          "album_type": "album",
+          "release_date": "2005-04-12",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273c9d75becad0ea6752b80453d",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02c9d75becad0ea6752b80453d",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851c9d75becad0ea6752b80453d",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7lwXrOskUl8qQN8WKuaRYe",
+        "name": "Copacabana",
+        "type": "track",
+        "uri": "spotify:track:7lwXrOskUl8qQN8WKuaRYe",
+        "duration_ms": 190626,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 1,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES71G1507958"
+        },
+        "artists": [
+          {
+            "id": "2hazSY4Ef3aB9ATXW7F5w3",
+            "name": "IZAL",
+            "type": "artist",
+            "uri": "spotify:artist:2hazSY4Ef3aB9ATXW7F5w3"
+          }
+        ],
+        "album": {
+          "id": "4ApLmAxyvhQi7GGK5CMOgG",
+          "name": "Copacabana",
+          "uri": "spotify:album:4ApLmAxyvhQi7GGK5CMOgG",
+          "album_type": "album",
+          "release_date": "2015-09-18",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273b642ea726261181fc4024817",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02b642ea726261181fc4024817",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851b642ea726261181fc4024817",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "1KhqSLS8YafrUCbjrn8WxZ",
+        "name": "Club de fans de John Boy",
+        "type": "track",
+        "uri": "spotify:track:1KhqSLS8YafrUCbjrn8WxZ",
+        "duration_ms": 231160,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 62,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES7650900038"
+        },
+        "artists": [
+          {
+            "id": "6VCoG3MG7ZKRxDjaYOvtrF",
+            "name": "Love of Lesbian",
+            "type": "artist",
+            "uri": "spotify:artist:6VCoG3MG7ZKRxDjaYOvtrF"
+          }
+        ],
+        "album": {
+          "id": "1vvfLVVcU1o8sPMq25CxpF",
+          "name": "1999 (o como generar incendios de nieve con una lupa enfocando la luna)",
+          "uri": "spotify:album:1vvfLVVcU1o8sPMq25CxpF",
+          "album_type": "album",
+          "release_date": "2009-03-31",
+          "release_date_precision": "day",
+          "total_tracks": 14,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273304dbb3e13db9dae376c7a51",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02304dbb3e13db9dae376c7a51",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851304dbb3e13db9dae376c7a51",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "7p86AB1S0CeNeYc7CfWvGR",
+        "name": "La noche me resbala",
+        "type": "track",
+        "uri": "spotify:track:7p86AB1S0CeNeYc7CfWvGR",
+        "duration_ms": 181839,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5010600743"
+        },
+        "artists": [
+          {
+            "id": "5e4btuINxJ9yrpwBqdPqPq",
+            "name": "Señor Trepador",
+            "type": "artist",
+            "uri": "spotify:artist:5e4btuINxJ9yrpwBqdPqPq"
+          }
+        ],
+        "album": {
+          "id": "3yK74pubVvBb4vSWye5A2l",
+          "name": "Aforismos invertebrados",
+          "uri": "spotify:album:3yK74pubVvBb4vSWye5A2l",
+          "album_type": "album",
+          "release_date": "2006-06-05",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273209591880febfaa658728eb3",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02209591880febfaa658728eb3",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851209591880febfaa658728eb3",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "31TmMW92lP0UoxtAaF89hU",
+        "name": "Qué Bonita",
+        "type": "track",
+        "uri": "spotify:track:31TmMW92lP0UoxtAaF89hU",
+        "duration_ms": 163768,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 3,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES6702209004"
+        },
+        "artists": [
+          {
+            "id": "16t23tANCHuuAN0yPqBbA0",
+            "name": "DePol",
+            "type": "artist",
+            "uri": "spotify:artist:16t23tANCHuuAN0yPqBbA0"
+          }
+        ],
+        "album": {
+          "id": "1Em1AH6NyWHAPyCaVM7iGX",
+          "name": "Qué Bonita",
+          "uri": "spotify:album:1Em1AH6NyWHAPyCaVM7iGX",
+          "album_type": "single",
+          "release_date": "2022-11-25",
+          "release_date_precision": "day",
+          "total_tracks": 1,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2739c08563a9b03828119c3109b",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e029c08563a9b03828119c3109b",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048519c08563a9b03828119c3109b",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "2CioKOaM8dU2VvjYUCNRGx",
+        "name": "Fever",
+        "type": "track",
+        "uri": "spotify:track:2CioKOaM8dU2VvjYUCNRGx",
+        "duration_ms": 236372,
+        "explicit": false,
+        "track_number": 6,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 51,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "GBUM72101408"
+        },
+        "artists": [
+          {
+            "id": "41AbNVba2ccpmcc9QtOJE7",
+            "name": "Kings of Convenience",
+            "type": "artist",
+            "uri": "spotify:artist:41AbNVba2ccpmcc9QtOJE7"
+          }
+        ],
+        "album": {
+          "id": "1jyVgS78GWmR0EjkFst9YC",
+          "name": "Peace Or Love",
+          "uri": "spotify:album:1jyVgS78GWmR0EjkFst9YC",
+          "album_type": "album",
+          "release_date": "2021-06-18",
+          "release_date_precision": "day",
+          "total_tracks": 11,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2730cfef9b5682f06149af2f10d",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e020cfef9b5682f06149af2f10d",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048510cfef9b5682f06149af2f10d",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2023-03-01T20:59:03Z",
+      "is_local": false,
+      "item": {
+        "id": "3kKC32g6Udc9wNHwZcMohb",
+        "name": "Saharabbey Road",
+        "type": "track",
+        "uri": "spotify:track:3kKC32g6Udc9wNHwZcMohb",
+        "duration_ms": 277653,
+        "explicit": false,
+        "track_number": 11,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES55C1060011"
+        },
+        "artists": [
+          {
+            "id": "6J6yx1t3nwIDyPXk5xa7O8",
+            "name": "Vetusta Morla",
+            "type": "artist",
+            "uri": "spotify:artist:6J6yx1t3nwIDyPXk5xa7O8"
+          }
+        ],
+        "album": {
+          "id": "7ozOQXEfKskKDTtDpmTnuh",
+          "name": "Un Día en el Mundo",
+          "uri": "spotify:album:7ozOQXEfKskKDTtDpmTnuh",
+          "album_type": "album",
+          "release_date": "2008-04-21",
+          "release_date_precision": "day",
+          "total_tracks": 12,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2734abd2851d3681abb6a6d9ce9",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e024abd2851d3681abb6a6d9ce9",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048514abd2851d3681abb6a6d9ce9",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2024-03-21T17:07:14Z",
+      "is_local": false,
+      "item": {
+        "id": "4ckZyAOFKfMti3H8aI60f5",
+        "name": "Bienvenidos - Live",
+        "type": "track",
+        "uri": "spotify:track:4ckZyAOFKfMti3H8aI60f5",
+        "duration_ms": 240533,
+        "explicit": false,
+        "track_number": 1,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 48,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ES5700300351"
+        },
+        "artists": [
+          {
+            "id": "1dpnxi6xgoB2kaRYnnoatZ",
+            "name": "Miguel Ríos",
+            "type": "artist",
+            "uri": "spotify:artist:1dpnxi6xgoB2kaRYnnoatZ"
+          }
+        ],
+        "album": {
+          "id": "5KvWPBtUDsGhQJ2f3tgLrY",
+          "name": "Rock & Rios",
+          "uri": "spotify:album:5KvWPBtUDsGhQJ2f3tgLrY",
+          "album_type": "album",
+          "release_date": "1982-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 20,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2732d9ddc4cd658f865bebc7815",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e022d9ddc4cd658f865bebc7815",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048512d9ddc4cd658f865bebc7815",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    }
+  ]
+}

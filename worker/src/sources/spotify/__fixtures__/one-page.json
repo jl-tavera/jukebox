@@ -1,0 +1,308 @@
+{
+  "href": "https://api.spotify.com/v1/playlists/3cEYpjA9oz9GiPac4AsH4n/items?offset=0&limit=50&additional_types=track",
+  "limit": 50,
+  "next": null,
+  "offset": 0,
+  "previous": null,
+  "total": 5,
+  "items": [
+    {
+      "added_at": "2015-01-15T12:39:22Z",
+      "is_local": false,
+      "item": {
+        "id": "4rzfv0JLZfVhOhbSQ8o5jZ",
+        "name": "Api",
+        "type": "track",
+        "uri": "spotify:track:4rzfv0JLZfVhOhbSQ8o5jZ",
+        "duration_ms": 376000,
+        "explicit": false,
+        "track_number": 10,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 1,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "DEKC41200989"
+        },
+        "artists": [
+          {
+            "id": "6eSdhw46riw2OUHgMwR8B5",
+            "name": "Odiseo",
+            "type": "artist",
+            "uri": "spotify:artist:6eSdhw46riw2OUHgMwR8B5"
+          }
+        ],
+        "album": {
+          "id": "2pANdqPvxInB0YvcDiw4ko",
+          "name": "Progressive Psy Trance Picks Vol.8",
+          "uri": "spotify:album:2pANdqPvxInB0YvcDiw4ko",
+          "album_type": "compilation",
+          "release_date": "2012-04-02",
+          "release_date_precision": "day",
+          "total_tracks": 20,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ce6d0eef0c1ce77e5f95bbbc",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ce6d0eef0c1ce77e5f95bbbc",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ce6d0eef0c1ce77e5f95bbbc",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2015-01-15T12:40:03Z",
+      "is_local": false,
+      "item": {
+        "id": "5o3jMYOSbaVz3tkgwhELSV",
+        "name": "Is",
+        "type": "track",
+        "uri": "spotify:track:5o3jMYOSbaVz3tkgwhELSV",
+        "duration_ms": 730066,
+        "explicit": false,
+        "track_number": 21,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "FR2X41475057"
+        },
+        "artists": [
+          {
+            "id": "5VQE4WOzPu9h3HnGLuBoA6",
+            "name": "Vlasta Marek",
+            "type": "artist",
+            "uri": "spotify:artist:5VQE4WOzPu9h3HnGLuBoA6"
+          }
+        ],
+        "album": {
+          "id": "6nlfkk5GoXRL1nktlATNsy",
+          "name": "Wellness & Dreaming Source",
+          "uri": "spotify:album:6nlfkk5GoXRL1nktlATNsy",
+          "album_type": "compilation",
+          "release_date": "2015-01-09",
+          "release_date_precision": "day",
+          "total_tracks": 25,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273aa2ff29970d9a63a49dfaeb2",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02aa2ff29970d9a63a49dfaeb2",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851aa2ff29970d9a63a49dfaeb2",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2015-01-15T12:22:30Z",
+      "is_local": false,
+      "item": {
+        "id": "4Cy0NHJ8Gh0xMdwyM9RkQm",
+        "name": "All I Want",
+        "type": "track",
+        "uri": "spotify:track:4Cy0NHJ8Gh0xMdwyM9RkQm",
+        "duration_ms": 401440,
+        "explicit": false,
+        "track_number": 4,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 53,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "US4GE1000022"
+        },
+        "artists": [
+          {
+            "id": "066X20Nz7iquqkkCW6Jxy6",
+            "name": "LCD Soundsystem",
+            "type": "artist",
+            "uri": "spotify:artist:066X20Nz7iquqkkCW6Jxy6"
+          }
+        ],
+        "album": {
+          "id": "4hnqM0JK4CM1phwfq1Ldyz",
+          "name": "This Is Happening",
+          "uri": "spotify:album:4hnqM0JK4CM1phwfq1Ldyz",
+          "album_type": "album",
+          "release_date": "2010-05-17",
+          "release_date_precision": "day",
+          "total_tracks": 9,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273ee0d0dce888c6c8a70db6e8b",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02ee0d0dce888c6c8a70db6e8b",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851ee0d0dce888c6c8a70db6e8b",
+              "width": 64
+            }
+          ],
+          "available_markets": [
+            "AR",
+            "AU"
+          ]
+        },
+        "available_markets": [
+          "AR",
+          "AU"
+        ]
+      }
+    },
+    {
+      "added_at": "2015-01-15T12:40:35Z",
+      "is_local": false,
+      "item": {
+        "id": "6hvFrZNocdt2FcKGCSY5NI",
+        "name": "Endpoints",
+        "type": "track",
+        "uri": "spotify:track:6hvFrZNocdt2FcKGCSY5NI",
+        "duration_ms": 358760,
+        "explicit": false,
+        "track_number": 2,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "USB8U1025969"
+        },
+        "artists": [
+          {
+            "id": "1cZW3NKv2zT57wB9ZFsCSw",
+            "name": "Glenn Horiuchi",
+            "type": "artist",
+            "uri": "spotify:artist:1cZW3NKv2zT57wB9ZFsCSw"
+          },
+          {
+            "id": "272ArH9SUAlslQqsSgPJA2",
+            "name": "Glenn Horiuchi Trio",
+            "type": "artist",
+            "uri": "spotify:artist:272ArH9SUAlslQqsSgPJA2"
+          }
+        ],
+        "album": {
+          "id": "2usKFntxa98WHMcyW6xJBz",
+          "name": "Glenn Horiuchi Trio / Gelenn Horiuchi Quartet: Mercy / Jump Start / Endpoints / Curl Out / Earthworks / Mind Probe / Null Set / Another Space (A)",
+          "uri": "spotify:album:2usKFntxa98WHMcyW6xJBz",
+          "album_type": "album",
+          "release_date": "2011-04-01",
+          "release_date_precision": "day",
+          "total_tracks": 8,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b2738b7447ac3daa1da18811cf7b",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e028b7447ac3daa1da18811cf7b",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d000048518b7447ac3daa1da18811cf7b",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    },
+    {
+      "added_at": "2015-01-15T12:41:10Z",
+      "is_local": false,
+      "item": {
+        "id": "2E2znCPaS8anQe21GLxcvJ",
+        "name": "You Are So Beautiful",
+        "type": "track",
+        "uri": "spotify:track:2E2znCPaS8anQe21GLxcvJ",
+        "duration_ms": 176093,
+        "explicit": false,
+        "track_number": 18,
+        "disc_number": 1,
+        "is_local": false,
+        "popularity": 0,
+        "preview_url": null,
+        "external_ids": {
+          "isrc": "ITUM70701043"
+        },
+        "artists": [
+          {
+            "id": "2KftmGt9sk1yLjsAoloC3M",
+            "name": "Zucchero",
+            "type": "artist",
+            "uri": "spotify:artist:2KftmGt9sk1yLjsAoloC3M"
+          }
+        ],
+        "album": {
+          "id": "0ivM6kSawaug0j3tZVusG2",
+          "name": "All The Best (Spanish Version)",
+          "uri": "spotify:album:0ivM6kSawaug0j3tZVusG2",
+          "album_type": "album",
+          "release_date": "2007-01-01",
+          "release_date_precision": "day",
+          "total_tracks": 18,
+          "images": [
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b27304e57d181ff062f8339d6c71",
+              "width": 640
+            },
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e0204e57d181ff062f8339d6c71",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d0000485104e57d181ff062f8339d6c71",
+              "width": 64
+            }
+          ],
+          "available_markets": []
+        },
+        "available_markets": []
+      }
+    }
+  ]
+}
