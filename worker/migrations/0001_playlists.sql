@@ -13,7 +13,9 @@ CREATE TABLE playlists (
   owner              TEXT,
   source_revision    TEXT,                 -- opaque did-it-change probe; see DESIGN 03
   version            INTEGER NOT NULL,     -- monotonic; the ETag
-  refresh_interval_s INTEGER NOT NULL,
+  refresh_interval_s INTEGER,              -- NULL until one is measured; DESIGN
+                                           -- keeps numbers needing real
+                                           -- measurement blank
   last_refreshed_at  INTEGER,
   status             TEXT NOT NULL,        -- pending | ok | unreachable | gone
   UNIQUE (source, source_id)
