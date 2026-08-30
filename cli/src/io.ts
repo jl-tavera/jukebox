@@ -13,7 +13,14 @@ export type Io = {
    * the renderer, and nothing else writes here at all.
    */
   out: (text: string) => void
-  /** Everything that is not data: a failure's message, and later a warning. */
+  /**
+   * Everything that is not data: a failure's message, and a warning.
+   *
+   * Both in either rendering. A caller parsing JSON reads stdout and never
+   * this, so a warning here costs that guarantee nothing -- and #33's fallback
+   * onto an old discovery document is exactly the thing the machine caller is
+   * most likely to want to know about.
+   */
   err: (text: string) => void
   /** Whether someone is reading the output, or something is parsing it. */
   stdoutIsTty: boolean

@@ -30,12 +30,30 @@ const envelope = (outcome: Outcome, version: string): Envelope =>
 /**
  * The one place anything is written, and the whole of the stream discipline.
  *
- * In JSON mode stdout gets one object and stderr gets nothing, so a caller can
- * read stdout whole and parse it. In human mode what worked goes to stdout and
- * what did not goes to stderr, so a person sees the problem and a pipe reading
- * stdout is never handed prose where it expected data.
+ * **stdout is the guarantee, and the only one.** In JSON mode it gets exactly
+ * one object, so a caller can read it whole and parse it. In human mode what
+ * worked goes there and what did not goes to stderr, so a person sees the
+ * problem and a pipe reading stdout is never handed prose where it expected
+ * data.
+ *
+ * Warnings go to stderr in *both* renderings, which is what `Io.err` has always
+ * said it was for -- "everything that is not data". Nothing parsing JSON reads
+ * stderr, so this costs the guarantee above nothing; suppressing them in JSON
+ * mode would instead leave the caller most likely to act on a stale API address
+ * as the only one never told about it.
+ *
+ * They are written before the result rather than after, because that is the
+ * order they happened in: the fallback is why the answer below reads as it does.
  */
-export const render = (renderable: Renderable, mode: Mode, version: string, io: Io): void => {
+export const render = (
+  renderable: Renderable,
+  mode: Mode,
+  version: string,
+  io: Io,
+  warnings: string[],
+): void => {
+  for (const warning of warnings) io.err(warning + '\n')
+
   if (mode === 'json') {
     io.out(JSON.stringify(envelope(renderable.outcome, version)) + '\n')
     return
