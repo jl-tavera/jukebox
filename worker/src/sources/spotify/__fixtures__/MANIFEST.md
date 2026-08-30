@@ -17,8 +17,8 @@ loudly if a donor stops exhibiting the shape it was chosen for. Update this file
 changes.
 
 `network.ts` is its sibling and is here for the same reason: it is Spotify standing still, answering
-the token request and a playlist read out of the files beside it so that a test can drive a whole
-Resolution without a network. It knows the endpoints and the bearer, so it belongs behind the same
+the token request, a playlist's own metadata and a playlist read out of the files beside it so that a
+test can drive a whole Resolution without a network. It knows the endpoints and the bearer, so it belongs behind the same
 boundary. Nothing under `src/` imports it, so none of it reaches the deployed worker.
 
 ## Why these exist
@@ -36,7 +36,7 @@ carry their status in the body as well; the 200s do not.
 | File | Donor playlist | Status | Kind | What it is for |
 |---|---|---|---|---|
 | `token.json` | — | `200` | real, redacted | The token response shape. `access_token` is a placeholder; only `token_type` and `expires_in` are real. |
-| `playlist-metadata.json` | `3cEYpjA9oz9GiPac4AsH4n` | `200` | verbatim | `name`, `owner`, `snapshot_id` — the source of `title`, `owner` and `revision()`. |
+| `playlist-metadata.json` | `3cEYpjA9oz9GiPac4AsH4n` | `200` | verbatim | `name`, `owner`, `snapshot_id` — the source of `title`, `owner` and `revision()`. `name` is read for real as of #30; the other two are still evidence waiting for a member to land on. |
 | `one-page.json` | `3cEYpjA9oz9GiPac4AsH4n` | `200` | verbatim | 5 entries, `next: null`. A playlist that fits one page. |
 | `multi-page-offset-0.json` | `03Xz4NcdaWjZq2T6sKNLui` | `200` | verbatim | 50 entries, `next` set, `previous: null`. Page one of the walk. |
 | `multi-page-offset-50.json` | `03Xz4NcdaWjZq2T6sKNLui` | `200` | verbatim | 19 entries, `next: null`, `previous` set. Page two; 69 total. |
@@ -54,6 +54,11 @@ playlist, and retrying will not help… deleted, made private, or curated by the
 which the API surfaces as `playlist_gone`. The adapter now makes that mapping: a 404 and nothing
 else is thrown as `PlaylistGone`, so the Resolution is acknowledged rather than retried. That the
 two captures are byte-identical is the evidence for one answer covering all three causes.
+
+Both captures are of `/items`. Since #30 the adapter also reads `/playlists/{id}`, and maps a 404
+there the same way — which is **inference, not evidence**: nothing here captures what the plain
+address answers for a playlist Spotify will not serve. It is the only claim this directory makes
+that no file beside it supports, and a re-capture is where to settle it.
 
 ### Two fixtures are not verbatim captures
 
@@ -74,10 +79,20 @@ straight capture would be a claim the next reader has no way to check.
 
 ## Request shape
 
+Two requests per Resolution, in this order:
+
 ```
+GET /v1/playlists/{id}
 GET /v1/playlists/{id}/items?limit=50&additional_types=track,episode
 ```
 
+- **The playlist's own address carries no query at all**, which is how the metadata above was
+  captured and what the adapter sends. A `fields` projection would trim a response already under a
+  kilobyte, and would leave the capture as evidence about a request nobody makes.
+- **It is read first.** Both orders meet a Gone playlist in their first request, but this is one
+  request where the walk is one per fifty entries, so a playlist that will be refused is refused
+  having spent the cheaper of the two. It is also the address `revision()` will read `snapshot_id`
+  from, so asked first it is where a walk can one day be skipped rather than merely preceded.
 - **Captured from `/items`, not `/tracks`.** Spotify's docs mark `/tracks` removed in favour of
   `/items`. Live they are aliases (finding 2), so this costs nothing today and survives the
   deprecation actually landing. For the same reason `normalize()` reads the `item` key.

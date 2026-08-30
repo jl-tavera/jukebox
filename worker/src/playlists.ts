@@ -106,7 +106,16 @@ export const readTracked = async (
 }
 
 /**
- * Moves a Playlist to the Version a Resolution just wrote.
+ * Moves a Playlist to the Version a Resolution just wrote, and to the name it
+ * just read.
+ *
+ * One statement, because they are one row catching up to one Resolution. A
+ * title written by a second statement could be the one a different attempt
+ * read, and a title written by no statement at all would leave the column that
+ * has had a name to hold since migration 0001 still holding nothing.
+ *
+ * Named rather than three positionals: `version` and `at` are both numbers,
+ * and nothing but the argument's place would say which was which.
  *
  * Called last, after the snapshot is written and head names it. A row saying
  * `ok` at a Version the cache cannot serve would be a Playlist the Tracks
@@ -116,12 +125,14 @@ export const readTracked = async (
 export const markResolved = async (
   db: D1Database,
   id: PlaylistId,
-  version: number,
-  at: number,
+  resolved: { version: number; title: string | null; at: number },
 ): Promise<void> => {
   await db
-    .prepare(`UPDATE playlists SET version = ?, status = 'ok', last_refreshed_at = ? WHERE id = ?`)
-    .bind(version, at, id)
+    .prepare(
+      `UPDATE playlists SET version = ?, title = ?, status = 'ok', last_refreshed_at = ?
+       WHERE id = ?`,
+    )
+    .bind(resolved.version, resolved.title, resolved.at, id)
     .run()
 }
 

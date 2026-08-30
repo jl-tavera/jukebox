@@ -44,6 +44,17 @@ type StubEntry =
   | { kind: 'not-a-recording' }
 
 /**
+ * What every stub Playlist is called. Every address reaches the same set, so
+ * they all share it -- what varies between stub Playlists is which Playlist
+ * they are, not what is in them or what it is called.
+ *
+ * A name rather than none, because a Source offering nothing usable is a real
+ * case and it is driven where the awkward shapes actually come from: against
+ * Spotify, at both of its seams.
+ */
+const SET_NAME = 'The Fixed Set'
+
+/**
  * The fixed set, invented rather than captured. Four entries, and the third is
  * not a recording -- so `skipped` carries a count something produced, and the
  * gap it leaves at index 2 is visible in the positions that survive. A Source
@@ -108,7 +119,7 @@ export const stub: PlaylistSource<StubEntry[]> = {
   fetch: async () => FIXED_SET,
 
   normalize: (entries) => {
-    const playlist: NormalizedPlaylist = { tracks: [], skipped: 0 }
+    const playlist: NormalizedPlaylist = { title: SET_NAME, tracks: [], skipped: 0 }
 
     entries.forEach((entry, position) => {
       if (entry.kind !== 'recording') {

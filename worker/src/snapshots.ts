@@ -23,9 +23,15 @@ export type SnapshotContents = Omit<PlaylistTracks, 'version'>
  * sites listing the same fields in a different order would compare unequal
  * while meaning the same thing, and the symptom would be a Version moving on
  * every Resolution for no reason anybody could see.
+ *
+ * The title is in here, so a Playlist renamed on its Source moves its Version
+ * even when its membership did not. That is right rather than incidental: the
+ * Version is the whole of a client's "am I current?", and a client holding a
+ * name the Source has since changed is not current.
  */
 const document = (version: number, contents: SnapshotContents): PlaylistTracks => ({
   version,
+  title: contents.title,
   skipped: contents.skipped,
   tracks: contents.tracks,
 })

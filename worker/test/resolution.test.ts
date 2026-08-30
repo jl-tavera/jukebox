@@ -54,7 +54,15 @@ describe('Resolution', () => {
     const response = await tracksOf('stub:served')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ version: 1, skipped: 1, tracks: TRACKS })
+    // Every stub address reaches the same fixed set, so every stub Playlist
+    // carries the same name. What a Source offering no usable name is served as
+    // is driven against Spotify, where the awkward shapes come from.
+    expect(await response.json()).toEqual({
+      version: 1,
+      title: 'The Fixed Set',
+      skipped: 1,
+      tracks: TRACKS,
+    })
   })
 
   it('names the answer with the Playlist Version, as a strong ETag', async () => {

@@ -196,7 +196,7 @@ components:
       description: |
         A Playlist's Tracks at one Version. The same document is what the server
         stores, so the bytes served are the bytes written.
-      required: [version, skipped, tracks]
+      required: [version, title, skipped, tracks]
       properties:
         version:
           type: integer
@@ -204,6 +204,13 @@ components:
             The Playlist's Version, and the ETag this answer carries. It moves
             whenever the Playlist's contents change, and it is the whole of the
             client's "am I current?".
+        title:
+          type: [string, 'null']
+          description: |
+            The Playlist's own name on its Source. `null` where the Source
+            offers none, or offers one that is only whitespace: a Playlist
+            with no usable name is served without one rather than under an
+            invented placeholder, which a client cannot tell from a real name.
         skipped:
           type: integer
           description: |

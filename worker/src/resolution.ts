@@ -32,7 +32,7 @@ export interface ResolutionMessage {
  *   1. the Tracks and their membership, into D1;
  *   2. the snapshot, under its own Version's key;
  *   3. head, naming that Version -- the moment the Tracks become servable;
- *   4. the Playlist row, catching up to the Version it now has.
+ *   4. the Playlist row, catching up to the Version and the name it now has.
  *
  * Head moving is what makes the answer visible, so everything the answer is
  * made of exists before it moves, and nothing that contradicts it exists
@@ -104,7 +104,12 @@ export const resolve = async (env: Env, id: PlaylistId): Promise<void> => {
     //
     // Nothing needs recording in D1 either: head exists only if `recordTracks`
     // completed on some earlier attempt, because it is first in the order above.
-    await markResolved(env.DB, id, served.version, at)
+    //
+    // The title goes with it, and is not stale: it came from this Resolution's
+    // own read of the Playlist, which happened whether or not anything else
+    // moved. Writing it only on the path below would leave a Playlist that never
+    // changes again holding the empty column it has held since migration 0001.
+    await markResolved(env.DB, id, { version: served.version, title: contents.title, at })
     return
   }
 
@@ -122,5 +127,5 @@ export const resolve = async (env: Env, id: PlaylistId): Promise<void> => {
   const version = Math.max(served?.version ?? 0, playlist.version) + 1
 
   await writeSnapshot(env.CACHE, id, version, contents)
-  await markResolved(env.DB, id, version, at)
+  await markResolved(env.DB, id, { version, title: contents.title, at })
 }

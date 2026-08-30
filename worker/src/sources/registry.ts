@@ -22,11 +22,22 @@ export type NormalizedTrack = Track
  * What `normalize` answers with. Everything downstream of it sees only this;
  * a Source's own vocabulary reaches no further.
  *
- * `title`, `owner` and the Source's own revision token are not here. Nothing
- * displays them and nothing re-resolves yet, and the interface grows a member
- * at a time rather than being stubbed ahead of its first use.
+ * `owner` and the Source's own revision token are still not here. Nothing
+ * displays an owner and nothing re-resolves yet, and the interface grows a
+ * member at a time rather than being stubbed ahead of its first use -- which
+ * is what `title` arriving alone, for the one client that displays it, is.
  */
 export interface NormalizedPlaylist {
+  /**
+   * What the Source calls this Playlist, so a client can tell a user which
+   * Playlist they added rather than showing them an identifier.
+   *
+   * `null` where the Source offers no usable name. Nothing downstream could
+   * tell an invented placeholder from a real title, and the one thing a caller
+   * needs to know about a Playlist that has no name is that it has none.
+   */
+  title: string | null
+
   tracks: NormalizedTrack[]
 
   /**

@@ -1,14 +1,19 @@
+import { env } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import type { PlaylistTracks } from '@jukebox/schema'
 import {
   CREDENTIALS,
   FIXTURE_BASIC,
   FIXTURE_BEARER,
+  FIXTURE_TITLE,
   TOKEN_ADDRESS,
   TOKEN_REQUEST,
   itemsAddress,
+  metadataAddress,
   pagesOf,
   spotifyServing,
+  spotifyServingNameless,
+  type StandingIn,
 } from '../src/sources/spotify/__fixtures__/network'
 import mixedEntries from '../src/sources/spotify/__fixtures__/mixed-entries.json'
 import multiPage0 from '../src/sources/spotify/__fixtures__/multi-page-offset-0.json'
@@ -37,19 +42,35 @@ import { createPlaylist, insteadOfTheNetwork, resolvePlaylist, tracksOf } from '
  * uses a different one, as the neighbouring suites do: it keeps what a test
  * left behind out of the next one's way even when they share storage.
  *
- * The pages default to the one captured single-page playlist, so a test that is
- * not about the walk says nothing about paging.
  */
-const resolveAgainstSpotify = async (sourceId: string, ...pages: ItemsResponse[]) => {
+const resolveWith = async (spotify: StandingIn, sourceId: string) => {
   await createPlaylist(`https://open.spotify.com/playlist/${sourceId}`)
 
-  const spotify = spotifyServing(...(pages.length > 0 ? pages : [onePage]))
   await insteadOfTheNetwork(spotify.answer, () =>
     resolvePlaylist(`spotify:${sourceId}`, CREDENTIALS),
   )
 
   return spotify
 }
+
+/**
+ * Against a Source answering out of the captured responses. The pages default
+ * to the one captured single-page playlist, so a test that is not about the
+ * walk says nothing about paging.
+ */
+const resolveAgainstSpotify = (sourceId: string, ...pages: ItemsResponse[]) =>
+  resolveWith(spotifyServing(...(pages.length > 0 ? pages : [onePage])), sourceId)
+
+/**
+ * Against a Source that will not say what the Playlist is called.
+ *
+ * One case here rather than the four `normalize.test.ts` drives. What is worth
+ * a whole Resolution is that an absent name reaches a reader as an absent
+ * title; which of the four ways the Source withheld it is decided one function
+ * in, and is tested there.
+ */
+const resolveAgainstNamelessSpotify = (sourceId: string) =>
+  resolveWith(spotifyServingNameless(onePage), sourceId)
 
 describe('a Spotify Playlist resolved against the Source', () => {
   it('comes back over HTTP as Tracks carrying a Version', async () => {
@@ -94,8 +115,11 @@ describe('how the consumer authenticates', () => {
     const { calls } = await resolveAgainstSpotify('7JQrxQmrwXvOnCdx7LNs07')
 
     // The captured token response carries a placeholder, so a request bearing
-    // anything else did not get its credential from that answer.
+    // anything else did not get its credential from that answer. Both reads are
+    // checked because there are two of them now, and one going out unsigned
+    // would come back 401 and read as a token the Source rejected.
     expect(calls[1]?.authorization).toBe(FIXTURE_BEARER)
+    expect(calls[2]?.authorization).toBe(FIXTURE_BEARER)
   })
 
   it('gets a fresh token for each Resolution rather than keeping one', async () => {
@@ -119,17 +143,17 @@ describe('the request the consumer makes for a playlist', () => {
     // shaped like one (MANIFEST.md finding 5); and no region is named, because
     // DESIGN section 05 caches one answer for every caller and a region-scoped
     // response would quietly make that cache region-specific.
-    expect(calls[1]?.url).toBe(itemsAddress('1AAAAAAAAAAAAAAAAAAAAA', 0))
+    expect(calls[2]?.url).toBe(itemsAddress('1AAAAAAAAAAAAAAAAAAAAA', 0))
   })
 
   it('stops after one page when the Source says there is no other', async () => {
     const { calls } = await resolveAgainstSpotify('5AAAAAAAAAAAAAAAAAAAAA')
 
-    // A token and a page, and no speculative second request: the walk asks for
-    // another page only when the Source said there is one. A playlist that fits
-    // on one page therefore costs exactly one page read, as it did before the
-    // walk existed.
-    expect(calls).toHaveLength(2)
+    // A token, the playlist's own metadata and a page, and no speculative
+    // second page: the walk asks for another only when the Source said there is
+    // one. A playlist that fits on one page therefore costs exactly one page
+    // read, as it did before the walk existed.
+    expect(calls).toHaveLength(3)
   })
 })
 
@@ -157,6 +181,7 @@ describe('a playlist longer than one page', () => {
     // finding 5.
     expect(calls.map((call) => call.url)).toEqual([
       TOKEN_ADDRESS,
+      metadataAddress('4AAAAAAAAAAAAAAAAAAAAA'),
       itemsAddress('4AAAAAAAAAAAAAAAAAAAAA', 0),
       itemsAddress('4AAAAAAAAAAAAAAAAAAAAA', 50),
     ])
@@ -176,6 +201,7 @@ describe('a playlist longer than one page', () => {
     expect(body.tracks.map((track) => track.position)).toEqual([...Array(200).keys()])
     expect(calls.map((call) => call.url)).toEqual([
       TOKEN_ADDRESS,
+      metadataAddress(id),
       ...[0, 50, 100, 150].map((offset) => itemsAddress(id, offset)),
     ])
   })
@@ -211,6 +237,66 @@ describe('the entries a playlist holds that are not Tracks', () => {
   })
 })
 
+describe('the name a Playlist has on its Source', () => {
+  it('survives the post, the Resolution and the read', async () => {
+    await resolveAgainstSpotify('1BBBBBBBBBBBBBBBBBBBBB')
+
+    const body = (await (await tracksOf('spotify:1BBBBBBBBBBBBBBBBBBBBB')).json()) as PlaylistTracks
+
+    // Written out rather than read from the fixture, for the reason every
+    // expected value in `normalize.test.ts` is: an assertion that reads the
+    // capture the way the code does agrees with it however wrong both are.
+    expect(body.title).toBe(FIXTURE_TITLE)
+  })
+
+  it('is read from the playlist itself, before any of its entries', async () => {
+    const { calls } = await resolveAgainstSpotify('2BBBBBBBBBBBBBBBBBBBBB')
+
+    // The plain address, with nothing appended, and ahead of the walk. Both
+    // are the adapter's decisions and `playlistMetadata` holds the reasons for
+    // them; what this pins is that they are still true -- which nothing short
+    // of the whole call list, in order, can say.
+    expect(calls.map((call) => call.url)).toEqual([
+      TOKEN_ADDRESS,
+      metadataAddress('2BBBBBBBBBBBBBBBBBBBBB'),
+      itemsAddress('2BBBBBBBBBBBBBBBBBBBBB', 0),
+    ])
+  })
+
+  it('is written to the Playlist row, which has had a column for it all along', async () => {
+    await resolveAgainstSpotify('3BBBBBBBBBBBBBBBBBBBBB')
+
+    // Nothing reads this column yet -- the served title comes out of the
+    // snapshot. It is written because the row is what says where a Playlist has
+    // got to, and one whose Tracks name it while D1 does not is a row the
+    // Refresh that eventually schedules these would have to read the Source
+    // again to complete.
+    const row = await env.DB.prepare('SELECT title FROM playlists WHERE id = ?')
+      .bind('spotify:3BBBBBBBBBBBBBBBBBBBBB')
+      .first<{ title: string | null }>()
+
+    expect(row?.title).toBe(FIXTURE_TITLE)
+  })
+})
+
+describe('a Playlist its Source offers no usable name for', () => {
+  it('is served without a title rather than under an invented one', async () => {
+    await resolveAgainstNamelessSpotify('4BBBBBBBBBBBBBBBBBBBBB')
+
+    const response = await tracksOf('spotify:4BBBBBBBBBBBBBBBBBBBBB')
+    const body = (await response.json()) as PlaylistTracks
+
+    // Resolved, served, and honest about the one thing it does not know. A
+    // placeholder would reach whoever saw it looking like a name somebody
+    // chose, and no reader could tell the two apart. `normalize.test.ts` drives
+    // the four shapes an unusable name arrives in; this drives what a reader is
+    // handed for one of them.
+    expect(response.status).toBe(200)
+    expect(body.title).toBeNull()
+    expect(body.tracks).toHaveLength(5)
+  })
+})
+
 describe('a playlist with nothing in it', () => {
   it('resolves to a Version carrying no Tracks, which is not the same as Pending', async () => {
     // Reachable for the first time here: every captured playlist has entries,
@@ -224,6 +310,6 @@ describe('a playlist with nothing in it', () => {
     const body = (await response.json()) as PlaylistTracks
 
     expect(response.status).toBe(200)
-    expect(body).toEqual({ version: 1, skipped: 0, tracks: [] })
+    expect(body).toEqual({ version: 1, title: FIXTURE_TITLE, skipped: 0, tracks: [] })
   })
 })

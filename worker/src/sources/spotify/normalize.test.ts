@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { normalize } from './normalize'
-import type { ItemsPage } from './payloads'
+import type { ItemsPage, PlaylistMetadata } from './payloads'
 import missingIsrc from './__fixtures__/missing-isrc.json'
 import mixedEntries from './__fixtures__/mixed-entries.json'
 import multiPage0 from './__fixtures__/multi-page-offset-0.json'
 import multiPage50 from './__fixtures__/multi-page-offset-50.json'
 import onePage from './__fixtures__/one-page.json'
+import playlistMetadata from './__fixtures__/playlist-metadata.json'
 import severalArtists from './__fixtures__/several-artists.json'
 
 /**
@@ -21,9 +22,22 @@ import severalArtists from './__fixtures__/several-artists.json'
  * construction and can never disagree.
  */
 
+/**
+ * `normalize` driven as a Resolution drives it: the captured playlist object
+ * standing behind the pages.
+ *
+ * Every suite but the last two is about the Tracks rather than about what the
+ * Playlist is called, so the metadata is supplied once here rather than at each
+ * call. It is the real capture, so those suites are driven by the same input the
+ * pipeline produces.
+ */
+const normalizedFrom = (...pages: readonly ItemsPage[]) =>
+  normalize({ metadata: playlistMetadata, pages })
+
 describe('a playlist that fits one page', () => {
   it('normalizes into Tracks the contract describes', () => {
-    expect(normalize([onePage])).toEqual({
+    expect(normalizedFrom(onePage)).toEqual({
+      title: 'Spotify Web API Testing playlist',
       skipped: 0,
       tracks: [
         {
@@ -92,7 +106,7 @@ describe('a playlist that fits one page', () => {
  */
 describe('entries the Source offered that are not Tracks', () => {
   it('leaves out a podcast episode, a local file and an unavailable entry', () => {
-    const { tracks } = normalize([mixedEntries])
+    const { tracks } = normalizedFrom(mixedEntries)
 
     expect(tracks.map((track) => track.sourceTrackId)).toEqual([
       '33QRau26GpW2wI24c4Qsj5',
@@ -102,11 +116,11 @@ describe('entries the Source offered that are not Tracks', () => {
   })
 
   it('counts them, so a shorter list than the Source shows is not data loss', () => {
-    expect(normalize([mixedEntries]).skipped).toBe(3)
+    expect(normalizedFrom(mixedEntries).skipped).toBe(3)
   })
 
   it('keeps the Source index, so what was skipped leaves a visible gap', () => {
-    const { tracks } = normalize([mixedEntries])
+    const { tracks } = normalizedFrom(mixedEntries)
 
     // Six entries in, three Tracks out, at the indexes they came from rather
     // than renumbered 0, 1, 2.
@@ -116,7 +130,7 @@ describe('entries the Source offered that are not Tracks', () => {
 
 describe('the artists of a Track', () => {
   it('is an array whether there are three, two or one', () => {
-    const { tracks } = normalize([severalArtists])
+    const { tracks } = normalizedFrom(severalArtists)
     const at = (position: number) => tracks.find((track) => track.position === position)
 
     // Three on one entry is what this donor was chosen for. One artist is the
@@ -127,7 +141,7 @@ describe('the artists of a Track', () => {
   })
 
   it('leaves out the local file this donor also happens to hold', () => {
-    const { tracks, skipped } = normalize([severalArtists])
+    const { tracks, skipped } = normalizedFrom(severalArtists)
 
     // 40 entries, one of them a local file at index 16.
     expect(tracks).toHaveLength(39)
@@ -166,14 +180,14 @@ describe('the cover image of a Track', () => {
       ],
     }
 
-    expect(normalize([page]).tracks[0]?.coverImageUrl).toBe('https://example.test/640.jpg')
+    expect(normalizedFrom(page).tracks[0]?.coverImageUrl).toBe('https://example.test/640.jpg')
   })
 
   it('is the 1280 one where the Source offers a size above its usual 640', () => {
     // MANIFEST.md describes album images as 640/300/64, and one entry across
     // every fixture is not: this one offers 1280. Pinned so that "largest"
     // cannot quietly become "the 640 one".
-    const { tracks } = normalize([severalArtists])
+    const { tracks } = normalizedFrom(severalArtists)
 
     expect(tracks.find((track) => track.position === 29)?.coverImageUrl).toBe(
       'https://i.scdn.co/image/ab6742d3000053b79fd6084bb1c8b4191205c4e8',
@@ -187,7 +201,7 @@ describe('a Track the Source holds no ISRC for', () => {
     // lacking an ISRC was found across 91 public playlists, so one had to be
     // constructed to reach this branch as a real track rather than as the
     // local file that naturally exhibits it. MANIFEST.md finding 3.
-    const { tracks } = normalize([missingIsrc])
+    const { tracks } = normalizedFrom(missingIsrc)
 
     expect(tracks).toHaveLength(1)
     expect(tracks[0]?.isrc).toBeNull()
@@ -196,7 +210,7 @@ describe('a Track the Source holds no ISRC for', () => {
 
 describe('what a Track does not carry', () => {
   it('leaves the Source its own vocabulary', () => {
-    const [track] = normalize([onePage]).tracks
+    const [track] = normalizedFrom(onePage).tracks
 
     // `popularity`, `preview_url` and `available_markets` are in the captured
     // input on purpose, so that this assertion has something to be about.
@@ -223,7 +237,7 @@ describe('what a Track does not carry', () => {
  */
 describe('a playlist the Source answered in more than one page', () => {
   it('reads as one list, in the order the pages were read', () => {
-    const { tracks, skipped } = normalize([multiPage0, multiPage50])
+    const { tracks, skipped } = normalizedFrom(multiPage0, multiPage50)
 
     // 50 entries then 19, none of them skipped. Position runs unbroken across
     // the join, so nothing restarts at 0 when the second page begins.
@@ -233,7 +247,7 @@ describe('a playlist the Source answered in more than one page', () => {
   })
 
   it('carries the first Track of the second page at its own index', () => {
-    const { tracks } = normalize([multiPage0, multiPage50])
+    const { tracks } = normalizedFrom(multiPage0, multiPage50)
 
     expect(tracks[50]).toMatchObject({
       sourceTrackId: '1FG7ZjnuT0O9CsDKOxND0E',
@@ -267,9 +281,56 @@ describe('a Track whose entry carries no album', () => {
       ],
     }
 
-    expect(normalize([page]).tracks[0]).toMatchObject({
+    expect(normalizedFrom(page).tracks[0]).toMatchObject({
       album: null,
       coverImageUrl: null,
     })
+  })
+})
+
+/**
+ * The Playlist's own name -- the one thing `normalize` reads from outside the
+ * pages. The awkward cases are here for the reason the header gives: they are
+ * combinatorial, and a placeholder that leaked into a title would otherwise be
+ * reported as an HTTP assertion three layers from the branch that made it.
+ */
+describe('the title of a Playlist', () => {
+  it('is trimmed, so a name that merely looks padded is not stored padded', () => {
+    // ADR-0004 has the client derive a Library folder name from this, and a
+    // trailing space is a filesystem hazard on the platform DESIGN section 06
+    // names as the primary one. Trimming is not inventing a name; padding one
+    // back out would be.
+    const padded: PlaylistMetadata = { name: '  Wellness & Dreaming Source  ' }
+
+    expect(normalize({ metadata: padded, pages: [onePage] }).title).toBe(
+      'Wellness & Dreaming Source',
+    )
+  })
+})
+
+describe('a Playlist its Source offers no usable name for', () => {
+  // Four ways of offering nothing. The whitespace one is what an implementation
+  // is likeliest to let through -- '   ' is a truthy string, so `name ?? null`
+  // passes it on and only trimming refuses it.
+  it.each([
+    ['no name at all', {}],
+    ['a name the Source sent as null', { name: null }],
+    ['an empty name', { name: '' }],
+    ['a name of nothing but whitespace', { name: '   ' }],
+  ])('carries no title rather than an invented one, given %s', (_, metadata: PlaylistMetadata) => {
+    // Never a placeholder, and never the id or the address dressed as one:
+    // either would reach whoever saw it looking like the name its owner chose,
+    // and nothing downstream could tell the invention from the fact.
+    expect(normalize({ metadata, pages: [onePage] }).title).toBeNull()
+  })
+
+  it('still normalizes into its Tracks', () => {
+    // A name is not what a Playlist is for. A Source that will not say what one
+    // is called has still said what is in it, and the entries are untouched by
+    // the absence -- which is the whole of "still resolves and is served".
+    const { tracks, skipped } = normalize({ metadata: {}, pages: [onePage] })
+
+    expect(tracks).toHaveLength(5)
+    expect(skipped).toBe(0)
   })
 })
