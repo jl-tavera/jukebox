@@ -37,5 +37,9 @@ jobs:
         run: bun run --cwd worker types --check
 
       - run: bun run --cwd schema typecheck
+      # schema is the contract both other surfaces read, so its checks live
+      # here rather than in each of theirs. This workflow is filtered on
+      # schema/** too, so a change to it is still caught -- once.
+      - run: bun run --cwd schema test
       - run: bun run --cwd worker typecheck
       - run: bun run --cwd worker test
