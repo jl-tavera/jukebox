@@ -1,5 +1,7 @@
 import { renderUsage, runCommand, type ArgsDef, type CommandDef, type Resolvable } from 'citty'
+import { BootStop, lazily, type Session } from './boot'
 import { reportVersion } from './commands/version'
+import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
 import { selectMode } from './mode'
 import { failed, succeeded, type Renderable } from './outcome'
@@ -8,24 +10,58 @@ import { root as jukebox } from './root'
 import { JSON_STABILITY, VERSION } from './version'
 
 /**
+ * The things a caller may replace, and the only ones.
+ *
+ * `root` was already here as a bare third parameter; `discovery` joins it
+ * because it is the same category of thing -- something a test replaces to
+ * reach a path the real program has no way to reach -- and two anonymous
+ * positionals of that category is one too many. `test/harness.ts`'s own
+ * `Options` is the precedent for naming them rather than counting them.
+ *
+ * Not an environment variable. `JUKEBOX_API` is a documented affordance a
+ * developer is meant to reach for; this is where the program's single
+ * compiled-in address lives, and making that configurable at runtime would ship
+ * a second address override the documentation would then have to explain the
+ * difference between.
+ */
+export type Seams = {
+  /** A command tree of the caller's own. See the note on `main`. */
+  root?: CommandDef
+  /** Where the discovery document is read from. The site's own address by default. */
+  discovery?: string
+}
+
+/**
  * The whole of the program, and the only thing that decides anything.
  *
  * It returns an exit code rather than taking one, and takes its streams rather
  * than reaching for them, so a test drives exactly the path a shell drives with
- * no process to spawn. `root` is injectable for the same reason
- * `worker/test/api.ts` hands the worker bindings of a test's own: it reaches
+ * no process to spawn. The seams are injectable for the same reason
+ * `worker/test/api.ts` hands the worker bindings of a test's own: they reach
  * paths the real tree has no way to reach, and nothing in here is shaped
  * differently because of it.
  *
  * The shape is compute, then render. Every command returns one result object
  * and prints nothing on the way, which is what makes machine output a property
- * of this function rather than something added to each command later.
+ * of this function rather than something added to each command later. A warning
+ * raised on the way is carried out to `render` rather than printed where it
+ * arose, so that this stays true of warnings too and `render` stays the only
+ * thing that writes.
  */
-export const main = async (argv: string[], io: Io, root: CommandDef = jukebox): Promise<number> => {
+export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<number> => {
   const mode = selectMode(asked(argv, JSON_FLAGS), io)
 
-  const renderable = await compute(argv, root)
-  render(renderable, mode, VERSION, io)
+  // Collected rather than printed where they arise, so that `render` stays the
+  // only thing that writes and the shape stays compute-then-render. A warning
+  // emitted from inside the boot would be a second writer, and the first crack
+  // in the property that makes machine output belong to this function.
+  const warnings: string[] = []
+  const session: Session = {
+    backend: lazily(seams.discovery ?? DISCOVERY_URL, (text) => void warnings.push(text)),
+  }
+
+  const renderable = await compute(argv, seams.root ?? jukebox, session)
+  render(renderable, mode, VERSION, io, warnings)
 
   // Zero for every answer the CLI was built to give, non-zero only where the
   // CLI itself could not give one. When Sync lands, all five of the server's
@@ -61,7 +97,11 @@ const asked = (argv: string[], flags: string[]): boolean => {
   return false
 }
 
-const compute = async (argv: string[], root: CommandDef): Promise<Renderable> => {
+const compute = async (
+  argv: string[],
+  root: CommandDef,
+  session: Session,
+): Promise<Renderable> => {
   try {
     const named = await dispatch(argv, root)
 
@@ -92,7 +132,14 @@ const compute = async (argv: string[], root: CommandDef): Promise<Renderable> =>
       )
     }
 
-    const { result } = await runCommand(named.command, { rawArgs: named.rest })
+    const { result } = await runCommand(named.command, {
+      rawArgs: named.rest,
+      // citty hands this straight to `ctx.data`. A thunk rather than a booted
+      // backend, because that is what makes "commands that read only local
+      // state work with no network at all" a property of the shape rather than
+      // a list somebody has to keep in step with the command tree.
+      data: session,
+    })
 
     // citty types a command's return as `any`, so this is the one place the
     // shape every command promises is taken on trust. Checked rather than cast,
@@ -105,6 +152,14 @@ const compute = async (argv: string[], root: CommandDef): Promise<Renderable> =>
     return result
   } catch (error) {
     const cause = error instanceof Error ? error : new Error(String(error))
+
+    // A boot that stopped, which is a decision rather than a fault: the version
+    // gate refused, the backend said it was down, or there was no way to find
+    // out where the backend is. Recognised with `instanceof` where citty's
+    // error below is recognised by name, and the difference is not taste --
+    // citty does not export its class and this one is ours, so the stronger
+    // check is available here and a rename cannot quietly stop it being caught.
+    if (cause instanceof BootStop) return failed('jukebox', cause.code, cause.message)
 
     // citty's own error, which it raises for an argument vector it cannot
     // parse. The class is not exported, so it is recognised by name. A usage

@@ -37,6 +37,28 @@ export type Options = {
   stdin?: boolean
   /** A command tree of this test's own, for the paths the real one cannot reach. */
   root?: CommandDef
+  /**
+   * The home this run is given. A fresh one unless a test hands one over.
+   *
+   * Handing one over is how two runs come to share a saved discovery document,
+   * and so the only way anything about caching is reachable at all: without it
+   * every run starts from an empty directory and the second one can never find
+   * what the first one wrote.
+   */
+  home?: string
+  /** Where the discovery document is read from. The site's own address by default. */
+  discovery?: string
+  /** Variables set for the length of this run and put back after, as the home already is. */
+  env?: Record<string, string | undefined>
+  /**
+   * Runs after the home exists and before `main` does, against the locations
+   * this run resolved to.
+   *
+   * This is how a test ages a saved document -- by editing a number in a file
+   * the CLI wrote itself -- rather than by handing the CLI a clock it would then
+   * have to carry in production for a test's sake.
+   */
+  prepare?: (locations: Locations) => void
 }
 
 const homes: string[] = []
@@ -71,7 +93,7 @@ export const jukebox = async (argv: string[], options: Options = {}): Promise<Ru
 }
 
 const runOnce = async (argv: string[], options: Options): Promise<Run> => {
-  const home = temporaryHome('jukebox-')
+  const home = options.home ?? temporaryHome('jukebox-')
 
   let stdout = ''
   let stderr = ''
@@ -82,15 +104,40 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
     stdinIsTty: options.stdin ?? true,
   }
 
-  const before = process.env[HOME_VARIABLE]
-  process.env[HOME_VARIABLE] = home
+  const restore = forThisRun({ ...options.env, [HOME_VARIABLE]: home })
 
   try {
-    const code = await main(argv, io, options.root)
-    return { stdout, stderr, code, home, locations: locations() }
+    const where = locations()
+    options.prepare?.(where)
+
+    const code = await main(argv, io, { root: options.root, discovery: options.discovery })
+    return { stdout, stderr, code, home, locations: where }
   } finally {
-    if (before === undefined) delete process.env[HOME_VARIABLE]
-    else process.env[HOME_VARIABLE] = before
+    restore()
+  }
+}
+
+/**
+ * Sets each variable for the length of one run and puts the environment back
+ * exactly as it was found, including the ones that were not set at all.
+ *
+ * The unsetting is the half that is easy to leave out and expensive to leave
+ * out. A variable one test set would otherwise still be set for the next, and
+ * the run that then failed would be the one that never mentioned it.
+ */
+const forThisRun = (values: Record<string, string | undefined>): (() => void) => {
+  const before = Object.keys(values).map((name) => [name, process.env[name]] as const)
+
+  for (const [name, value] of Object.entries(values)) {
+    if (value === undefined) delete process.env[name]
+    else process.env[name] = value
+  }
+
+  return () => {
+    for (const [name, value] of before) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
   }
 }
 
