@@ -43,6 +43,10 @@ _Avoid_: Song, item, entry
 How many entries a source offered that never became tracks — podcast episodes, local files, entries the source will no longer serve. Counted rather than dropped silently, so a list shorter than the source's does not read as data loss. Position keeps the source's own index, so a skip leaves a visible gap rather than renumbering what follows.
 _Avoid_: Dropped, filtered, ignored; and the client's per-track `skipped` state (that is a track whose match has tier `none` — this is an entry that never became one)
 
+**Removed**:
+A Track the Source no longer lists in a Playlist. Its local record is kept, along with the moment it left, and the word never implies a file was deleted. Distinct from **Skipped**, which never became a Track, and from **Gone**, which describes a Playlist rather than a Track.
+_Avoid_: Flagged (names the consequence for a file, not the membership fact), deleted, dropped
+
 **Catalog**:
 An open music service holding openly licensed, downloadable recordings — Jamendo, Free Music Archive, Internet Archive, ccMixter, Musopen.
 _Avoid_: Library, provider
@@ -61,6 +65,10 @@ _Avoid_: Confidence, quality, rating
 **Library**:
 The user's local folder of downloaded audio. It belongs to the user: Jukebox flags files, and only ever deletes them on an explicit command.
 _Avoid_: Collection, catalog (a catalog is upstream and open; a library is local and the user's)
+
+**Mirror**:
+The client's local record of the Playlists a user tracks and the Tracks in them. Authoritative for local state only: it can always be rebuilt from the **Library** and a server snapshot. A Playlist can be tracked upstream without being in any given Mirror.
+_Avoid_: Cache (a cache may be discarded without loss; this is authoritative), store, state
 
 **Version**:
 A per-playlist counter that increases whenever that playlist's contents change. It is the whole of "am I current?" — the client stores the last version it saw, and a sync that finds the same number has nothing to do.
