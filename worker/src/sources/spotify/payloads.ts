@@ -1,6 +1,7 @@
 /**
- * What Spotify's playlist items endpoint returns, as far as this adapter reads
- * it. Only the fields Resolution uses are declared -- the payload carries many
+ * What Spotify's playlist endpoints return -- the playlist itself, and its
+ * items -- as far as this adapter reads them. Only the fields Resolution uses
+ * are declared -- the payload carries many
  * more, and `__fixtures__/MANIFEST.md` records which of them the captures keep
  * and why.
  *
@@ -86,4 +87,46 @@ export interface ItemsResponse extends ItemsPage {
    * finding 5, and the reason `itemsPage` addresses every page itself.
    */
   readonly next: string | null
+}
+
+/**
+ * The playlist object itself -- what `GET /playlists/{id}` answers, as far as
+ * this adapter reads it, which is its name and nothing else.
+ *
+ * `owner` and `snapshot_id` are in the captured response and are deliberately
+ * not declared: `NormalizedPlaylist` has nowhere to put either yet, and a
+ * field declared here would read as one something downstream can use.
+ *
+ * `name` is optional and nullable although every captured response carries a
+ * string, for the reason `Item.type` is a plain string rather than a union: it
+ * arrives off a network, and what it means is `normalize`'s to decide rather
+ * than the compiler's to assume.
+ */
+export interface PlaylistMetadata {
+  readonly name?: string | null
+}
+
+/**
+ * One whole playlist read: what the playlist says about itself, and the entries
+ * it holds. Two endpoints, because Spotify serves them from two.
+ *
+ * As much of a read as `normalize` reads, which is what the pages being
+ * `ItemsPage` says -- a test can hand it a name and two entries and nothing
+ * else, which is how the cases only `normalize` decides are driven.
+ */
+export interface PlaylistRead {
+  readonly metadata: PlaylistMetadata
+  readonly pages: readonly ItemsPage[]
+}
+
+/**
+ * The same read as `fetch` answers it, its pages carrying the one field beyond
+ * the entries that the walk needs.
+ *
+ * Separate from `PlaylistRead` for the reason `ItemsResponse` is separate
+ * from `ItemsPage`, and by the same means: the wider shape narrows one member
+ * of the shape it extends, so what the two have in common is written once.
+ */
+export interface FetchedPlaylist extends PlaylistRead {
+  readonly pages: readonly ItemsResponse[]
 }

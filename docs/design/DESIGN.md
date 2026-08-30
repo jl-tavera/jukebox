@@ -302,7 +302,7 @@ interface NormalizedTrack {
 
 interface NormalizedPlaylist {
   sourceId: string
-  title: string
+  title: string | null   // null where the source offers no usable name
   owner: string | null
   revision: string | null
   tracks: NormalizedTrack[]

@@ -1,5 +1,5 @@
 import type { NormalizedPlaylist, NormalizedTrack } from '../registry'
-import type { Image, ItemsPage } from './payloads'
+import type { Image, PlaylistRead } from './payloads'
 
 /**
  * Source-shaped to domain-shaped. Pure and synchronous, which is what lets the
@@ -9,8 +9,11 @@ import type { Image, ItemsPage } from './payloads'
  *
  * It takes the pages rather than one page so that reading a longer playlist is
  * a change to how they are fetched and not to what they mean.
+ *
+ * It takes what the playlist says about itself alongside them, because the title
+ * is the one thing normalized here that no entry has a say in.
  */
-export const normalize = (pages: readonly ItemsPage[]): NormalizedPlaylist => {
+export const normalize = ({ metadata, pages }: PlaylistRead): NormalizedPlaylist => {
   const tracks: NormalizedTrack[] = []
   let skipped = 0
 
@@ -54,8 +57,29 @@ export const normalize = (pages: readonly ItemsPage[]): NormalizedPlaylist => {
     })
   })
 
-  return { tracks, skipped }
+  return { title: playlistTitle(metadata.name), tracks, skipped }
 }
+
+/**
+ * The Source's name for the Playlist, or `null` where what it offered does not
+ * amount to one.
+ *
+ * Absent, empty and whitespace-only are one answer because they are one fact:
+ * the Source has no name to give. Trimming first is what makes them one case
+ * rather than three -- and what stops the same name typed with a trailing space
+ * being a different title from the name without it, which matters because
+ * ADR-0004 has the client cut a Library folder name out of this.
+ *
+ * `||` rather than `??`, deliberately: the empty string is one of the values
+ * that becomes `null`, not a name that happens to be short.
+ *
+ * Never a placeholder. "Untitled playlist", the Source's id, the address --
+ * each would arrive downstream indistinguishable from a name somebody chose,
+ * and nothing past this point could tell the invention from the fact. An absent
+ * title is something a client can decide what to show for; a convincing one is
+ * not.
+ */
+const playlistTitle = (name: string | null | undefined): string | null => name?.trim() || null
 
 /**
  * The widest image the Source offers, destined for file tags -- downscaling

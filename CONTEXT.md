@@ -29,7 +29,8 @@ _Avoid_: Pull, fetch
 ### The things
 
 **Playlist**:
-A tracked collection of tracks, identified by its public URL on a source. Jukebox never owns a playlist; it mirrors one.
+A tracked collection of tracks, identified by its public URL on a source. Jukebox never owns a playlist; it mirrors one. Its **title** is what the source calls it, and is absent where the source offers nothing usable — never a placeholder, which nobody downstream could tell from a real title.
+_Avoid_: A field or column called `name` — that is the source's own word for it, and ours is `title`. Either word is fine in prose.
 
 **Source**:
 A service a playlist is mirrored from — Spotify, later Apple Music and YouTube. Pluggable behind an adapter.
@@ -71,7 +72,7 @@ The client's local record of the Playlists a user tracks and the Tracks in them.
 _Avoid_: Cache (a cache may be discarded without loss; this is authoritative), store, state
 
 **Version**:
-A per-playlist counter that increases whenever that playlist's contents change. It is the whole of "am I current?" — the client stores the last version it saw, and a sync that finds the same number has nothing to do.
+A per-playlist counter that increases whenever that playlist's contents change. A playlist's title is part of what a version names, so a rename moves it too — a client holding the old title is not current. It is the whole of "am I current?" — the client stores the last version it saw, and a sync that finds the same number has nothing to do.
 _Avoid_: Revision (a revision is the source's own opaque change token), timestamp, hash
 
 ### Playlist status

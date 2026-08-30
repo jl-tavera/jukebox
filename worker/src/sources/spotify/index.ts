@@ -1,7 +1,7 @@
 import { PlaylistGone } from '../gone'
 import type { PlaylistSource } from '../registry'
 import { normalize } from './normalize'
-import type { ItemsResponse } from './payloads'
+import type { FetchedPlaylist, ItemsResponse, PlaylistMetadata } from './payloads'
 
 /**
  * The Spotify Source adapter. Reached only through the registry: nothing
@@ -130,6 +130,54 @@ const accessToken = async (env: Env): Promise<string> => {
 }
 
 /**
+ * The one status that says something about the Playlist rather than about us or
+ * about Spotify. A deleted playlist, a private one and one Spotify curates
+ * itself all answer 404 -- `gone-404.json` and `curated-404.json` are byte for
+ * byte identical captures of two of the three -- so one answer covers them, and
+ * none of them is helped by asking again.
+ *
+ * Built here rather than at each of the two reads below, so neither can say
+ * something different about the same Playlist. Only the items read has a
+ * captured 404 behind it; that the playlist's own address answers the same way
+ * is inference, and `__fixtures__/MANIFEST.md` records it as inference.
+ */
+const gone = (sourceId: string) => new PlaylistGone(`Spotify does not have a playlist ${sourceId}`)
+
+/**
+ * What the playlist says about itself, which is where its name comes from.
+ *
+ * The plain address, carrying no query at all. That is how
+ * `__fixtures__/capture.ts` captured `playlist-metadata.json`, and a request
+ * differing from the one the fixtures describe is one nothing has evidence
+ * about -- the same rule `itemsPage` writes its query out longhand for. No
+ * `fields` projection for that reason, and none is wanted: the whole object is
+ * under a kilobyte.
+ *
+ * Read before the walk. Both orders meet a Gone Playlist in their first
+ * request, but this is one request where the walk is one per fifty entries, so
+ * a Playlist that will be refused is refused having spent the cheaper of the
+ * two. It is also the address a future `revision()` reads `snapshot_id` from --
+ * asked first, this is where a walk can one day be skipped rather than merely
+ * preceded.
+ */
+const playlistMetadata = async (sourceId: string, bearer: string): Promise<PlaylistMetadata> => {
+  const response = await fetch(`${API}/playlists/${sourceId}`, {
+    headers: { authorization: `Bearer ${bearer}` },
+  })
+
+  if (response.status === 404) throw gone(sourceId)
+
+  // About the credential, the rate or Spotify's own health rather than about
+  // the Playlist, exactly as on a page read: thrown plainly, so the queue
+  // delivers the Resolution again.
+  if (!response.ok) {
+    throw new Error(`Spotify would not describe playlist ${sourceId}: ${response.status}`)
+  }
+
+  return response.json<PlaylistMetadata>()
+}
+
+/**
  * One request's worth of playlist entries.
  *
  * The page is addressed by `offset` rather than by following the `next` link
@@ -166,14 +214,7 @@ const itemsPage = async (
 
   const response = await fetch(address, { headers: { authorization: `Bearer ${bearer}` } })
 
-  // The one status that says something about the Playlist rather than about us
-  // or about Spotify. A deleted playlist, a private one and one Spotify curates
-  // itself all answer 404 -- `gone-404.json` and `curated-404.json` are byte for
-  // byte identical captures of two of the three -- so one answer covers them,
-  // and none of them is helped by asking again.
-  if (response.status === 404) {
-    throw new PlaylistGone(`Spotify does not have a playlist ${sourceId}`)
-  }
+  if (response.status === 404) throw gone(sourceId)
 
   // Everything else is about the credential we sent, the rate we sent it at, or
   // Spotify's own health: a 401, a 403, a 429, a 500. None of those is a fact
@@ -186,7 +227,7 @@ const itemsPage = async (
   return response.json<ItemsResponse>()
 }
 
-export const spotify: PlaylistSource<ItemsResponse[]> = {
+export const spotify: PlaylistSource<FetchedPlaylist> = {
   id: 'spotify',
 
   claims: (url) => sourceIdFrom(url) !== undefined,
@@ -204,6 +245,9 @@ export const spotify: PlaylistSource<ItemsResponse[]> = {
   /**
    * The one expensive call, reached only from the Resolution consumer.
    *
+   * Two reads: the playlist itself, then its entries. The first is where the
+   * name comes from and `playlistMetadata` says why it goes first.
+   *
    * The pages are answered rather than flattened here, so what `normalize`
    * reads is what Spotify actually said and in the order it was asked for.
    *
@@ -214,6 +258,7 @@ export const spotify: PlaylistSource<ItemsResponse[]> = {
    */
   fetch: async (sourceId, env) => {
     const bearer = await accessToken(env)
+    const metadata = await playlistMetadata(sourceId, bearer)
     const pages: ItemsResponse[] = []
 
     for (let offset = 0; offset < WALK_CEILING; offset += PAGE_SIZE) {
@@ -224,7 +269,7 @@ export const spotify: PlaylistSource<ItemsResponse[]> = {
       // followed. Counting entries against `total` would work as well until the
       // playlist changed under the walk; this is the field Spotify computes for
       // the window actually asked for.
-      if (page.next === null) return pages
+      if (page.next === null) return { metadata, pages }
 
       // Spotify named another page and gave nothing to place it after. Trusting
       // `next` and asking again would loop; stopping would hand back a short

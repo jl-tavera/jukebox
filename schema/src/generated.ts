@@ -78,6 +78,13 @@ export interface components {
              */
             version: number;
             /**
+             * @description The Playlist's own name on its Source. `null` where the Source
+             *     offers none, or offers one that is only whitespace: a Playlist
+             *     with no usable name is served without one rather than under an
+             *     invented placeholder, which a client cannot tell from a real name.
+             */
+            title: string | null;
+            /**
              * @description How many entries the Source offered that are not Tracks -- podcast
              *     episodes, local files, entries it will no longer serve. They are
              *     left out of `tracks`, and counted here so that a shorter list than
