@@ -30,3 +30,13 @@ export type PlaylistId = components['schemas']['PlaylistId']
 
 /** Where a Playlist is in its lifecycle: `CONTEXT.md`'s Pending / Unreachable / Gone. */
 export type PlaylistStatus = components['schemas']['PlaylistStatus']
+
+/**
+ * The document the site publishes and the CLI reads on boot. Not an API path --
+ * the site serves it and the worker does not -- so it is declared by hand
+ * rather than generated. See `./discovery`.
+ */
+export type { DiscoveryDocument, DiscoveryStatus } from './discovery'
+
+/** The publish-time check on that document. Strict on purpose; see `./discovery`. */
+export { discoveryProblems } from './discovery'

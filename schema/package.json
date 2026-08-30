@@ -7,9 +7,11 @@
   },
   "scripts": {
     "generate": "openapi-typescript openapi.yaml -o src/generated.ts",
-    "typecheck": "tsc --noEmit"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.0",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.0"
   }

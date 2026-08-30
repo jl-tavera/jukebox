@@ -50,3 +50,21 @@ for the API's contract; nothing stops a script too old for the CLI's output shap
 detects one. A scripter who does not read the version field gets a silent misparse, which is the
 accepted cost of not building a second version negotiation for an interface that will be frozen
 before it has many users.
+
+## Amendment, 2026-08-30: the discovery document does go in `schema/`
+
+#31 put `DiscoveryDocument` in `schema/`, which reads at a glance like the option this ADR
+rejected. It is not, and the difference is worth stating so nobody undoes one by citing the other.
+
+The rejection above turns on one sentence: *"the worker neither writes this shape nor reads it."*
+That is a test about how many surfaces a shape crosses, not about which two. The CLI's output
+envelope is written by the CLI and read by whoever runs it — one surface, so `schema/` would have
+been a shared home for something nothing shares. The discovery document is written by the site and
+read by the CLI. Two surfaces, deploying separately, able to drift. That is the same situation the
+API contract is in, and `CLAUDE.md` sends it to the same place.
+
+The second half of the rejection holds too, and is why the document is a hand-written type rather
+than a path in `openapi.yaml`: nothing generates against it, because the API does not serve it.
+
+Both shapes stay where they are. The envelope moves into `schema/` on the day something other than
+the CLI generates against it — which is what this ADR already said.

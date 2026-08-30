@@ -1,0 +1,12 @@
+{
+  // The tests need `bun:test`, and loading Bun's types loads Node's with them.
+  // That has to stay out of the config above: `src/` is compiled bare on
+  // purpose, because it is the only check that catches this package reaching
+  // for an ambient global. Every surface that imports it has DOM, Node or
+  // Workers types loaded, so none of their typechecks would notice.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["test/**/*.ts"]
+}
