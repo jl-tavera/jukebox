@@ -512,6 +512,10 @@ The API URL is not compiled into the binary. On boot the CLI reads `discovery.js
 
 Step 4 is the whole point of the `message` field. During an outage the user should read a sentence written by a human, not a stack trace or a JSON parse error from a 502 error page.
 
+**Where it is actually served, as of #31.** `jukebox.dev` is registered to somebody else, so the two addresses above are the intended ones rather than the live ones. The site deploys to `jukebox-site.<account>.workers.dev`, the document is at `/discovery.json` there, and the `api` it names is the staging API Worker's own workers.dev address. A client hardcoding `https://jukebox.dev/discovery.json` today reaches nothing. `docs/design/SITE.md` §08 tracks the domain; the `min_version` example above is `0.4.0` for illustration and the published document names `0.1.0`.
+
+The shape is declared in `schema/`, as `DiscoveryDocument` — the site writes it and the CLI reads it, so it is a contract between two surfaces exactly as the API is. `schema/` also owns the publish-time check the site's CI runs over the file it exports. That check is deliberately stricter than a client should be: see `discoveryProblems`.
+
 ### Breaking-change procedure
 
 Order matters, and it is counterintuitive:

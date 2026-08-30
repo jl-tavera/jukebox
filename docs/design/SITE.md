@@ -30,19 +30,23 @@ Design decisions here are mostly **Proposed**. The exceptions are marked, and th
 
 ## 01 · What the site is for
 
-The site Worker serves five things. Only the first is built today.
+The site Worker serves five things. Two are built today.
 
 | Artifact | Purpose | Built? |
 |---|---|---|
 | `/` | The landing page. Show what this is, hand over the install command. | yes |
 | `install.sh` | What `curl \| sh` fetches. | no — §08 |
-| `discovery.json` | Read by every installed CLI on boot. The API URL, `min_version`, kill switch. | no — §08 |
+| `discovery.json` | Read by every installed CLI on boot. The API URL, `min_version`, kill switch. | yes |
 | `/docs` | Longer-form usage. | no — §08 |
 | `/status` | Coverage stats. Listed under `README.md` "Later". | no — §08 |
 
 **The site and the API are separate Workers, and the site carries the fallback.** `install.sh` and `discovery.json` must stay reachable when `api.jukebox.dev` is entirely down, because `discovery.json` is where the outage message a human wrote gets read from. *(Invariant — `DESIGN.md` §07, `CLAUDE.md`.)*
 
 The practical consequence for this surface: **static export only.** No SSR, no server components requiring a runtime, no route handlers, no server actions. A site that needs a running Next.js process to render is a site that can fail, and the whole reason it is a second Worker is that it must not. *(Invariant — `CLAUDE.md`.)*
+
+**What `discovery.json` names today, and why that was allowed to ship.** §08 used to hold this artifact open, on the grounds that a document pointing at an API that does not exist would be worse than shipping none — a CLI reading it would resolve a dead host instead of failing at a clearly missing file. That bar is about *reachability*, not about which environment answers it, and the published document clears it: `api` names the staging API Worker, which is deployed and serving the contract's own error envelope. A CLI following it reaches a real API.
+
+What the document does not yet name is a *stable* address, and that is the one thing it was never required to. The address being data rather than a compiled-in constant is the entire point of `DESIGN.md` §07 — moving it later costs one edited line and a deploy, with no client release and nothing to migrate. `min_version` is `0.1.0`, the first release, so the gate is exercised from the beginning rather than switched on once it already matters.
 
 ### What the landing page has to accomplish
 
@@ -217,6 +221,7 @@ Not aspirations. A build that misses one of these is not finished.
 | Keyboard | Both controls reachable, with a visible focus ring in both themes |
 | Reduced motion | `prefers-reduced-motion: reduce` leaves a solid cursor |
 | Theme flash | None, on hard reload, in either theme |
+| **Discovery document published** | `out/discovery.json` exists and satisfies `DiscoveryDocument` from `schema/`. Checked by `bun run --cwd site check:discovery`, which reads the export rather than `public/` — a correct source file that never gets copied is a CLI that cannot boot. Run by CI and again by `deploy`, because the edit this file is most likely to receive is a kill switch flipped by hand, and that edit never opens a pull request. |
 | Static export | `out/` is complete and serves standalone with no Next.js runtime |
 | No webfont | `out/` contains no font files and the HTML preloads none |
 
@@ -246,7 +251,7 @@ The first is the one to actually measure rather than eyeball — a per-glyph fon
 
 **`install.sh` hosting and contents.** The README already publishes the `curl | sh` line, so the URL is a commitment. The script needs a release to install and there are no releases. Blocks nothing on the landing page; blocks the page being truthful the moment anyone runs the command.
 
-**`discovery.json`.** `DESIGN.md` §07 specifies the shape. Shipping one that points at an API that does not exist would be worse than shipping none — a CLI reading it would resolve a dead host instead of failing at a clearly missing file. Ships with the API.
+**The domain is not ours.** `jukebox.dev` is registered to somebody else. Every document in this repo names it — `README.md`'s `curl | sh` line, `DESIGN.md` §07's `https://jukebox.dev/discovery.json`, `app/layout.tsx`'s `metadataBase`, `openapi.yaml`'s server entry — and none of it resolves. So the site deploys to `jukebox-site.<account>.workers.dev` and that is where `discovery.json` is served from today. This is a naming decision rather than a technical one, and it is the last thing blocking the install command from being true. Nothing else in this document changes when it is settled: the Worker gains one `custom_domain` route and the discovery document gains one edited line.
 
 **Docs route.** Whether `/docs` is MDX inside this app, a redirect to the GitHub README, or a separate surface.
 
