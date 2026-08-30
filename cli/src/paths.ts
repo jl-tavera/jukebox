@@ -13,7 +13,14 @@ import { posix, win32 } from 'node:path'
 export type Locations = {
   /** Holds the configuration file. */
   config: string
-  /** Holds the Mirror. Nothing here creates it, or anything in it. */
+  /**
+   * Holds the last discovery document seen, and will hold the Mirror.
+   *
+   * Both are rebuildable, which is what puts them on this side of the line:
+   * the saved document is refetched within the hour and the Mirror can always
+   * be rebuilt from a server snapshot. Nothing creates the Mirror yet -- #35 is
+   * where it comes into existence, because it is the first thing that needs one.
+   */
   data: string
 }
 
