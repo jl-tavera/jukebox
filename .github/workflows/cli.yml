@@ -1,0 +1,35 @@
+name: cli
+
+# Path-filtered so touching the API or the landing page never runs the CLI's
+# checks. GitHub Actions does not expand YAML anchors, so the list is written
+# twice.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cli/**'
+      - 'schema/**'
+      - '.github/workflows/cli.yml'
+      - 'package.json'
+      - 'bun.lock'
+  pull_request:
+    paths:
+      - 'cli/**'
+      - 'schema/**'
+      - '.github/workflows/cli.yml'
+      - 'package.json'
+      - 'bun.lock'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      # The committed types are checked against openapi.yaml by the worker's
+      # workflow, which is filtered on `schema/**` too -- so a contract change
+      # is still caught, once rather than twice.
+      - run: bun run --cwd cli typecheck
+      - run: bun run --cwd cli test
