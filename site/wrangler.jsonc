@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jukebox-site",
+  "compatibility_date": "2026-08-29",
+
+  // No `main`. This Worker runs no code at all -- it serves the static export
+  // and nothing else, which is what lets it keep serving discovery.json and
+  // install.sh while the API is entirely down (CLAUDE.md, SITE.md 01).
+  //
+  // One deployment, and no named environments. worker/wrangler.jsonc declares
+  // every environment in full because bindings are non-inheritable and would
+  // otherwise drift apart (ADR-0002); this Worker has no bindings, so there is
+  // nothing here for that to protect. A second environment arrives when there
+  // is something to stage.
+  //
+  // No route either. jukebox.dev is registered to somebody else, so the address
+  // the README and DESIGN.md 07 publish is not ours to attach -- see SITE.md 08.
+  // Until it is, this serves on workers.dev, and the discovery document is how
+  // an installed CLI learns that without a release.
+  "assets": {
+    "directory": "./out",
+
+    // Serves the export's own 404.html on a miss, with a 404 status.
+    //
+    // Never "single-page-application": that answers any unmatched path with
+    // index.html and a 200, so a discovery.json that failed to publish would
+    // hand a CLI an HTML body and a success code instead of a plain absence.
+    // SITE.md 08's reason for not shipping a bad document is that a CLI should
+    // fail at a clearly missing file; this is the setting that keeps it clear.
+    "not_found_handling": "404-page"
+  }
+}

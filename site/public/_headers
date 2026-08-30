@@ -1,0 +1,10 @@
+# Workers Assets reads this file from the assets root and does not serve it.
+#
+# The discovery document is a kill switch, and a kill switch behind an edge
+# cache nobody set is a kill switch with an unknown delay. `no-cache` is "hold
+# this, but ask before using it" rather than "do not store it" -- the same
+# choice, for the same reason, that the API makes on every answer carrying a
+# Version. Without it the outage message a human just wrote reaches people
+# whenever Cloudflare's heuristics decide it should.
+/discovery.json
+  Cache-Control: no-cache
