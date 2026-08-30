@@ -2,6 +2,7 @@
   "name": "jukebox",
   "private": true,
   "workspaces": [
+    "cli",
     "schema",
     "site",
     "worker"
