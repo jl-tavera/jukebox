@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
+import type { Context } from 'hono'
 import type {
   CreatePlaylistRequest,
   CreatePlaylistResponse,
   PendingTracks,
 } from '@jukebox/schema'
 import { errorBody } from './errors'
-import { readStatus, recordPending } from './playlists'
+import { readStatusAndVersion, recordPending } from './playlists'
 import { resolve, type ResolutionMessage } from './resolution'
 import { readHead, readSnapshot } from './snapshots'
 import { findSource, playlistId } from './sources/registry'
@@ -94,7 +95,9 @@ app.post('/playlists', async (c) => {
     // A row that is not there cannot happen -- nothing deletes one, and the
     // insert above either wrote it or found it -- and Pending is what it would
     // mean if it did, so it is the fallback rather than a branch of its own.
-    const status = newlyTracked ? 'pending' : ((await readStatus(c.env.DB, id)) ?? 'pending')
+    const status = newlyTracked
+      ? 'pending'
+      : ((await readStatusAndVersion(c.env.DB, id))?.status ?? 'pending')
 
     // Nothing left to ask for, and nothing to wait for: the client fetches the
     // Tracks and skips polling entirely.
@@ -146,55 +149,67 @@ app.post('/playlists', async (c) => {
   )
 })
 
+/**
+ * The answer for a Playlist being served at `version`: the snapshot stored under
+ * it, or the empty revalidation for a caller that already holds it.
+ *
+ * The conditional check is first, and nothing above it reads anything. That is
+ * DESIGN section 05's cheap path -- "no D1 query, no snapshot read, no JSON
+ * parse" -- and this function is where it is enforced now that two routes reach
+ * it, so reordering the halves below is the regression that section warns about
+ * even if every test still passes.
+ *
+ * Written once because the Version arrives two ways and the answer must not
+ * depend on which. Head is the ordinary one. The other is the Playlist row,
+ * which names the same Version whenever the cache cannot answer for head yet --
+ * and a client cannot tell one body from the other, which is what makes the
+ * second a fallback rather than a second contract.
+ */
+const served = async (c: Context<{ Bindings: Env }>, id: string, version: string) => {
+  // Strong, because the Version names an immutable snapshot exactly rather than
+  // an equivalent one -- so it is built once here and sent with the answer
+  // whether or not there is a body under it.
+  const etag = `"${version}"`
+
+  if (holdsVersion(c.req.header('if-none-match'), version)) {
+    // The whole of a sync that has nothing to do: no body, and a client that
+    // already agrees with us.
+    return c.body(null, 304, { etag, 'cache-control': REVALIDATE })
+  }
+
+  const snapshot = await readSnapshot(c.env.CACHE, id, version)
+
+  // Neither route here names a Version whose snapshot was not written first, so
+  // reaching this means the cache lost a key it was promised to keep. It is not
+  // a state the contract has an answer for, and inventing one would hide it.
+  // Rebuilding the document from D1 instead needs `skipped`, which D1 does not
+  // store; issue #25 holds the schema change that would let it.
+  if (snapshot === null) {
+    throw new Error(`nothing stored for ${id} at version ${version}`)
+  }
+
+  // The stored document is the response body, served as the bytes it was
+  // written as.
+  return c.body(snapshot, 200, {
+    'content-type': 'application/json',
+    etag,
+    'cache-control': REVALIDATE,
+  })
+}
+
 app.get('/playlists/:id/tracks', async (c) => {
   const id = c.req.param('id')
 
-  // DESIGN section 05: a conditional request is served from the KV head key
-  // alone -- "no D1 query, no snapshot read, no JSON parse", and a D1 query on
-  // that path is a regression even if it passes tests. So head is read first,
-  // and the conditional check sits immediately below it, above the snapshot
-  // read. Moving either of the two reads above this line would answer the same
-  // in every case and cost the common one everything it was built to save.
-  const version = await readHead(c.env.CACHE, id)
+  // Head first, and alone: everything a conditional request costs is this one
+  // read and the comparison `served` makes on it. Moving the row read below
+  // above this line would answer the same in every case and cost the common one
+  // everything DESIGN section 05 built it to save.
+  const head = await readHead(c.env.CACHE, id)
+  if (head !== null) return served(c, id, head)
 
-  if (version !== null) {
-    // Strong, because the Version names an immutable snapshot exactly rather
-    // than an equivalent one -- so it is built once here and sent with the
-    // answer whether or not there is a body under it.
-    const etag = `"${version}"`
+  const stored = await readStatusAndVersion(c.env.DB, id)
 
-    if (holdsVersion(c.req.header('if-none-match'), version)) {
-      // The whole of a sync that has nothing to do: one key read, no body, and
-      // a client that already agrees with us.
-      return c.body(null, 304, { etag, 'cache-control': REVALIDATE })
-    }
-
-    const snapshot = await readSnapshot(c.env.CACHE, id, version)
-
-    // Head only ever names a snapshot already written, so reaching this means
-    // the cache lost a key it was promised to keep. It is not a state the
-    // contract has an answer for, and inventing one would hide it.
-    if (snapshot === null) {
-      throw new Error(`head names a snapshot that is not there: ${id} at version ${version}`)
-    }
-
-    // The stored document is the response body, served as the bytes it was
-    // written as.
-    return c.body(snapshot, 200, {
-      'content-type': 'application/json',
-      etag,
-      'cache-control': REVALIDATE,
-    })
-  }
-
-  const status = await readStatus(c.env.DB, id)
-
-  if (status === 'pending') {
-    const pending: PendingTracks = { status: 'pending' }
-    return c.json(pending, 202)
-  }
-
-  if (status === undefined) {
+  if (stored === undefined) {
     // Ids are derived from the URL, so an id nothing tracks is a Playlist that
     // was never added rather than one whose Resolution failed -- which is why
     // this is not the Gone answer.
@@ -207,18 +222,48 @@ app.get('/playlists/:id/tracks', async (c) => {
     )
   }
 
-  // Reached only by a Playlist with no Version at all, because head is read
-  // first: one that resolved before and has since gone will keep being served
-  // the Tracks it already has, which is DESIGN section 09's rule that a remote
-  // failure never costs a reader what they already had.
-  if (status === 'gone') return c.json(errorBody('playlist_gone', GONE), 410)
-  if (status === 'unreachable') return c.json(errorBody('source_unavailable', UNAVAILABLE), 503)
+  if (stored.status === 'pending') {
+    const pending: PendingTracks = { status: 'pending' }
+    return c.json(pending, 202)
+  }
 
-  // `ok` with nothing to serve. The write order means it cannot happen -- head
-  // moves before the row says `ok` -- so it is an invariant, not an answer, and
-  // inventing one for it would hide a cache that had lost a key it was promised
-  // to keep. What a rebuild from D1 would take is recorded in its own issue.
-  throw new Error(`a Playlist that is ${status} has no head to serve: ${id}`)
+  // Reached by a Playlist with no Version being served, because head is read
+  // first: one that resolved before and has since gone keeps being served the
+  // Tracks it already has, which is DESIGN section 09's rule that a remote
+  // failure never costs a reader what they already had.
+  //
+  // Neither gets the fallback below, and one narrow case pays for that: a
+  // redelivery of an already-successful Resolution can mark a Playlist Gone
+  // without touching its Version, so a reader inside the window described below
+  // would be refused Tracks that are still stored. It is older than the fallback
+  // rather than made by it, and covering it is a wider change than serving a
+  // Version. Recorded on #25, which owns what the cold path answers.
+  if (stored.status === 'gone') return c.json(errorBody('playlist_gone', GONE), 410)
+  if (stored.status === 'unreachable') {
+    return c.json(errorBody('source_unavailable', UNAVAILABLE), 503)
+  }
+
+  // `ok`, and head could not say so. Not an impossible state and not an empty
+  // cache: KV caches a miss as readily as a hit, for up to a minute in whichever
+  // location made it, so a client polling for Tracks that were not written yet
+  // leaves the absence of head cached behind it and goes on reading `null` from
+  // a key that now exists. Reproduced against staging on issue #13.
+  //
+  // The row is the way out, and one it can be trusted with: it is moved to a
+  // Version only after the snapshot under that Version is written and head names
+  // it, so a row saying `ok` at Version n is a promise that n was servable. The
+  // key holding it has never been asked for while absent either -- nothing reads
+  // a snapshot before head names one -- so no negative cache stands over it.
+  //
+  // A conditional request landing here pays a D1 read the cheap path does not,
+  // which section 05 forbids of *that* path and not of this one: it is reached
+  // only when head has already answered `null`, so nothing common is slower.
+  //
+  // `String` cannot spell the key differently from the one `writeSnapshot` used.
+  // Both start from the same integer -- the column is INTEGER and `markResolved`
+  // binds the number the snapshot was written under -- and an integer has one
+  // decimal spelling.
+  return served(c, id, String(stored.version))
 })
 
 /**

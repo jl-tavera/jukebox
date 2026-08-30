@@ -91,3 +91,37 @@ const refusingToRun = (statement: D1PreparedStatement): D1PreparedStatement =>
  */
 export const refusingUpdates = (db: D1Database): D1Database =>
   allBut(db, 'prepare', (target) => (sql: string) => refusingToRun(target.prepare(sql)))
+
+/**
+ * A cache that answers its first read as a miss, and everything after it
+ * truthfully.
+ *
+ * The state a client polling for Tracks puts a real KV into. A miss is
+ * negatively cached for up to a minute in the colo that made it, so a poll sent
+ * before a Resolution finishes leaves the absence of head cached behind it -- and
+ * the next poll goes on reading `null` from a key that now exists. Miniflare's
+ * KV is strongly consistent and has no such window, so nothing in this suite
+ * meets it without being stood in for.
+ *
+ * The *first* read rather than a named one, for two reasons that agree. Head is
+ * read before anything else and will stay that way -- DESIGN section 05 makes
+ * that the cheap path -- so the first `get` is the one the window swallows. And
+ * which keys exist and what they are called is `snapshots.ts`'s business, so a
+ * stand-in that spelled one here would pin what that module owns.
+ */
+export const missingTheFirstRead = (cache: KVNamespace): KVNamespace => {
+  let missed = false
+
+  return allBut(cache, 'get', (target) => {
+    // Through `Reflect.get` because `get` is overloaded five ways, and this
+    // forwards whichever one the caller meant without naming any of them.
+    const real = Reflect.get(target, 'get') as (...args: unknown[]) => Promise<unknown>
+
+    return (...args: unknown[]) => {
+      if (missed) return real.apply(target, args)
+
+      missed = true
+      return Promise.resolve(null)
+    }
+  })
+}

@@ -56,20 +56,29 @@ export const recordPending = async (
 }
 
 /**
- * Where a Playlist has got to, or `undefined` when nothing is tracking that id.
- * The caller has to tell those apart, so an untracked Playlist is not folded
- * into any state.
+ * Where a Playlist has got to, and the Version it got there at. `undefined`
+ * when nothing is tracking that id: the caller has to tell that apart from any
+ * state, so an untracked Playlist is not folded into one.
+ *
+ * Both come off one row, so the Version costs a caller that wants only the
+ * status nothing -- no second statement, no second round trip. `version` is 0
+ * until a Resolution writes one, which is what `recordPending` inserts.
  */
-export const readStatus = async (
+export interface StoredPlaylist {
+  status: StoredStatus
+  version: number
+}
+
+export const readStatusAndVersion = async (
   db: D1Database,
   id: PlaylistId,
-): Promise<StoredStatus | undefined> => {
+): Promise<StoredPlaylist | undefined> => {
   const row = await db
-    .prepare('SELECT status FROM playlists WHERE id = ?')
+    .prepare('SELECT status, version FROM playlists WHERE id = ?')
     .bind(id)
-    .first<{ status: StoredStatus }>()
+    .first<StoredPlaylist>()
 
-  return row?.status
+  return row ?? undefined
 }
 
 /**

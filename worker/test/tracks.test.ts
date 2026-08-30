@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { env } from 'cloudflare:workers'
-import type { ErrorEnvelope } from '@jukebox/schema'
+import type { ErrorEnvelope, PlaylistTracks } from '@jukebox/schema'
 import { createPlaylist, resolvePlaylist, tracksOf, tracksOfWithBindings } from './api'
-import { counting } from './bindings'
+import { counting, missingTheFirstRead } from './bindings'
 
 describe('GET /playlists/{id}/tracks', () => {
   it('answers Pending for a Playlist nothing has resolved yet', async () => {
@@ -133,3 +133,46 @@ describe('a sync that finds nothing has changed', () => {
   })
 })
 
+
+describe('a cache that has not caught up with its own writes', () => {
+  it('serves the Version the row names when head reads as missing', async () => {
+    const id = await resolved('negatively-cached')
+
+    // Head reads `null` for a Playlist whose Resolution has finished, which is
+    // what a negatively cached miss looks like from in here. The row knows the
+    // Version, and the snapshot under it was written before head was, so there
+    // is a right answer to give -- and a 500 with no code for the CLI to branch
+    // on is not it.
+    const response = await tracksOfWithBindings(id, { CACHE: missingTheFirstRead(env.CACHE) })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('etag')).toBe('"1"')
+
+    // The whole snapshot, not a placeholder: the same answer the hot path gives.
+    const served = (await response.json()) as PlaylistTracks
+    expect(served.version).toBe(1)
+    expect(served.skipped).toBe(1)
+    expect(served.tracks.map((track) => track.title)).toEqual([
+      'Blue Dot',
+      'Long Way Down',
+      'Salt and Wire',
+    ])
+  })
+
+  it('still answers a caller holding that Version with no body', async () => {
+    const id = await resolved('negatively-cached-conditional')
+
+    // The Version is the Version wherever it was read from, so a client that
+    // already holds it gets the same empty answer -- and this path never reads
+    // the snapshot at all.
+    const response = await tracksOfWithBindings(
+      id,
+      { CACHE: missingTheFirstRead(env.CACHE) },
+      { 'if-none-match': '"1"' },
+    )
+
+    expect(response.status).toBe(304)
+    expect(await response.text()).toBe('')
+    expect(response.headers.get('etag')).toBe('"1"')
+  })
+})
