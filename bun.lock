@@ -36,12 +36,14 @@
         "react-dom": "^19.2.8",
       },
       "devDependencies": {
+        "@jukebox/schema": "workspace:*",
         "@tailwindcss/postcss": "^4.3.3",
         "@types/node": "^26.4.0",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.5",
         "tailwindcss": "^4.3.3",
         "typescript": "^7.0.2",
+        "wrangler": "^4.127.1",
       },
     },
     "worker": {
