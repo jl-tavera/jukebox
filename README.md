@@ -42,6 +42,29 @@ One more design property worth stating: **user requests never trigger an upstrea
 
 ---
 
+## Scripting and agents
+
+Every command computes one result and then renders it. Pass `--json`, or simply pipe the output somewhere, and you get exactly one JSON object on stdout instead of human text:
+
+```json
+{ "ok": true, "command": "sync", "version": "0.1.0", "data": {} }
+```
+
+A failure carries a stable machine-readable code beside the human message, in one vocabulary shared with the API:
+
+```json
+{ "ok": false, "command": "add", "version": "0.1.0",
+  "error": { "code": "invalid_url", "message": "No source recognises this URL." } }
+```
+
+A non-zero exit means the command genuinely failed. Every answer the backend can give — including *nothing changed*, *still resolving* and *that playlist is gone* — is a success, so a scheduled sync reports a failure only when there was one.
+
+In a pipe or a CI job there are no prompts and no spinners: nothing can hang waiting for an answer nobody is there to give.
+
+**The JSON shape is unstable before 1.0.** It can change in any release, with no notice beyond the release notes, and it freezes at 1.0. The `version` field in every object is what to pin or branch on. See [ADR-0005](docs/adr/0005-json-output-is-unstable-before-1-0.md).
+
+---
+
 ## Stack
 
 ### CLI
@@ -183,5 +206,4 @@ Bindings are non-inheritable, so staging and production are each declared in ful
 
 - Additional playlist sources (Apple Music, YouTube)
 - Crowd-sourced match corrections feeding the shared cache
-- `--json` output for scripting and agent use
 - Public status page with live coverage stats
