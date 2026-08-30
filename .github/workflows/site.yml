@@ -1,0 +1,47 @@
+name: site
+
+# Path-filtered so touching the API or the CLI never runs the site's checks, and
+# so shipping the landing page never reaches either of them.
+# GitHub Actions does not expand YAML anchors, so the list is written twice.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'schema/**'
+      - '.github/workflows/site.yml'
+      - 'package.json'
+      - 'bun.lock'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'schema/**'
+      - '.github/workflows/site.yml'
+      - 'package.json'
+      - 'bun.lock'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - run: bun run --cwd site typecheck
+
+      # The first workflow here that builds, because what needs checking is the
+      # build's output rather than its source. The discovery document is read
+      # back from `out/` and not `public/`, so a build that quietly stopped
+      # publishing it fails here instead of in a CLI on somebody's machine.
+      #
+      # The parser doing the checking is unit-tested by the worker's workflow,
+      # which is filtered on schema/** too -- so it is covered once rather than
+      # three times, the same split cli.yml already carries a note about.
+      #
+      # Nothing here notices a CLI version bump that leaves min_version naming a
+      # release nobody can install. That is deliberate: DESIGN.md 07's
+      # breaking-change procedure is what keeps the two in step, and it is an
+      # ordering a workflow cannot check.
+      - run: bun run --cwd site build
+      - run: bun run --cwd site check:discovery
