@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { env } from 'cloudflare:workers'
 import type { ErrorEnvelope } from '@jukebox/schema'
-import { createPlaylist, tracksOf } from './api'
+import { createPlaylist, resolvePlaylist, tracksOf, tracksOfWithBindings } from './api'
+import { counting } from './bindings'
 
 describe('GET /playlists/{id}/tracks', () => {
   it('answers Pending for a Playlist nothing has resolved yet', async () => {
@@ -37,6 +39,97 @@ describe('GET /playlists/{id}/tracks', () => {
     // leave the reader with a status code.
     expect(error.message).toMatch(/add/i)
     expect(error.message).not.toContain('playlist_not_found')
+  })
+})
+
+/** A resolved Playlist at Version 1, from the Source that reaches no network. */
+const resolved = async (name: string) => {
+  await createPlaylist(`stub:playlist:${name}`)
+  await resolvePlaylist(`stub:${name}`)
+  return `stub:${name}`
+}
+
+describe('a sync that finds nothing has changed', () => {
+  it('answers with no body when the caller already holds this Version', async () => {
+    const id = await resolved('unchanged')
+
+    const response = await tracksOf(id, { 'if-none-match': '"1"' })
+
+    expect(response.status).toBe(304)
+    expect(await response.text()).toBe('')
+    // The same ETag it would have sent with the body, so a client that stores
+    // whatever came back is storing the same thing either way.
+    expect(response.headers.get('etag')).toBe('"1"')
+    expect(response.headers.get('cache-control')).toBe('no-cache')
+  })
+
+  it('answers a weakened ETag too', async () => {
+    const id = await resolved('weakened')
+
+    // Nothing here marks an ETag weak, but something between here and a client
+    // may: an edge that re-encodes a response is the usual cause. A comparison
+    // that missed it would send a whole snapshot to a client that already had
+    // it, silently, with every other test in this file still green.
+    const response = await tracksOf(id, { 'if-none-match': 'W/"1"' })
+
+    expect(response.status).toBe(304)
+  })
+
+  it('answers a caller asking for anything it does not already have', async () => {
+    const id = await resolved('anything')
+
+    // RFC 9110 gives `*` the meaning "whatever you have now". This is only ever
+    // reached where a Version exists, so whatever we have is the thing being
+    // asked about, and the answer is the same as naming it.
+    const response = await tracksOf(id, { 'if-none-match': '*' })
+
+    expect(response.status).toBe(304)
+  })
+
+  it('sends the Tracks when the caller holds an older Version', async () => {
+    const id = await resolved('behind')
+
+    const response = await tracksOf(id, { 'if-none-match': '"0"' })
+
+    // A comparison, not a presence test.
+    expect(response.status).toBe(200)
+    expect(response.headers.get('etag')).toBe('"1"')
+  })
+
+  it('reads one cache key and asks the database nothing', async () => {
+    const id = await resolved('cheap')
+    const database: string[] = []
+    const cache: string[] = []
+
+    const response = await tracksOfWithBindings(
+      id,
+      { DB: counting(env.DB, database), CACHE: counting(env.CACHE, cache) },
+      { 'if-none-match': '"1"' },
+    )
+
+    // DESIGN section 05: "no D1 query, no snapshot read, no JSON parse. Any
+    // change that puts a D1 query on this path is a regression even if it
+    // passes tests." So this is the test that would not pass.
+    expect(response.status).toBe(304)
+    expect(database).toEqual([])
+    expect(cache).toEqual(['get'])
+  })
+
+  it('costs more than that when the caller holds nothing', async () => {
+    const id = await resolved('full')
+    const database: string[] = []
+    const cache: string[] = []
+
+    const response = await tracksOfWithBindings(id, {
+      DB: counting(env.DB, database),
+      CACHE: counting(env.CACHE, cache),
+    })
+
+    // The control. Without it, "one cache read" above could be a property of
+    // the endpoint rather than of the conditional path, and the assertion would
+    // hold for a handler that never read a snapshot at all.
+    expect(response.status).toBe(200)
+    expect(cache.length).toBeGreaterThan(1)
   })
 })
 

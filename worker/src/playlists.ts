@@ -8,9 +8,13 @@ import type { SourceName } from './sources/registry'
 
 /**
  * The four states the `status` column holds -- `CONTEXT.md`'s vocabulary, and
- * the comment on the column in migration 0001. Wider than the API's
- * `PlaylistStatus`, which only names the states a response can currently
- * carry, and narrows towards it as the remaining responses land.
+ * the comment on the column in migration 0001.
+ *
+ * Wider than the API's `PlaylistStatus`, and permanently so. A response carries
+ * a status when it has something to hand over or something to wait for;
+ * Unreachable and Gone have neither, so they reach a caller as an error code it
+ * can branch on rather than as a state described in a success body. The two
+ * types name different things and are not converging.
  */
 export type StoredStatus = 'pending' | 'ok' | 'unreachable' | 'gone'
 
@@ -110,4 +114,25 @@ export const markResolved = async (
     .prepare(`UPDATE playlists SET version = ?, status = 'ok', last_refreshed_at = ? WHERE id = ?`)
     .bind(version, at, id)
     .run()
+}
+
+/**
+ * Records a Resolution that ended without Tracks.
+ *
+ * No Version and no `last_refreshed_at`: neither moved, because nothing was
+ * read. What the Playlist was serving before, if anything, it goes on serving
+ * -- these two states are answers for a Playlist that has never had a Version,
+ * and a Playlist that has one is served from its snapshot either way.
+ */
+const markFailed = (db: D1Database, id: PlaylistId, status: 'gone' | 'unreachable') =>
+  db.prepare('UPDATE playlists SET status = ? WHERE id = ?').bind(status, id).run()
+
+/** The Source refuses this Playlist, and asking again will not change that. */
+export const markGone = async (db: D1Database, id: PlaylistId): Promise<void> => {
+  await markFailed(db, id, 'gone')
+}
+
+/** The Source could not be read, for a reason worth trying again. */
+export const markUnreachable = async (db: D1Database, id: PlaylistId): Promise<void> => {
+  await markFailed(db, id, 'unreachable')
 }

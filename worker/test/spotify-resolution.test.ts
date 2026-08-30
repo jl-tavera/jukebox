@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { PlaylistTracks } from '@jukebox/schema'
 import {
+  CREDENTIALS,
+  FIXTURE_BASIC,
   FIXTURE_BEARER,
   TOKEN_ADDRESS,
   TOKEN_REQUEST,
   itemsAddress,
+  pagesOf,
   spotifyServing,
 } from '../src/sources/spotify/__fixtures__/network'
+import mixedEntries from '../src/sources/spotify/__fixtures__/mixed-entries.json'
+import multiPage0 from '../src/sources/spotify/__fixtures__/multi-page-offset-0.json'
+import multiPage50 from '../src/sources/spotify/__fixtures__/multi-page-offset-50.json'
 import onePage from '../src/sources/spotify/__fixtures__/one-page.json'
+import type { ItemsResponse } from '../src/sources/spotify/payloads'
 import { createPlaylist, insteadOfTheNetwork, resolvePlaylist, tracksOf } from './api'
 
 /**
@@ -23,31 +30,20 @@ import { createPlaylist, insteadOfTheNetwork, resolvePlaylist, tracksOf } from '
  */
 
 /**
- * The consumer is handed these the way it is handed a stand-in for the
- * network: through its own boundary, with nothing in the worker knowing it
- * happened. They are here rather than in the test environment's config so that
- * they sit beside the assertion about what is done with them.
- */
-const CREDENTIALS = {
-  SPOTIFY_CLIENT_ID: 'test-client-id',
-  SPOTIFY_CLIENT_SECRET: 'test-client-secret',
-}
-
-/** base64 of `test-client-id:test-client-secret`. */
-const BASIC = 'dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0'
-
-/**
  * Adds a Playlist and resolves it with the Source standing still.
  *
  * Takes the Source's own id and derives both the address a person would paste
  * and the Playlist id ADR-0001 gives it, so the two cannot disagree. Each test
  * uses a different one, as the neighbouring suites do: it keeps what a test
  * left behind out of the next one's way even when they share storage.
+ *
+ * The pages default to the one captured single-page playlist, so a test that is
+ * not about the walk says nothing about paging.
  */
-const resolveAgainstSpotify = async (sourceId: string) => {
+const resolveAgainstSpotify = async (sourceId: string, ...pages: ItemsResponse[]) => {
   await createPlaylist(`https://open.spotify.com/playlist/${sourceId}`)
 
-  const spotify = spotifyServing(onePage)
+  const spotify = spotifyServing(...(pages.length > 0 ? pages : [onePage]))
   await insteadOfTheNetwork(spotify.answer, () =>
     resolvePlaylist(`spotify:${sourceId}`, CREDENTIALS),
   )
@@ -89,7 +85,7 @@ describe('how the consumer authenticates', () => {
     expect(calls[0]).toMatchObject({
       url: TOKEN_ADDRESS,
       method: 'POST',
-      authorization: `Basic ${BASIC}`,
+      authorization: FIXTURE_BASIC,
       body: TOKEN_REQUEST,
     })
   })
@@ -126,11 +122,108 @@ describe('the request the consumer makes for a playlist', () => {
     expect(calls[1]?.url).toBe(itemsAddress('1AAAAAAAAAAAAAAAAAAAAA', 0))
   })
 
-  it('reads one page and makes no other request', async () => {
+  it('stops after one page when the Source says there is no other', async () => {
     const { calls } = await resolveAgainstSpotify('5AAAAAAAAAAAAAAAAAAAAA')
 
-    // A token and a page. A playlist longer than one page is read no further
-    // than this -- #12 adds the walk, and this is what will change when it does.
+    // A token and a page, and no speculative second request: the walk asks for
+    // another page only when the Source said there is one. A playlist that fits
+    // on one page therefore costs exactly one page read, as it did before the
+    // walk existed.
     expect(calls).toHaveLength(2)
+  })
+})
+
+describe('a playlist longer than one page', () => {
+  it('resolves completely, across every page the Source offers', async () => {
+    // 69 entries over two pages, captured from one real playlist -- so what is
+    // under test is bytes Spotify actually sent, joined at a boundary it chose.
+    await resolveAgainstSpotify('03Xz4NcdaWjZq2T6sKNLui', multiPage0, multiPage50)
+
+    const body = (await (await tracksOf('spotify:03Xz4NcdaWjZq2T6sKNLui')).json()) as PlaylistTracks
+
+    expect(body.tracks).toHaveLength(69)
+    // Unbroken across the join, which is what says the second page was placed
+    // after the first rather than counted from its own start.
+    expect(body.tracks.map((track) => track.position)).toEqual([...Array(69).keys()])
+  })
+
+  it('addresses each page itself rather than following the Source', async () => {
+    const { calls } = await resolveAgainstSpotify('4AAAAAAAAAAAAAAAAAAAAA', multiPage0, multiPage50)
+
+    // Exactly these, in this order. The captured `next` on the first page names
+    // an address without `additional_types=episode`, so a walk that followed it
+    // would have asked for something different from this -- and would have been
+    // answered with track-shaped episodes from the second page on. MANIFEST.md
+    // finding 5.
+    expect(calls.map((call) => call.url)).toEqual([
+      TOKEN_ADDRESS,
+      itemsAddress('4AAAAAAAAAAAAAAAAAAAAA', 0),
+      itemsAddress('4AAAAAAAAAAAAAAAAAAAAA', 50),
+    ])
+  })
+
+  it('reads a playlist of two hundred entries as two hundred Tracks', async () => {
+    // Constructed, not captured: no public playlist held still long enough to
+    // be worth committing 200 entries of, and what this asks is arithmetic --
+    // that four pages yield four pages' worth. `pagesOf` says why it is built
+    // in memory rather than written into __fixtures__.
+    const id = '6AAAAAAAAAAAAAAAAAAAAA'
+    const { calls } = await resolveAgainstSpotify(id, ...pagesOf(200, id))
+
+    const body = (await (await tracksOf(`spotify:${id}`)).json()) as PlaylistTracks
+
+    expect(body.tracks).toHaveLength(200)
+    expect(body.tracks.map((track) => track.position)).toEqual([...Array(200).keys()])
+    expect(calls.map((call) => call.url)).toEqual([
+      TOKEN_ADDRESS,
+      ...[0, 50, 100, 150].map((offset) => itemsAddress(id, offset)),
+    ])
+  })
+
+  it('asks for one token however many pages it reads', async () => {
+    const id = '7AAAAAAAAAAAAAAAAAAAAA'
+    const { calls } = await resolveAgainstSpotify(id, ...pagesOf(200, id))
+
+    // Still one, not one per page. The token is obtained before the walk, and
+    // a careless walk would move it inside.
+    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1)
+  })
+})
+
+describe('the entries a playlist holds that are not Tracks', () => {
+  it('leaves them out of the Tracks and counts them into skipped', async () => {
+    // Six entries: three tracks, a podcast episode, a local file and one the
+    // Source will no longer serve. No public playlist holds all three kinds at
+    // once, so this one is composed from real entries -- MANIFEST.md says which
+    // came from where.
+    const id = '9AAAAAAAAAAAAAAAAAAAAA'
+    await resolveAgainstSpotify(id, mixedEntries as unknown as ItemsResponse)
+
+    const body = (await (await tracksOf(`spotify:${id}`)).json()) as PlaylistTracks
+
+    expect(body.tracks).toHaveLength(3)
+    // Counted rather than dropped silently: three of six against a Source
+    // showing six should not read as data loss.
+    expect(body.skipped).toBe(3)
+    // The Source's own indices, so what was left out leaves a visible gap
+    // rather than renumbering what follows it.
+    expect(body.tracks.map((track) => track.position)).toEqual([0, 2, 5])
+  })
+})
+
+describe('a playlist with nothing in it', () => {
+  it('resolves to a Version carrying no Tracks, which is not the same as Pending', async () => {
+    // Reachable for the first time here: every captured playlist has entries,
+    // and before the walk an empty page could only mean a request that went
+    // wrong. `PendingTracks` exists precisely so a client can tell "no Tracks
+    // yet" from "resolved to nothing" -- this is the second.
+    const id = '8AAAAAAAAAAAAAAAAAAAAA'
+    await resolveAgainstSpotify(id, { items: [], next: null })
+
+    const response = await tracksOf(`spotify:${id}`)
+    const body = (await response.json()) as PlaylistTracks
+
+    expect(response.status).toBe(200)
+    expect(body).toEqual({ version: 1, skipped: 0, tracks: [] })
   })
 })

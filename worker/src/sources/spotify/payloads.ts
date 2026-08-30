@@ -60,7 +60,30 @@ export interface PlaylistEntry {
   readonly item: Item | null
 }
 
-/** A page of entries. Spotify caps `limit` at 50, so a long playlist is several. */
+/**
+ * A page of entries, as much of one as `normalize` reads. Spotify caps `limit`
+ * at 50, so a long playlist is several of these.
+ */
 export interface ItemsPage {
   readonly items: readonly PlaylistEntry[]
+}
+
+/**
+ * The same page as the endpoint actually answers it, carrying the one field
+ * beyond the entries that the walk needs.
+ *
+ * Separate from `ItemsPage` so that `normalize` keeps asking for the least it
+ * reads: a test can hand it a page built from two entries and nothing else,
+ * which is how the cases that only `normalize` decides are driven.
+ */
+export interface ItemsResponse extends ItemsPage {
+  /**
+   * The address of the page after this one, or `null` on the last.
+   *
+   * Read for whether there is more, and never followed. Spotify drops
+   * `additional_types` from its own paging links, so a walk that followed one
+   * would see track-shaped episodes from page two on -- `__fixtures__/MANIFEST.md`
+   * finding 5, and the reason `itemsPage` addresses every page itself.
+   */
+  readonly next: string | null
 }

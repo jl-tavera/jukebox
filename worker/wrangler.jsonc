@@ -38,13 +38,22 @@
     ],
 
     // One Playlist per delivery. The consumer walks a batch and acknowledges
-    // nothing message by message, so a throw sends the whole batch round again
-    // -- and a batch of several would re-resolve Playlists that had already
-    // succeeded, moving their Version with nothing having changed.
+    // nothing message by message, so a throw sends the whole batch round again,
+    // and a batch of several would re-resolve Playlists that had already
+    // succeeded.
+    //
+    // That used to mean moving their Version for nothing, and no longer does --
+    // a Resolution that finds the contents already being served writes nothing.
+    // What it still costs is a read of the Source per Playlist dragged round
+    // with the failure, which is the one budget this whole design exists to
+    // keep proportional. So the setting stands, for the smaller reason.
     //
     // What still fails after three attempts lands in the dead-letter queue,
     // which deliberately has no consumer: a Resolution nobody can complete
-    // should sit somewhere it can be read rather than disappear.
+    // should sit somewhere it can be read rather than disappear. Nothing in
+    // process can observe either number -- the tests drive the consumer
+    // directly -- so what they assert is the part the worker decides: whether a
+    // failure fails its delivery at all.
     "consumers": [
       {
         "queue": "jukebox-resolution",

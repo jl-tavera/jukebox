@@ -1,6 +1,7 @@
+import { PlaylistGone } from '../gone'
 import type { PlaylistSource } from '../registry'
 import { normalize } from './normalize'
-import type { ItemsPage } from './payloads'
+import type { ItemsResponse } from './payloads'
 
 /**
  * The Spotify Source adapter. Reached only through the registry: nothing
@@ -69,6 +70,23 @@ const API = 'https://api.spotify.com/v1'
 const PAGE_SIZE = 50
 
 /**
+ * How far this walk will go before it decides it is not reading a playlist.
+ *
+ * Ours, not Spotify's. Spotify is widely said to cap a playlist at 10,000
+ * entries and nothing in `__fixtures__/` captures that, so it is not claimed
+ * here as a fact about the Source -- it is a number picked to sit well above
+ * any playlist we expect and well below a loop that never ends. Whether to ask
+ * for another page is decided by the answer to the last one, which arrives off
+ * a network, and a consumer that keeps believing it would spend its fifteen
+ * minutes and the project's upstream budget on nothing.
+ *
+ * Reaching it is an error rather than a stopping place. A Playlist read this
+ * far and no further is a short answer, and a short answer handed back as a
+ * whole one is the silent shortfall `skipped` exists to refuse.
+ */
+const WALK_CEILING = 10_000
+
+/**
  * A token for the Client Credentials flow -- no user, no redirect, no consent
  * screen, which is what lets a worker nobody is logged into read a public
  * playlist. DESIGN section 10 rules out user OAuth, so this is the only flow
@@ -120,6 +138,10 @@ const accessToken = async (env: Env): Promise<string> => {
  * page and track-shaped episodes on every one after -- MANIFEST.md finding 5.
  * Addressing pages ourselves means every page is asked for the same way.
  *
+ * `next` is still read, in `fetch` above: whether there is another page and
+ * where that page lives are different questions, and only the second one is
+ * the one finding 5 says not to take Spotify's word for.
+ *
  * The query is written out rather than built with `URLSearchParams`, which
  * percent-encodes the comma into `track%2Cepisode`. Spotify accepts that, but
  * every captured response was taken with this exact query, and a request that
@@ -133,24 +155,38 @@ const accessToken = async (env: Env): Promise<string> => {
  * No market is named. DESIGN section 05 caches one answer for every caller,
  * and a region-scoped response would quietly make that cache region-specific.
  */
-const itemsPage = async (sourceId: string, offset: number, bearer: string): Promise<ItemsPage> => {
+const itemsPage = async (
+  sourceId: string,
+  offset: number,
+  bearer: string,
+): Promise<ItemsResponse> => {
   const address =
     `${API}/playlists/${sourceId}/items` +
     `?offset=${offset}&limit=${PAGE_SIZE}&additional_types=track,episode`
 
   const response = await fetch(address, { headers: { authorization: `Bearer ${bearer}` } })
 
-  // Thrown rather than answered, so the Resolution fails and the queue delivers
-  // it again. Telling a 404 (the Playlist is Gone) apart from a 503 (try later)
-  // is #12's, and until then every failure is treated as worth retrying.
+  // The one status that says something about the Playlist rather than about us
+  // or about Spotify. A deleted playlist, a private one and one Spotify curates
+  // itself all answer 404 -- `gone-404.json` and `curated-404.json` are byte for
+  // byte identical captures of two of the three -- so one answer covers them,
+  // and none of them is helped by asking again.
+  if (response.status === 404) {
+    throw new PlaylistGone(`Spotify does not have a playlist ${sourceId}`)
+  }
+
+  // Everything else is about the credential we sent, the rate we sent it at, or
+  // Spotify's own health: a 401, a 403, a 429, a 500. None of those is a fact
+  // about the Playlist, and all of them can be different in a minute, so they
+  // are thrown plainly and the queue delivers the Resolution again.
   if (!response.ok) {
     throw new Error(`Spotify would not serve playlist ${sourceId}: ${response.status}`)
   }
 
-  return response.json<ItemsPage>()
+  return response.json<ItemsResponse>()
 }
 
-export const spotify: PlaylistSource<ItemsPage[]> = {
+export const spotify: PlaylistSource<ItemsResponse[]> = {
   id: 'spotify',
 
   claims: (url) => sourceIdFrom(url) !== undefined,
@@ -171,11 +207,39 @@ export const spotify: PlaylistSource<ItemsPage[]> = {
    * The pages are answered rather than flattened here, so what `normalize`
    * reads is what Spotify actually said and in the order it was asked for.
    *
-   * One page today. A playlist longer than 50 entries is read as far as its
-   * first page and no further -- #12 adds the walk, where the criterion for it
-   * lives, and this returning a list is the shape that walk pushes into.
+   * The walk is sequential, and cannot be anything else: whether there is
+   * another page is in the answer to this one. One token covers all of them --
+   * it is obtained before the first request rather than inside the loop, which
+   * would ask the token endpoint once per page for nothing.
    */
-  fetch: async (sourceId, env) => [await itemsPage(sourceId, 0, await accessToken(env))],
+  fetch: async (sourceId, env) => {
+    const bearer = await accessToken(env)
+    const pages: ItemsResponse[] = []
+
+    for (let offset = 0; offset < WALK_CEILING; offset += PAGE_SIZE) {
+      const page = await itemsPage(sourceId, offset, bearer)
+      pages.push(page)
+
+      // The Source's own answer to whether there is more, read and not
+      // followed. Counting entries against `total` would work as well until the
+      // playlist changed under the walk; this is the field Spotify computes for
+      // the window actually asked for.
+      if (page.next === null) return pages
+
+      // Spotify named another page and gave nothing to place it after. Trusting
+      // `next` and asking again would loop; stopping would hand back a short
+      // playlist as a complete one and move its Version to say so. Failing means
+      // the Resolution is delivered again, which is the honest answer to a
+      // Source contradicting itself.
+      if (page.items.length === 0) {
+        throw new Error(`Spotify offered a page of playlist ${sourceId} after an empty one`)
+      }
+    }
+
+    throw new Error(
+      `playlist ${sourceId} did not end within the ${WALK_CEILING} entries this walk will read`,
+    )
+  },
 
   normalize,
 }

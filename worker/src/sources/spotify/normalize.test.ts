@@ -217,9 +217,9 @@ describe('what a Track does not carry', () => {
 
 /**
  * `normalize` takes the pages rather than one page, and this is what holds it
- * to that. It is not the paging walk -- nothing here fetches, and `fetch` still
- * reads a single page. It is the reason #12 can add the walk by changing how
- * pages are gathered without touching what they mean.
+ * to that. It is not the paging walk -- nothing here fetches. It is the reason
+ * the walk could be added by changing only how pages are gathered: what a page
+ * means was already settled here, and this file did not move when it landed.
  */
 describe('a playlist the Source answered in more than one page', () => {
   it('reads as one list, in the order the pages were read', () => {

@@ -17,8 +17,30 @@ export const createPlaylist = (url: unknown) =>
     body: JSON.stringify({ url }),
   })
 
-export const tracksOf = (id: string) =>
-  exports.default.fetch(`https://api.jukebox.dev/playlists/${id}/tracks`)
+const tracksAddress = (id: string) => `https://api.jukebox.dev/playlists/${id}/tracks`
+
+export const tracksOf = (id: string, headers: HeadersInit = {}) =>
+  exports.default.fetch(tracksAddress(id), { headers })
+
+/**
+ * The same request, with bindings of the test's own.
+ *
+ * `exports.default` is a Fetcher, so there is no way to hand the fetch handler
+ * an env through it -- the same limit `resolvePlaylist` runs into below, and the
+ * same answer: the worker's own default export, called directly. Still the
+ * worker's boundary, not a module behind it. The ordinary reads go through
+ * `tracksOf` above, so the real dispatcher stays under test everywhere else.
+ */
+export const tracksOfWithBindings = (
+  id: string,
+  bindings: Partial<Env>,
+  headers: HeadersInit = {},
+) =>
+  worker.fetch(
+    new Request(tracksAddress(id), { headers }),
+    { ...env, ...bindings },
+    createExecutionContext(),
+  )
 
 /**
  * The other entry point. `exports.default` is a Fetcher and carries only
