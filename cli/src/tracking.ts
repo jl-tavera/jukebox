@@ -66,6 +66,19 @@ const markLocalStatus = (
 }
 
 /**
+ * A Track that joined or left, named.
+ *
+ * The name is here rather than looked up afterwards because the read that finds
+ * the change is already holding it: a departed Track's title comes off the row
+ * about to be marked Removed, and a new one's off the snapshot being applied.
+ * Reading them back would be a second query for something already in hand.
+ *
+ * A departed Track is named with the title the Mirror held -- the name it was
+ * last known by here, which is the only one this machine ever saw.
+ */
+export type NamedTrack = { trackId: string; title: string }
+
+/**
  * Records what a refusal means for a Playlist already tracked.
  *
  * Here rather than in each command because it is a fact about the Mirror rather
@@ -79,8 +92,30 @@ export const recordRefusal = (mirror: Mirror, id: PlaylistId, code: ErrorCode): 
   if (code === 'source_unavailable') markLocalStatus(mirror, id, 'unreachable')
 }
 
-/** What one application of a snapshot changed, in namespaced Track ids. */
-export type Applied = { added: string[]; removed: string[] }
+/** What one application of a snapshot changed. */
+export type Applied = { added: NamedTrack[]; removed: NamedTrack[] }
+
+/** A Playlist this Mirror tracks, and what Sync needs in order to ask about it. */
+export type TrackedPlaylist = { id: PlaylistId; title: string | null; lastVersion: number | null }
+
+/**
+ * Every Playlist this user tracks, in a fixed order.
+ *
+ * `ORDER BY id` so that two Syncs of the same Mirror report in the same order.
+ * There is nothing better to sort by: a title may be absent, and nothing records
+ * when a Playlist was added.
+ *
+ * `lastVersion` is `null` for a Playlist that has never resolved, which is
+ * exactly the case that must be asked unconditionally -- there is no Version to
+ * claim to be holding.
+ */
+export const trackedPlaylists = (mirror: Mirror): TrackedPlaylist[] =>
+  mirror
+    .query<{ id: PlaylistId; title: string | null; last_version: number | null }, []>(
+      'SELECT id, title, last_version FROM playlists ORDER BY id',
+    )
+    .all()
+    .map((row) => ({ id: row.id, title: row.title, lastVersion: row.last_version }))
 
 /**
  * Brings a Playlist's Tracks into agreement with one snapshot, and answers what
@@ -98,8 +133,8 @@ export type Applied = { added: string[]; removed: string[] }
  * ten-thousand-Track Playlist is a real thing to paste in.
  *
  * `add` throws the answer away. It is here because computing it is what the
- * before-and-after read already does, and #36 is the command that says a change
- * happened out loud.
+ * before-and-after read already does, and because `sync` is the command that
+ * says a change happened out loud.
  */
 export const applySnapshot = (
   mirror: Mirror,
@@ -110,13 +145,13 @@ export const applySnapshot = (
   const source = sourceOf(id)
 
   return mirror.transaction((): Applied => {
-    const before = new Set(
+    const before = new Map(
       mirror
-        .query<{ track_id: string }, [PlaylistId]>(
-          'SELECT track_id FROM tracks WHERE playlist_id = ? AND removed_at IS NULL',
+        .query<{ track_id: string; title: string }, [PlaylistId]>(
+          'SELECT track_id, title FROM tracks WHERE playlist_id = ? AND removed_at IS NULL ORDER BY position',
         )
         .all(id)
-        .map((row) => row.track_id),
+        .map((row) => [row.track_id, row.title] as const),
     )
 
     // Provisionally gone, all of them. A Track already Removed is left alone, so
@@ -143,7 +178,7 @@ export const applySnapshot = (
          removed_at = NULL`,
     )
 
-    const present = new Set<string>()
+    const present = new Map<string, string>()
 
     for (const track of snapshot.tracks) {
       // ADR-0001's form, derived here because the API sends the Source's own id
@@ -151,7 +186,7 @@ export const applySnapshot = (
       // database explicitly, so storing the bare id would contradict a recorded
       // decision to save a string operation.
       const trackId = `${source}:${track.sourceTrackId}`
-      present.add(trackId)
+      present.set(trackId, track.title)
 
       // `added_at` is only ever written by the insert half. A Track that left and
       // came back keeps the moment it first joined: its row is that Track's whole
@@ -173,11 +208,21 @@ export const applySnapshot = (
     recordResolved(mirror, id, snapshot, at)
 
     return {
-      added: [...present].filter((trackId) => !before.has(trackId)),
-      removed: [...before].filter((trackId) => !present.has(trackId)),
+      added: namedTracks(present, (trackId) => !before.has(trackId)),
+      removed: namedTracks(before, (trackId) => !present.has(trackId)),
     }
   })()
 }
+
+/**
+ * One side of the difference between two pictures of a Playlist, in the Source's
+ * own order -- the snapshot arrives in it, and the read of what was here is
+ * ordered by position to match.
+ */
+const namedTracks = (tracks: Map<string, string>, joinedOrLeft: (trackId: string) => boolean): NamedTrack[] =>
+  [...tracks]
+    .filter(([trackId]) => joinedOrLeft(trackId))
+    .map(([trackId, title]) => ({ trackId, title }))
 
 /**
  * Moves the Playlist row to the Version this snapshot names, and gives it a
