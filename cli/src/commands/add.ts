@@ -3,7 +3,7 @@ import type { PlaylistId } from '@jukebox/schema'
 import { createPlaylist, playlistTracks, type Held } from '../api'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { counted, named } from '../phrasing'
+import { counted, named, skippedly } from '../phrasing'
 import { backend, patienceOf, type Patience } from '../session'
 import { applySnapshot, folderNameOf, recordPending, recordRefusal } from '../tracking'
 
@@ -166,10 +166,6 @@ const stillResolving = (id: PlaylistId): Renderable<Added> =>
       `Tracking ${id}.\n` +
       'It is still being read from its source. Run `jukebox sync` in a moment to pick up its tracks.',
   )
-
-/** Always said, including when it is none, so its absence never has to be interpreted. */
-const skippedly = (skipped: number): string =>
-  skipped === 0 ? 'nothing skipped' : `${counted(skipped, 'entry', 'entries')} skipped`
 
 export const add = defineCommand({
   meta: {
