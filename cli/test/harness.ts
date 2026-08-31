@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Database } from 'bun:sqlite'
 import type { CommandDef } from 'citty'
-import type { Patience } from '../src/boot'
 import type { Io } from '../src/io'
 import { MIRROR_FILE } from '../src/mirror'
 import { main } from '../src/main'
 import { HOME_VARIABLE, locations, type Locations } from '../src/paths'
+import type { Patience } from '../src/session'
 
 /**
  * Seam 3: the CLI's own entry point, driven with an argument vector against a

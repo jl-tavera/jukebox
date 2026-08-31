@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
 import type { PlaylistId } from '@jukebox/schema'
 import { createPlaylist, playlistTracks, type Held } from '../api'
-import { backend, patienceOf, type Patience } from '../boot'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
+import { backend, patienceOf, type Patience } from '../session'
 import { applySnapshot, folderNameOf, markLocalStatus, recordPending } from '../tracking'
 
 /**
