@@ -1,4 +1,5 @@
 import { defineCommand, type ArgsDef } from 'citty'
+import { add } from './commands/add'
 import { version } from './commands/version'
 import { VERSION } from './version'
 
@@ -38,5 +39,5 @@ export const root = defineCommand({
     description: 'Mirror public playlists and keep a local record of what is in them.',
   },
   args,
-  subCommands: { version },
+  subCommands: { add, version },
 })
