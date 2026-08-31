@@ -253,7 +253,19 @@ export interface operations {
     getPlaylistTracks: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The Version the caller already holds, quoted -- the ETag off the
+                 *     answer it last stored. Declared because it is the request that makes
+                 *     the 304 below the overwhelmingly common answer rather than a rare
+                 *     one, and a response nothing in the document asks for reads as one
+                 *     nothing ever gets.
+                 *
+                 *     Absent from an ask by a caller holding nothing: a Playlist it has
+                 *     never seen resolved has no Version to send.
+                 */
+                "If-None-Match"?: string;
+            };
             path: {
                 id: components["schemas"]["PlaylistId"];
             };
