@@ -59,9 +59,16 @@ export type Unreachable = { kind: 'unreachable'; message: string }
  */
 export type Created = { kind: 'tracked'; id: PlaylistId } | Refused | Unreachable
 
-/** The API's answer to being asked for a Playlist's Tracks. */
+/**
+ * The API's answer to being asked for a Playlist's Tracks.
+ *
+ * `unchanged` carries nothing because nothing came back: it is the answer to a
+ * conditional ask, and it means the caller's own record is already current. A
+ * caller that holds no Version never receives it.
+ */
 export type Held =
   | { kind: 'snapshot'; snapshot: PlaylistTracks }
+  | { kind: 'unchanged' }
   | { kind: 'resolving' }
   | Refused
   | Unreachable
@@ -100,15 +107,36 @@ export const createPlaylist = async (api: string, url: string): Promise<Created>
  *
  * One request answers both "is it ready" and "here they are", which is what lets
  * the poll loop and the fetch be the same call.
+ *
+ * `holding` is the Version the caller already has, and passing it is what makes
+ * a Sync cost nothing: the Version is the ETag, so an unchanged Playlist comes
+ * back as a bare `304`. It defaults to asking unconditionally because that is
+ * what `add` wants -- an add reports the title, the count and the Skipped, and
+ * cannot do that from an answer with no body -- and because a Playlist that has
+ * never resolved has no Version to send.
  */
-export const playlistTracks = async (api: string, id: PlaylistId): Promise<Held> => {
+export const playlistTracks = async (
+  api: string,
+  id: PlaylistId,
+  holding: number | null = null,
+): Promise<Held> => {
   const answer = await asked(`${api}/playlists/${encodeURIComponent(id)}/tracks`, {
-    headers: { accept: 'application/json' },
+    headers: {
+      accept: 'application/json',
+      // Quoted, and strong: the Version names one immutable snapshot exactly
+      // rather than an equivalent one, which is how the worker sends it and so
+      // the only spelling it recognises coming back.
+      ...(holding === null ? {} : { 'if-none-match': `"${holding}"` }),
+    },
   })
 
   if (answer.kind === 'unreachable') return answer
 
   const { response, body } = answer
+
+  // First, because it is the answer this route gives most often and the only one
+  // with nothing in it to read. Everything below reaches for a body.
+  if (response.status === 304) return { kind: 'unchanged' }
 
   if (response.status === 200) {
     const snapshot = readSnapshot(body)
@@ -149,7 +177,9 @@ const asked = async (
 
   // Parsed here and not by the caller, so a body that is not JSON is one shape of
   // nothing rather than two. Every answer this API gives carries one except the
-  // empty revalidation, which #36 is the first to ask for.
+  // empty revalidation, and that one falls out of the same catch as a body that
+  // would not parse -- which costs nothing, because its caller branches on the
+  // status before it looks at what came back.
   const body = await response.json().catch(() => undefined)
 
   return { kind: 'answered', response, body }

@@ -169,6 +169,25 @@ export const REFUSALS = {
   ),
 } as const
 
+/**
+ * Is the caller already holding this Version?
+ *
+ * Deliberately the worker's own rule from `worker/src/index.ts`, restated rather
+ * than simplified down to what the CLI happens to send. RFC 9110 lets
+ * `If-None-Match` carry a list, lets a tag be marked weak, and gives `*` the
+ * meaning "whatever you have now" -- and a test server that accepted a bare `1`
+ * would pass a CLI that the real worker answers a whole snapshot to.
+ *
+ * This is the half of the seam spec #29 asks for by name: the server decides
+ * what a conditional request means, so a CLI that never sent one cannot agree
+ * with it.
+ */
+const holdsVersion = (header: string | undefined, version: number): boolean =>
+  (header ?? '').split(',').some((tag) => {
+    const sent = tag.trim().replace(/^W\//, '')
+    return sent === '*' || sent === `"${version}"`
+  })
+
 const envelope = (refusal: Refusal): Response =>
   Response.json({ error: { code: refusal.code, message: refusal.message } }, {
     status: refusal.refuse,
@@ -189,25 +208,33 @@ export const serving = (document: DiscoveryDocument = healthy()): Site => {
   const tracked = new Map<string, Tracked>()
   const held = new Map<PlaylistId, Answer[]>()
 
-  const tracks = (id: PlaylistId): Response => {
+  const tracks = (id: PlaylistId, holding: string | undefined): Response => {
     const queued = held.get(id)
     if (queued === undefined || queued.length === 0) return envelope(REFUSALS.notFound)
 
     // Shifted while more than one remains, so the last answer given is the one
     // every later request gets. That is what lets a test say "resolving twice,
     // then resolved" and also "resolving for ever".
+    //
+    // Above the conditional check below, and not by accident: a revalidation is
+    // a request like any other and consumes a queued answer like any other. A
+    // test saying "changed, then unchanged" is describing two asks.
     const next = queued.length > 1 ? queued.shift()! : queued[0]!
 
     if (next === 'resolving') return Response.json({ status: 'pending' }, { status: 202 })
     if ('refuse' in next) return envelope(next)
 
-    // The ETag and Cache-Control the contract requires of this answer. Nothing
-    // in #35 reads either -- the Version is taken off the body, where it is an
-    // integer already -- but serving them is what lets #36 assert the
-    // conditional request against a server that was telling the truth all along.
-    return Response.json(next, {
-      headers: { etag: `"${next.version}"`, 'cache-control': 'no-cache' },
-    })
+    // The ETag and Cache-Control the contract requires, on the answer with a
+    // body and on the empty one that revalidates it -- the same tag either way,
+    // so a client that stores whatever came back stores the same thing.
+    const headers = { etag: `"${next.version}"`, 'cache-control': 'no-cache' }
+
+    // The whole of a sync that has nothing to do. `Response.json` cannot express
+    // it: a 304 carries no body at all, which is the one answer this API gives
+    // that `api.ts` cannot parse a document out of.
+    if (holdsVersion(holding, next.version)) return new Response(null, { status: 304, headers })
+
+    return Response.json(next, { headers })
   }
 
   const created = async (request: Request): Promise<Response> => {
@@ -250,7 +277,9 @@ export const serving = (document: DiscoveryDocument = healthy()): Site => {
       if (path === '/playlists' && request.method === 'POST') return await created(request)
 
       const forTracks = /^\/playlists\/(.+)\/tracks$/.exec(path)
-      if (forTracks !== null && request.method === 'GET') return tracks(forTracks[1]!)
+      if (forTracks !== null && request.method === 'GET') {
+        return tracks(forTracks[1]!, request.headers.get('if-none-match') ?? undefined)
+      }
 
       return new Response('Not found\n', { status: 404 })
     },
