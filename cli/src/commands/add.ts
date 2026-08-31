@@ -3,6 +3,7 @@ import type { PlaylistId } from '@jukebox/schema'
 import { createPlaylist, playlistTracks, type Held } from '../api'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
+import { counted, named } from '../phrasing'
 import { backend, patienceOf, type Patience } from '../session'
 import { applySnapshot, folderNameOf, recordPending, recordRefusal } from '../tracking'
 
@@ -165,18 +166,6 @@ const stillResolving = (id: PlaylistId): Renderable<Added> =>
       `Tracking ${id}.\n` +
       'It is still being read from its source. Run `jukebox sync` in a moment to pick up its tracks.',
   )
-
-/**
- * What to call a Playlist on screen.
- *
- * The id is the fallback, and `CONTEXT.md` is why there is no third option: a
- * title is absent where the Source offers nothing usable, "never a placeholder,
- * which nobody downstream could tell from a real title".
- */
-const named = (title: string | null, id: PlaylistId): string =>
-  title === null ? id : `"${title}"`
-
-const counted = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`
 
 /** Always said, including when it is none, so its absence never has to be interpreted. */
 const skippedly = (skipped: number): string =>
