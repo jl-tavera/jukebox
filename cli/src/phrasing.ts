@@ -112,6 +112,29 @@ export const skippedly = (skipped: number): string =>
   skipped === 0 ? 'nothing skipped' : `${counted(skipped, 'entry', 'entries')} skipped`
 
 /**
+ * The Mirror was asked about a Playlist it does not hold.
+ *
+ * Shared by `show` and `remove`, which ask the same question of the same table
+ * and owe the same answer -- one of them phrasing it differently would read as
+ * two different problems.
+ *
+ * The middle line only where the reference looks like an address, because that
+ * is the only case where the reader may be right and Jukebox still cannot find
+ * it: the URL is matched as the exact string `add` recorded, so the same
+ * Playlist pasted a second time with a tracking parameter on it genuinely
+ * misses. Left unsaid, that reads as "you do not track this" when the truth is
+ * "not by that name".
+ */
+export const notTracked = (reference: string): string =>
+  [
+    `Jukebox is not tracking ${reference} on this machine.`,
+    ...(reference.includes('://')
+      ? ['Addresses are matched exactly as they were typed when the playlist was added.']
+      : []),
+    'Run `jukebox list` to see what is tracked.',
+  ].join('\n')
+
+/**
  * What to call a Playlist where the reader may want to act on it next.
  *
  * `named` plus the handle, because `show` and `remove` both print a heading
