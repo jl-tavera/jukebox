@@ -33,8 +33,35 @@ import { olderThan, VERSION } from './version'
  */
 export type Backend = { api: string }
 
+/**
+ * How long a command waits for something out of its hands, and how often it asks
+ * again while it waits.
+ *
+ * In the session because a test has to be able to shorten it and production must
+ * not: an environment variable would be a knob shipped to every user so that one
+ * test could reach a branch. `Seams` is where this repository already puts
+ * exactly that, beside the address the discovery document is read from.
+ *
+ * In *this file* only because `Session` is, and that is worth moving rather than
+ * defending: how long a command waits has nothing to do with the boot sequence
+ * this module is named for. `Session`, `backend` and this belong in one module of
+ * their own, and #36 -- which is the next thing to add a member -- is where the
+ * move costs least.
+ */
+export type Patience = { windowMs: number; intervalMs: number }
+
+/**
+ * Thirty seconds, asking every second.
+ *
+ * Every add is a cold Resolution -- nothing is read from a Source until the queue
+ * gets to it -- so the wait is the normal experience rather than an edge case.
+ * Long enough that a Resolution almost always lands inside it; short enough that
+ * nobody concludes the terminal has frozen.
+ */
+export const PATIENCE: Patience = { windowMs: 30_000, intervalMs: 1_000 }
+
 /** What `main` puts in citty's `data`, and the only thing a command may find there. */
-export type Session = { backend: () => Promise<Backend> }
+export type Session = { backend: () => Promise<Backend>; patience: Patience }
 
 /** One variable, and it moves one thing. See the comment where it is read. */
 export const API_VARIABLE = 'JUKEBOX_API'
@@ -96,6 +123,16 @@ export const backend = async (data: unknown): Promise<Backend> => {
 
   return await session.backend()
 }
+
+/**
+ * The patience this run was given.
+ *
+ * Falls back to the default rather than refusing, unlike `backend`: a command
+ * with no session cannot reach a backend at all, but one with no patience has a
+ * perfectly good answer to how long to wait.
+ */
+export const patienceOf = (data: unknown): Patience =>
+  (data as Session | undefined)?.patience ?? PATIENCE
 
 /**
  * Booted at most once per run, and only if something asks.

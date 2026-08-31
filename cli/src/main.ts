@@ -1,5 +1,5 @@
 import { renderUsage, runCommand, type ArgsDef, type CommandDef, type Resolvable } from 'citty'
-import { BootStop, lazily, type Session } from './boot'
+import { BootStop, lazily, PATIENCE, type Patience, type Session } from './boot'
 import { reportVersion } from './commands/version'
 import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
@@ -29,6 +29,12 @@ export type Seams = {
   root?: CommandDef
   /** Where the discovery document is read from. The site's own address by default. */
   discovery?: string
+  /**
+   * How long a command waits for work it did not start. The shipped default
+   * unless a test shortens it, which is the only way the giving-up branch is
+   * reachable inside a test suite that has to finish.
+   */
+  patience?: Patience
 }
 
 /**
@@ -58,6 +64,7 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   const warnings: string[] = []
   const session: Session = {
     backend: lazily(seams.discovery ?? DISCOVERY_URL, (text) => void warnings.push(text)),
+    patience: seams.patience ?? PATIENCE,
   }
 
   const renderable = await compute(argv, seams.root ?? jukebox, session)
