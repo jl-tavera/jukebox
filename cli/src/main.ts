@@ -1,5 +1,5 @@
 import { renderUsage, runCommand, type ArgsDef, type CommandDef, type Resolvable } from 'citty'
-import { BootStop, lazily, PATIENCE, type Patience, type Session } from './boot'
+import { BootStop } from './boot'
 import { reportVersion } from './commands/version'
 import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
@@ -7,6 +7,7 @@ import { selectMode } from './mode'
 import { failed, succeeded, type Renderable } from './outcome'
 import { render } from './render'
 import { root as jukebox } from './root'
+import { lazily, PATIENCE, type Patience, type Session } from './session'
 import { JSON_STABILITY, VERSION } from './version'
 
 /**
