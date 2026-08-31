@@ -6,7 +6,28 @@ import type { Mirror } from './mirror'
  * What the Mirror is told, kept out of the commands so a command stays about
  * what it says to the user -- the split `worker/src/playlists.ts` makes against
  * the routes, for the same reason.
+ *
+ * `reading.ts` is the other half, and the line between them is who is asking
+ * rather than which verb the SQL uses. A read a write needs in order to be
+ * correct stays here -- `trackedPlaylists` is what Sync asks before it writes,
+ * `folderNameOf` is read back the moment after. A read somebody wants an answer
+ * to is over there.
  */
+
+/**
+ * A Playlist's status in the Mirror: `CONTEXT.md`'s three, and `ok`.
+ *
+ * Not `@jukebox/schema`'s `PlaylistStatus`, which is the API's `pending | ok`.
+ * The API answers about a Resolution it is running; the Mirror records what this
+ * machine last learned, and two of the things it can learn are states the
+ * contract states as error codes rather than as a status. One of them,
+ * `unreachable`, the API has no way to say about itself at all.
+ *
+ * Declared here because this module writes every one of the four, and read back
+ * by `reading.ts` -- so a value renamed on the way in breaks the typecheck on
+ * the way out.
+ */
+export type MirrorStatus = 'pending' | 'ok' | 'gone' | 'unreachable'
 
 /**
  * The Source a namespaced id belongs to.
@@ -60,7 +81,10 @@ export const recordPending = (
 const markLocalStatus = (
   mirror: Mirror,
   id: PlaylistId,
-  status: 'gone' | 'unreachable',
+  // Narrowed out of the four rather than written as its own pair, so that a
+  // status renamed in one place is renamed in both. The other two are written
+  // by `recordPending` and `recordResolved`, which name them inline in SQL.
+  status: Extract<MirrorStatus, 'gone' | 'unreachable'>,
 ): void => {
   mirror.run('UPDATE playlists SET status = ? WHERE id = ?', [status, id])
 }
@@ -292,3 +316,24 @@ export const folderNameOf = (mirror: Mirror, id: PlaylistId): string | null =>
       'SELECT folder_name FROM playlists WHERE id = ?',
     )
     .get(id)?.folder_name ?? null
+
+/**
+ * Stops tracking a Playlist here, and takes its Tracks with it.
+ *
+ * The only delete in the CLI, and it stays the only one. Everywhere else a
+ * Playlist that goes wrong keeps what it had -- DESIGN section 09's rule, and
+ * the reason `recordRefusal` moves a status and touches nothing else. This is
+ * the one place a person has asked.
+ *
+ * The Tracks go through the cascade rather than through a second statement,
+ * which is what `mirror.ts` turns `PRAGMA foreign_keys` on for. Two statements
+ * would be the same rows deleted in the same order with one more chance of
+ * being interrupted between them.
+ *
+ * Nothing upstream is told, because there is nothing to tell: the worker has no
+ * notion of who tracks what and no endpoint that could be given one. The
+ * command says so out loud, since a reader could reasonably assume otherwise.
+ */
+export const stopTracking = (mirror: Mirror, id: PlaylistId): void => {
+  mirror.run('DELETE FROM playlists WHERE id = ?', [id])
+}

@@ -25,8 +25,8 @@ export const MIRROR_FILE = 'mirror.sqlite'
  *
  * A wrapper would have to grow a method per statement anything wants, and every
  * one of those methods would be a place for a query to hide from the module that
- * owns the table. `tracking.ts` owns the writes and #37 will own the reads; both
- * take one of these.
+ * owns the table. `tracking.ts` owns the writes and `reading.ts` owns the reads;
+ * both take one of these.
  */
 export type Mirror = Database
 
