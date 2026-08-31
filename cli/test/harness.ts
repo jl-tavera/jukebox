@@ -177,10 +177,22 @@ export const oneObject = (run: { stdout: string }): Record<string, unknown> => {
  * The Mirror a run left behind, opened read-only and closed again.
  *
  * Reading a database rather than driving an interface is normally the wrong shape
- * for a test, and it is here for the things nothing else can observe yet: the form
- * a Track id is stored in, whether a second add duplicated anything, what the
- * migration runner did. #37 brings `list` and `show`, which are the interface
- * those become assertions against.
+ * for a test, and this said it was waiting for #37 to bring the interface. That
+ * interface is here: `list --json` carries a Playlist's whole row and
+ * `show --json` a Track's, so what a command can be asked, a test should ask it.
+ *
+ * Two things stay behind, and they are not waiting for a later ticket. The
+ * Mirror's *shape* -- what tables exist, what columns they carry, what version
+ * it is at -- is what `mirror.test.ts` asserts, and no command exposes it or
+ * should; a `jukebox` that printed its own schema would be answering a question
+ * only its maintainer has. And a row orphaned by a delete is invisible to every
+ * command by definition, because the Playlist that would have shown it is the
+ * one that went -- which is exactly the failure `remove.test.ts` guards against.
+ *
+ * The readers in `add.test.ts` and `sync.test.ts` predate all three commands.
+ * They were left alone rather than rewritten, because rewriting a passing test
+ * to reach the same conclusion by a different route is churn; they are worth
+ * moving the next time one of them is edited for its own sake.
  *
  * Read-only, so a test cannot quietly become the thing that wrote the row it is
  * asserting. Closed in a `finally`, because a handle left open on Windows is a
