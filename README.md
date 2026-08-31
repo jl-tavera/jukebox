@@ -65,6 +65,48 @@ In a pipe or a CI job there are no prompts and no spinners: nothing can hang wai
 
 ---
 
+## Reading your mirror
+
+Three commands read the local record back. None of them touches the network, so they work on a train, during an outage, and with the Wi-Fi off.
+
+| Command | What it does |
+|---|---|
+| `jukebox list` | Every playlist you track |
+| `jukebox show <playlist>` | One playlist and the tracks recorded for it |
+| `jukebox remove <playlist>` | Stop tracking one, on this machine |
+
+`list` gives a line per playlist — its status, what it holds, and when your copy last changed:
+
+```
+  spotify:1AbCdEfGhIjKlMnOpQrStU                    pending   no tracks             never updated
+  "Rain / Shine" (spotify:3cEYpjA9oz9GiPac4AsH4n)   ok        2 tracks, 1 removed   updated 2026-08-31 21:29
+```
+
+The id is on every row because it is what `show` and `remove` take, so the line you are reading always carries the string the next command wants.
+
+That last column says *updated*, not *synced*, and the difference is worth knowing: a sync that finds nothing changed costs nothing and writes nothing. The timestamp is when your copy last moved, not when Jukebox last asked.
+
+`show` takes either the id `list` prints or the address you added the playlist with, and lists its tracks in the source's own order:
+
+```
+"Rain / Shine" (spotify:3cEYpjA9oz9GiPac4AsH4n)
+2 tracks, 1 removed, 1 entry skipped.
+
+      Long Way Down   Aria Fenn, Kit Marlow   Ninety Miles   4:02
+      Sun Dogs        Aria Fenn               Ninety Miles   2:58
+
+Removed, and still recorded here:
+  -   Blue Dot        Aria Fenn               Ninety Miles   3:34   left 2026-08-31 21:29
+```
+
+**A track that leaves a playlist is kept, not deleted.** Its row stays, with the date it left. That is what lets `sync` tell you what changed instead of printing one number and then another, and it is why your copy can tell you what a playlist used to hold — the server stores what a playlist contains now, and nothing else remembers the rest.
+
+Addresses are matched exactly as you typed them when you added the playlist. Nothing is normalised, so the same playlist pasted a second time with a tracking parameter on the end will not be found; `jukebox list` is always the way back to a name that works.
+
+`remove` stops tracking a playlist and deletes its local rows. **It affects your machine only.** There is no account and nothing upstream knows you were tracking anything, so there is nothing to tell and no endpoint to tell it to — the playlist, its source, and anyone else tracking the same one are untouched. There is no confirmation prompt because there is nothing to lose that `jukebox add` cannot fetch again, and the command prints the exact line to do it with.
+
+---
+
 ## Configuration
 
 `jukebox config` shows every setting, its value, and whether that value came from a default, the file, or the environment.

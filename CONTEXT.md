@@ -45,7 +45,7 @@ How many entries a source offered that never became tracks — podcast episodes,
 _Avoid_: Dropped, filtered, ignored; and the client's per-track `skipped` state (that is a track whose match has tier `none` — this is an entry that never became one)
 
 **Removed**:
-A Track the Source no longer lists in a Playlist. Its local record is kept, along with the moment it left, and the word never implies a file was deleted. Distinct from **Skipped**, which never became a Track, and from **Gone**, which describes a Playlist rather than a Track.
+A Track the Source no longer lists in a Playlist. Its local record is kept, along with the moment it left, and the word never implies a file was deleted. Distinct from **Skipped**, which never became a Track, and from **Gone**, which describes a Playlist rather than a Track. Also distinct from `jukebox remove`, which stops tracking a whole Playlist and deletes its local rows — the command is named for what a user asks for, the term for what a Source did, and neither is ever described in the other's words.
 _Avoid_: Flagged (names the consequence for a file, not the membership fact), deleted, dropped
 
 **Catalog**:
@@ -79,6 +79,9 @@ _Avoid_: Revision (a revision is the source's own opaque change token), timestam
 
 **Pending**:
 Tracked, but not yet resolved. It has no tracks yet.
+
+**Ok**:
+Resolved, and its tracks are the ones its source last served. The ordinary state, and the only one that says nothing about a problem — a client shows the other three and leaves this one unremarked.
 
 **Unreachable**:
 Resolution failed for a reason expected to be temporary. Jukebox will try again.
