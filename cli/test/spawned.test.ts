@@ -73,6 +73,11 @@ describe('the CLI, run as its own process', () => {
       data: { commands: { name: string }[] }
     }
 
-    expect(help.data.commands.map((command) => command.name)).toEqual(['add', 'sync', 'version'])
+    expect(help.data.commands.map((command) => command.name)).toEqual([
+      'add',
+      'config',
+      'sync',
+      'version',
+    ])
   })
 })
