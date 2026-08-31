@@ -67,7 +67,30 @@ export const withMirror = async <T>(work: (mirror: Mirror) => Promise<T> | T): P
   try {
     return await work(mirror)
   } finally {
-    mirror.close()
+    release(mirror)
+  }
+}
+
+/**
+ * Closed, and actually let go of.
+ *
+ * `close(true)` rather than `close()`, and the difference is not error
+ * reporting. A handle with a statement still cached against it -- which is every
+ * one of these, because `query` caches what it prepares -- answers SQLITE_BUSY,
+ * and the plain close swallows that and leaves the file open until the handle is
+ * garbage collected. That is precisely the lock the comment above says this
+ * close exists to prevent, so the plain close was not doing the job it was
+ * written for.
+ *
+ * Swallowed because this runs on the way out of a failure as well as a success,
+ * and a cleanup that threw would replace whatever was already being reported
+ * with something less useful.
+ */
+const release = (mirror: Mirror): void => {
+  try {
+    mirror.close(true)
+  } catch {
+    // Deliberately nothing. See above.
   }
 }
 
@@ -94,7 +117,7 @@ const openMirror = (): Mirror => {
     mirror.exec('PRAGMA foreign_keys = ON')
     migrate(mirror)
   } catch (error) {
-    mirror.close()
+    release(mirror)
 
     if (error instanceof MirrorUnopenable) throw error
     throw new MirrorUnopenable(
