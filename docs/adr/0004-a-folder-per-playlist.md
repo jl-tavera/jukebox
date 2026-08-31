@@ -77,3 +77,36 @@ name is computed at the first moment there is a title to compute it from, and st
 then. That is during `add` when the Resolution lands inside its wait, and the first Sync otherwise.
 Naming a folder after the id at add time would have been naming it after the id for ever, because
 this ADR forbids changing it afterwards.
+
+## Amendment, 2026-08-31: `library_path` becomes real
+
+This ADR said the decision "reaches the code only as `library_path` in the config file". #34 is
+where that file came to exist, and settling it required four choices this ADR named only in
+passing. Each is recorded because it is the kind of thing a later reader would otherwise decide
+again, differently.
+
+- **The file is TOML, in the platform's configuration directory**, separate from the data directory
+  holding the Mirror — spec #29's decision, on the grounds that configuration is hand-written and
+  worth keeping while the Mirror is rebuildable. `Bun.TOML.parse` is built into the runtime, so this
+  costs no dependency and nothing that would reintroduce a native module to the compiled binary.
+  TOML's literal strings also take a Windows path without escaping it, which JSON cannot:
+  `library_path = 'C:\Users\ada\Music\Jukebox'`.
+- **The default is a `Jukebox` folder inside the platform's music directory** — `~/Music` on Windows
+  and macOS, `$XDG_MUSIC_DIR` or `~/Music` on Linux. Titled on every platform, including the one
+  where the CLI's own directory is lower-case: that casing is about fitting in among `~/.config`'s
+  dotted neighbours, and this folder sits in a browsable music directory instead.
+- **Windows' Known Folder is not read.** A user genuinely can move their Music folder and nothing in
+  the environment says where to — only the registry. A registry read is a lot of platform-specific
+  code for a default that nothing writes to in this release, and someone who moved theirs sets
+  `library_path`. The same reasoning keeps Linux's answer to the environment rather than parsing
+  `~/.config/user-dirs.dirs`: the resolver stays pure, which is what lets every platform's answer be
+  checked from any platform.
+- **`JUKEBOX_LIBRARY` overrides it; `JUKEBOX_HOME` deliberately does not.** The variable that
+  relocates everything relocates everything *of ours*. The Library is the user's own folder and sits
+  on the other side of that line — somebody pointing the CLI at a scratch directory has not asked
+  for their music to move.
+
+The consequence this ADR anticipated still holds and is now visible: **nothing creates the folder.**
+`jukebox config` reports the path and says outright that no Library folder is created and nothing is
+downloaded, because a user who sets a path and finds an empty folder has been misled by output that
+was technically accurate.
