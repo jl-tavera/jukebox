@@ -106,7 +106,15 @@ const tracking = async (
     return failed('add', 'network_unreachable', held.message)
   }
 
-  return stillResolving(id)
+  if (held.kind === 'resolving') return stillResolving(id)
+
+  // `unchanged` is the one answer `add` cannot be given: it never sends a
+  // Version, and the API only answers this to a caller that did. Named and
+  // thrown rather than left to fall into the branch above, because a Playlist
+  // reported as still being read when the server said "you already have this"
+  // would be a wrong answer rather than a missing one -- and this is where an
+  // `add` that started asking conditionally would find out.
+  throw new Error('the API answered a conditional request that add never made')
 }
 
 /**
