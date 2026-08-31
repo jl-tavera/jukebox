@@ -7,6 +7,7 @@ import {
   type Origin,
 } from '../config'
 import { succeeded, type Renderable } from '../outcome'
+import { columns } from '../phrasing'
 
 /**
  * `jukebox config`: every resolved value, and where each one came from.
@@ -51,14 +52,13 @@ const human = (reported: Configured): string => {
     },
   ]
 
-  const keyWidth = widest(rows.map(({ key }) => key))
-  const valueWidth = widest(rows.map(({ setting }) => setting.value))
-
   return [
-    ...rows.map(
-      ({ key, setting, variable }) =>
-        `  ${key.padEnd(keyWidth)}   ${setting.value.padEnd(valueWidth)}   ` +
+    ...columns(
+      rows.map(({ key, setting, variable }) => [
+        key,
+        setting.value,
         `(${came(setting.origin, variable)})`,
+      ]),
     ),
     '',
     whereFrom(file),
@@ -78,8 +78,6 @@ const human = (reported: Configured): string => {
  */
 const came = (origin: Origin, variable: string): string =>
   origin === 'environment' ? `environment: ${variable}` : origin
-
-const widest = (values: string[]): number => Math.max(...values.map((value) => value.length))
 
 /**
  * Named in all three cases, because "where would I put one?" is the question

@@ -3,7 +3,7 @@ import type { ErrorCode, PlaylistId } from '@jukebox/schema'
 import { playlistTracks, type Held } from '../api'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { counted, named } from '../phrasing'
+import { counted, named, NOTHING_TRACKED } from '../phrasing'
 import { backend } from '../session'
 import {
   applySnapshot,
@@ -166,13 +166,10 @@ const answered = async (api: string, playlist: TrackedPlaylist): Promise<Held> =
 }
 
 /**
- * A Mirror with nothing in it, which is a Sync that worked and had nothing to do.
- *
- * Said rather than printing an empty report, because a command that wrote nothing
- * at all reads as a command that failed silently.
+ * A Mirror with nothing in it is a Sync that worked and had nothing to do, and
+ * `list` reading the same Mirror has the same nothing to report. The sentence
+ * moved to `phrasing.ts` at #37 so that both say it in the same words.
  */
-const NOTHING_TRACKED = 'Nothing is tracked yet. Add a playlist with `jukebox add <url>`.'
-
 const report = (playlists: Reported[]): Renderable<Synced> =>
   succeeded('sync', { playlists }, () =>
     playlists.length === 0 ? NOTHING_TRACKED : playlists.map(line).join('\n'),
