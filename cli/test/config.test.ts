@@ -1,12 +1,19 @@
-import { describe, expect, it } from 'bun:test'
+import { afterAll, describe, expect, it } from 'bun:test'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import pkg from '../package.json'
 import {
+  CONFIG_FILE,
   DEFAULT_INTERVAL_HOURS,
   INTERVAL_VARIABLE,
   LIBRARY_VARIABLE,
+  NOTE,
   resolved,
+  type Configured,
   type FileState,
 } from '../src/config'
-import { HOME_VARIABLE, type Host } from '../src/paths'
+import { HOME_VARIABLE, type Host, type Locations } from '../src/paths'
+import { jukebox, oneObject, removeHomes } from './harness'
 
 /**
  * A pure seam, called directly.
@@ -282,5 +289,162 @@ describe('an unusable value with a usable one beneath it', () => {
 
   it('reports exactly one problem, for the one thing that was wrong', () => {
     expect(overFile().problems).toHaveLength(1)
+  })
+})
+
+/**
+ * Seam 3: the command, driven the way a shell drives it.
+ *
+ * What the pure tests above cannot reach is the part a user meets -- that a file
+ * on disk is actually found, that the note is actually printed, and above all
+ * that running this creates nothing.
+ */
+
+afterAll(removeHomes)
+
+const writing = (contents: string) => (where: Locations) => {
+  mkdirSync(where.config, { recursive: true })
+  writeFileSync(join(where.config, CONFIG_FILE), contents)
+}
+
+/**
+ * Nowhere. Every run below is given it, so that a command which quietly booted
+ * would hang or warn rather than passing.
+ */
+const NO_SITE = 'http://127.0.0.1:1/discovery.json'
+
+const asking = (options: Parameters<typeof jukebox>[1] = {}) =>
+  jukebox(['config'], { discovery: NO_SITE, ...options })
+
+describe('jukebox config', () => {
+  it('shows both settings with where each came from', async () => {
+    const run = await asking()
+
+    expect(run.stdout).toContain('library_path')
+    expect(run.stdout).toContain('sync_interval_hours')
+    expect(run.stdout).toContain(String(DEFAULT_INTERVAL_HOURS))
+    expect(run.stdout).toContain('(default)')
+    expect(run.code).toBe(0)
+  })
+
+  it('says plainly that nothing acts on either of them', async () => {
+    // The honesty constraint, and the thing most likely to be lost in a later
+    // tidy-up of this command's output.
+    const run = await asking()
+
+    expect(run.stdout).toContain(NOTE)
+  })
+
+  it('names where a configuration file would go, when there is none', async () => {
+    const run = await asking()
+
+    expect(run.stdout).toContain(join(run.locations.config, CONFIG_FILE))
+    expect(run.stdout.toLowerCase()).toContain('no configuration file yet')
+  })
+
+  it('creates nothing at all', async () => {
+    const run = await asking()
+
+    // The whole of "no first-run prompt asks for a Library path, and no Library
+    // folder is created", asserted the way `cli.test.ts` asserts it of `version`.
+    // A configuration directory conjured up for a file nobody wrote would be the
+    // same broken promise as the folder.
+    expect([...new Bun.Glob('**/*').scanSync(run.home)]).toEqual([])
+  })
+
+  it('answers with no network at all', async () => {
+    // Pointed at a closed port. A command that booted would warn on stderr at
+    // best and stop at worst, so silence here is the evidence that `config`
+    // never opens `boot.ts`'s one door.
+    const run = await asking()
+
+    expect(run.stderr).toBe('')
+    expect(run.code).toBe(0)
+  })
+
+  it('names the variable behind a value the environment supplied', async () => {
+    // `(environment)` alone leaves a reader who disagrees with the value with
+    // nowhere to go: it is not in the file in front of them, and nothing on
+    // screen says what to unset.
+    const run = await asking({ env: { [LIBRARY_VARIABLE]: '/mnt/elsewhere' } })
+
+    expect(run.stdout).toContain(`(environment: ${LIBRARY_VARIABLE})`)
+
+    // The other two origins name themselves through the key, so they stay bare.
+    expect(run.stdout).toContain('(default)')
+  })
+
+  it('reads a file somebody wrote', async () => {
+    const run = await asking({ tty: false, prepare: writing("library_path = '/srv/music'\n") })
+
+    const { data } = oneObject(run) as { data: Configured }
+
+    expect(data.settings.library_path).toEqual({ value: '/srv/music', origin: 'file' })
+    expect(data.file.state).toBe('read')
+    expect(data.problems).toEqual([])
+  })
+
+  it('lets a variable override the file', async () => {
+    const run = await asking({
+      tty: false,
+      env: { [LIBRARY_VARIABLE]: '/mnt/elsewhere' },
+      prepare: writing("library_path = '/srv/music'\n"),
+    })
+
+    const { data } = oneObject(run) as { data: Configured }
+
+    expect(data.settings.library_path).toEqual({
+      value: '/mnt/elsewhere',
+      origin: 'environment',
+    })
+  })
+
+  it('reports a file it cannot parse, and still answers', async () => {
+    const run = await asking({ tty: false, prepare: writing('this is not toml {{{\n') })
+
+    const { data } = oneObject(run) as { data: Configured }
+
+    expect(data.problems).toHaveLength(1)
+    expect(data.file.state).toBe('unreadable')
+    expect(data.settings.library_path.origin).toBe('default')
+
+    // Reported, and still a command that worked. Exiting non-zero here would
+    // make a broken file indistinguishable from a broken Jukebox.
+    expect(run.code).toBe(0)
+  })
+
+  it('never claims to have read a file it could not read', async () => {
+    // The two halves of the output contradicting each other -- `Read from ...`
+    // above a problem saying it was not read -- is a small dishonesty, and this
+    // command is the one place it is least affordable.
+    const run = await asking({ prepare: writing('this is not toml {{{\n') })
+
+    expect(run.stdout).not.toContain('Read from')
+    expect(run.stdout).toContain('There is a configuration file at')
+    expect(run.stdout).toContain('could not be read')
+  })
+
+  it('carries the whole envelope in JSON mode, and nothing beside it', async () => {
+    const run = await asking({ tty: false })
+    const envelope = oneObject(run)
+
+    expect(envelope).toMatchObject({ ok: true, command: 'config', version: pkg.version })
+
+    const { data } = envelope as { data: Configured }
+    expect(data.note).toBe(NOTE)
+    expect(data.settings.sync_interval_hours.value).toBe(DEFAULT_INTERVAL_HOURS)
+    expect(run.stderr).toBe('')
+  })
+
+  it('is listed in the help, described as something that shows', async () => {
+    const run = await jukebox(['--help'], { discovery: NO_SITE })
+
+    expect(run.stdout).toContain('config')
+
+    // The other half of the honesty constraint. A description promising to set
+    // or schedule anything would be a promise this release does not keep.
+    const help = run.stdout.toLowerCase()
+    expect(help).not.toContain('schedule')
+    expect(run.code).toBe(0)
   })
 })
