@@ -4,17 +4,12 @@ import type { ErrorCode } from '@jukebox/schema'
  * Codes the CLI raises on its own behalf, where the API's four say what the
  * server could not do.
  *
- * Five now. The version gate and the network are two of the three this file
- * used to name as absent, and #33 built the boot that raises them; a third
- * arrived with them, because a backend reporting itself down is neither a usage
- * problem nor a bug here, and a caller branching on it needs a word for it.
- *
- * No command registered today reaches that boot -- #35's `add` is the first
- * that will. The rule this file set down is about a code *nothing raises*, and
- * the code raising these three ships in the same commit and is exercised at the
- * same seam `cli.test.ts` already reaches for a command tree of its own. A
- * Mirror that would not open is still absent, and stays absent, because #35 is
- * where a Mirror comes into existence.
+ * Six now, and the last of the three this file used to name as absent has
+ * arrived: #35 is where a Mirror comes into existence, so it is where a Mirror
+ * that will not open first has something to say. The rule the file set down --
+ * no code before something raises it -- is kept the way it was kept for the
+ * other five: the code raising this one ships in the same commit as the code,
+ * and is exercised at the seam `add` is exercised at.
  */
 export type ClientErrorCode =
   /** The argument vector names no command, or one that does not exist. */
@@ -38,11 +33,27 @@ export type ClientErrorCode =
    */
   | 'service_down'
   /**
-   * The discovery document could not be read and there was no saved copy to
-   * fall back on. Raised only when both are true -- a fetch that failed with a
-   * saved copy behind it is a warning and a working run.
+   * A request the CLI needed an answer to never got one.
+   *
+   * Two things raise it, and they are the same thing from a caller's side. The
+   * discovery document could not be read and there was no saved copy to fall
+   * back on -- only when both are true, because a fetch that failed with a saved
+   * copy behind it is a warning and a working run. Or the API itself could not
+   * be reached, which no saved copy substitutes for: the Mirror can be read
+   * offline, but nothing can add a Playlist without asking.
    */
   | 'network_unreachable'
+  /**
+   * The Mirror could not be opened, or could not be brought up to date.
+   *
+   * Its own code rather than `unexpected`, because it is not a bug here and the
+   * reader's next move is specific: a disk that is full, a directory that is not
+   * writable, a file another Jukebox is holding, or a record written by a newer
+   * release than this one. Unlike the discovery cache, a failure here is never
+   * swallowed -- that cache is discardable by construction and this is the
+   * command.
+   */
+  | 'mirror_unopenable'
 
 /**
  * One vocabulary, in one place.

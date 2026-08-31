@@ -1,8 +1,11 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Database } from 'bun:sqlite'
 import type { CommandDef } from 'citty'
+import type { Patience } from '../src/boot'
 import type { Io } from '../src/io'
+import { MIRROR_FILE } from '../src/mirror'
 import { main } from '../src/main'
 import { HOME_VARIABLE, locations, type Locations } from '../src/paths'
 
@@ -48,6 +51,15 @@ export type Options = {
   home?: string
   /** Where the discovery document is read from. The site's own address by default. */
   discovery?: string
+  /**
+   * How long a command waits for work it did not start.
+   *
+   * Shortened by any test that has to watch a wait run out. The shipped window is
+   * thirty seconds, which is right for a person at a terminal and impossible for
+   * a suite, so this is the difference between that branch being tested and
+   * being assumed.
+   */
+  patience?: Patience
   /** Variables set for the length of this run and put back after, as the home already is. */
   env?: Record<string, string | undefined>
   /**
@@ -110,7 +122,11 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
     const where = locations()
     options.prepare?.(where)
 
-    const code = await main(argv, io, { root: options.root, discovery: options.discovery })
+    const code = await main(argv, io, {
+      root: options.root,
+      discovery: options.discovery,
+      patience: options.patience,
+    })
     return { stdout, stderr, code, home, locations: where }
   } finally {
     restore()
@@ -155,4 +171,30 @@ export const oneObject = (run: { stdout: string }): Record<string, unknown> => {
   }
 
   return JSON.parse(lines[0]!) as Record<string, unknown>
+}
+
+/**
+ * The Mirror a run left behind, opened read-only and closed again.
+ *
+ * Reading a database rather than driving an interface is normally the wrong shape
+ * for a test, and it is here for the things nothing else can observe yet: the form
+ * a Track id is stored in, whether a second add duplicated anything, what the
+ * migration runner did. #37 brings `list` and `show`, which are the interface
+ * those become assertions against.
+ *
+ * Read-only, so a test cannot quietly become the thing that wrote the row it is
+ * asserting. Closed in a `finally`, because a handle left open on Windows is a
+ * temporary home that will not delete.
+ */
+export const mirrorOf = <T>(run: Run, read: (mirror: Database) => T): T => {
+  const mirror = new Database(join(run.locations.data, MIRROR_FILE), {
+    readonly: true,
+    strict: true,
+  })
+
+  try {
+    return read(mirror)
+  } finally {
+    mirror.close()
+  }
 }
