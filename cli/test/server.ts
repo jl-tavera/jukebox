@@ -50,6 +50,20 @@ export const refusing = (refuse: number, code: ErrorCode, message: string): Refu
   message,
 })
 
+/**
+ * An answer the contract does not describe: a status with no error envelope
+ * under it.
+ *
+ * What something in front of the API produces rather than anything the worker
+ * writes -- an edge answering 502, a rate limiter, a block page served as HTML.
+ * Worth a shape of its own because the CLI cannot read one, and what it does
+ * when it cannot is the difference between one Playlist failing and a whole
+ * Sync failing.
+ */
+export type Broken = { breaks: number; body: string }
+
+export const breaking = (breaks: number, body: string): Broken => ({ breaks, body })
+
 /** What `POST /playlists` says about one URL. */
 export type Tracked = { id: PlaylistId; status: PlaylistStatus } | Refusal
 
@@ -61,7 +75,7 @@ export type Tracked = { id: PlaylistId; status: PlaylistStatus } | Refusal
  * Named for what this server answers rather than for what the CLI makes of it:
  * `api.ts` has a `Held` of its own, and the two are different halves of one wire.
  */
-export type Answer = PlaylistTracks | 'resolving' | Refusal
+export type Answer = PlaylistTracks | 'resolving' | Refusal | Broken
 
 /**
  * One running server, and everything a test needs to steer it.
@@ -223,6 +237,15 @@ export const serving = (document: DiscoveryDocument = healthy()): Site => {
 
     if (next === 'resolving') return Response.json({ status: 'pending' }, { status: 202 })
     if ('refuse' in next) return envelope(next)
+
+    // Served as it arrived, with no envelope under it, because the point of it
+    // is that it is not the contract's shape.
+    if ('breaks' in next) {
+      return new Response(next.body, {
+        status: next.breaks,
+        headers: { 'content-type': 'text/html' },
+      })
+    }
 
     // The ETag and Cache-Control the contract requires, on the answer with a
     // body and on the empty one that revalidates it -- the same tag either way,

@@ -72,10 +72,12 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   render(renderable, mode, VERSION, io, warnings)
 
   // Zero for every answer the CLI was built to give, non-zero only where the
-  // CLI itself could not give one. When Sync lands, all five of the server's
-  // answers -- nothing changed, changed, still resolving, gone, temporarily
-  // unreachable -- are `ok`: a tool that exits non-zero on the answer it
-  // receives most often cannot be scheduled.
+  // CLI itself could not give one. All five of the server's answers -- nothing
+  // changed, changed, still resolving, gone, temporarily unreachable -- reach
+  // `sync` as `ok`, and so does a Playlist it could not reach at all: a tool
+  // that exits non-zero on the answer it receives most often cannot be
+  // scheduled. What is left non-zero is a boot that stopped, a Mirror that
+  // would not open, and a vector naming no command.
   return renderable.outcome.ok ? 0 : 1
 }
 
