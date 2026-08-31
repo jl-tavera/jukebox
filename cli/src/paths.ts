@@ -51,15 +51,16 @@ export const HOME_VARIABLE = 'JUKEBOX_HOME'
  * A variable's value, or nothing at all.
  *
  * **Blank is not set, and whitespace is blank.** Every variable this project
- * reads follows that rule, because a blank value read as a value is uniformly a
- * disaster in miniature: a Mirror at the filesystem root, a configuration
- * directory that is really the drive root.
+ * reads follows that rule -- `JUKEBOX_HOME`, `JUKEBOX_API`, and the two `config`
+ * adds -- because a blank value read as a value is uniformly a disaster in
+ * miniature: a Mirror at the filesystem root, an API address of nothing, a
+ * Library in `/Jukebox`.
  *
- * Written once because it had been written several times over and they had
- * drifted. `||` lets a single space through as a path and a bare read lets an
- * empty string through; both sites carried a comment claiming the same rule,
- * which is how the divergence survived unnoticed. `phrasing.ts` is the
- * precedent for moving a shared sentence somewhere every caller can reach it.
+ * Written once here because it had been written three times and the three had
+ * drifted: two used `||`, which lets a single space through as a path, and one
+ * trimmed. Every one of them carried a comment claiming to follow the same rule,
+ * which is how the divergence survived. `phrasing.ts` is the precedent for
+ * moving a shared sentence somewhere both callers can reach.
  */
 export const given = (env: Host['env'], name: string): string | undefined => {
   const value = env[name]?.trim()
@@ -75,6 +76,16 @@ export const given = (env: Host['env'], name: string): string | undefined => {
 const NAME = { titled: 'Jukebox', plain: 'jukebox' }
 
 /**
+ * Resolved for a platform, not on one.
+ *
+ * A Windows path built with forward slashes opens perfectly well and reads
+ * wrong in every message that prints it, and `node:path`'s default is the
+ * host's spelling rather than the target's. Shared by both resolvers below, so
+ * that a second one cannot quietly answer in the running machine's dialect.
+ */
+const joiner = (host: Host) => (host.platform === 'win32' ? win32.join : posix.join)
+
+/**
  * The platform's own answer, or the one thing that overrides it.
  *
  * The layout follows the `env-paths` convention, which is what most CLIs that
@@ -83,11 +94,7 @@ const NAME = { titled: 'Jukebox', plain: 'jukebox' }
  * carry five or six the CLI has nothing to put in.
  */
 export const locations = (host: Host = thisHost()): Locations => {
-  // Resolved for a platform, not on one. A Windows path built with forward
-  // slashes opens perfectly well and reads wrong in every message that prints
-  // it, and `node:path`'s default is the host's spelling rather than the
-  // target's.
-  const join = host.platform === 'win32' ? win32.join : posix.join
+  const join = joiner(host)
 
   // One variable rather than two, because two can be set inconsistently and one
   // cannot -- and because a person relocating everything has one thing to
@@ -126,3 +133,47 @@ export const locations = (host: Host = thisHost()): Locations => {
     ),
   }
 }
+
+/** The one variable that moves the Library's default. Read only where XDG applies. */
+export const MUSIC_VARIABLE = 'XDG_MUSIC_DIR'
+
+/**
+ * Where the user keeps music.
+ *
+ * Deliberately not a member of `Locations`, and the line is ownership rather
+ * than tidiness. Everything in `Locations` is ours: we create it, we write to
+ * it, and `JUKEBOX_HOME` may move all of it at once. This is the user's own
+ * folder, which is why that variable does not reach it -- someone pointing the
+ * CLI at a scratch directory has not asked for their music to move.
+ */
+export const musicDirectory = (host: Host): string => {
+  const join = joiner(host)
+
+  // Windows and macOS both put it at `Music` under the profile. Windows calls
+  // it a Known Folder and a user genuinely can move it, but nothing in the
+  // environment says where to -- only the registry, and a registry read is a
+  // lot of platform-specific code for a default that nothing writes to in this
+  // release. A user who moved theirs sets `library_path` instead.
+  if (host.platform === 'win32' || host.platform === 'darwin') return join(host.home, 'Music')
+
+  // Linux, where XDG does name it. Read from the environment only: the spec's
+  // own home for this is `~/.config/user-dirs.dirs`, and parsing that would
+  // cost this resolver the purity that lets every platform's answer be checked
+  // from any platform -- which is the whole reason a `Host` is handed in.
+  //
+  // Blank is not set, per `given`. A blank value read as a path would put
+  // someone's Library in `/Jukebox`.
+  return given(host.env, MUSIC_VARIABLE) ?? join(host.home, 'Music')
+}
+
+/**
+ * The Library's root, unless the user says otherwise. ADR-0004 governs what
+ * goes inside it; nothing creates it, here or anywhere else in this release.
+ *
+ * Titled on every platform, including the one where `locations` goes
+ * lower-case. That casing is about fitting in among `~/.config`'s dotted
+ * neighbours, and this folder has no such neighbours: it sits in a browsable
+ * music directory beside albums named the way a person would name them.
+ */
+export const defaultLibrary = (host: Host): string =>
+  joiner(host)(musicDirectory(host), NAME.titled)

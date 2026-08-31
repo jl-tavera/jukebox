@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'bun:test'
-import { HOME_VARIABLE, locations, type Host } from '../src/paths'
+import {
+  defaultLibrary,
+  HOME_VARIABLE,
+  locations,
+  MUSIC_VARIABLE,
+  musicDirectory,
+  type Host,
+} from '../src/paths'
 
 /**
  * A pure seam, called directly.
@@ -130,6 +137,71 @@ describe('every variable that names a directory', () => {
       expect(locations({ ...windows, env: { APPDATA: blank } }).config).toBe(
         'C:\\Users\\ada\\AppData\\Roaming\\Jukebox',
       )
+      expect(defaultLibrary({ ...linux, env: { [MUSIC_VARIABLE]: blank } })).toBe(
+        '/home/ada/Music/Jukebox',
+      )
     }
+  })
+})
+
+/**
+ * The Library's default root, which is the same platform question asked about
+ * the other side of an ownership line.
+ *
+ * `locations` answers where the CLI keeps its own things. This answers where
+ * the *user* keeps music, and nothing here creates any of it -- ADR-0004's root
+ * reaches this release as a string and nothing else.
+ */
+describe("the user's own music directory", () => {
+  it('is a Jukebox folder inside it, on every platform', () => {
+    expect(defaultLibrary(windows)).toBe('C:\\Users\\ada\\Music\\Jukebox')
+    expect(defaultLibrary(macos)).toBe('/Users/ada/Music/Jukebox')
+    expect(defaultLibrary(linux)).toBe('/home/ada/Music/Jukebox')
+  })
+
+  it('is the platform music folder, without the Jukebox folder', () => {
+    expect(musicDirectory(windows)).toBe('C:\\Users\\ada\\Music')
+    expect(musicDirectory(macos)).toBe('/Users/ada/Music')
+    expect(musicDirectory(linux)).toBe('/home/ada/Music')
+  })
+
+  it('is not moved by JUKEBOX_HOME', () => {
+    // The one variable that relocates everything relocates everything *of
+    // ours*. A test or a curious user pointing the CLI at a scratch directory
+    // has not asked for their music to move, and this release would silently
+    // report a Library inside a temporary folder if it had.
+    expect(defaultLibrary({ ...linux, env: { [HOME_VARIABLE]: '/tmp/somewhere' } })).toBe(
+      '/home/ada/Music/Jukebox',
+    )
+  })
+
+  it('honours XDG_MUSIC_DIR on Linux', () => {
+    expect(defaultLibrary({ ...linux, env: { [MUSIC_VARIABLE]: '/srv/tunes' } })).toBe(
+      '/srv/tunes/Jukebox',
+    )
+  })
+
+  it('ignores an empty XDG_MUSIC_DIR rather than putting the Library at the root', () => {
+    // The same rule JUKEBOX_HOME and JUKEBOX_API follow: a blank value is not a
+    // path, and reading it as one would put someone's music in `/Jukebox`.
+    expect(defaultLibrary({ ...linux, env: { [MUSIC_VARIABLE]: '' } })).toBe(
+      '/home/ada/Music/Jukebox',
+    )
+  })
+
+  it('does not read XDG_MUSIC_DIR where the platform has its own answer', () => {
+    // An XDG variable set on Windows or macOS is a leftover from a shell
+    // configured elsewhere, not an instruction about where music goes.
+    const set = { [MUSIC_VARIABLE]: '/srv/tunes' }
+
+    expect(defaultLibrary({ ...windows, env: { ...windows.env, ...set } })).toBe(
+      'C:\\Users\\ada\\Music\\Jukebox',
+    )
+    expect(defaultLibrary({ ...macos, env: set })).toBe('/Users/ada/Music/Jukebox')
+  })
+
+  it('spells the path the way the platform it is for spells it', () => {
+    expect(defaultLibrary(windows)).toContain('\\')
+    expect(defaultLibrary(linux)).not.toContain('\\')
   })
 })
