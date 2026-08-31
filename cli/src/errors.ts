@@ -4,12 +4,13 @@ import type { ErrorCode } from '@jukebox/schema'
  * Codes the CLI raises on its own behalf, where the API's four say what the
  * server could not do.
  *
- * Six now, and the last of the three this file used to name as absent has
- * arrived: #35 is where a Mirror comes into existence, so it is where a Mirror
- * that will not open first has something to say. The rule the file set down --
- * no code before something raises it -- is kept the way it was kept for the
- * other five: the code raising this one ships in the same commit as the code,
- * and is exercised at the seam `add` is exercised at.
+ * Seven now. Six arrived with the things that raise them, and the seventh is
+ * `playlist_not_tracked`: #37 is where the Mirror is first asked about one by
+ * name, so it is where being asked about one that is not there first has
+ * something to say. The rule the file set down -- no code before something
+ * raises it -- is kept the way it was kept for the other six: the code raising
+ * it ships in the same commit as the code, and is exercised at the seam its
+ * commands are exercised at.
  */
 export type ClientErrorCode =
   /** The argument vector names no command, or one that does not exist. */
@@ -54,6 +55,22 @@ export type ClientErrorCode =
    * command.
    */
   | 'mirror_unopenable'
+  /**
+   * The Mirror holds no Playlist by the name it was given.
+   *
+   * Its own code rather than the API's `playlist_not_found`, which the contract
+   * defines as the server saying it holds no row. `show` and `remove` never ask
+   * the server anything, so borrowing that code would tell a script the network
+   * was consulted and the backend disagreed -- when what happened is that this
+   * machine was asked about something it has never tracked. The two can even
+   * disagree honestly: a Playlist a stranger added is tracked upstream and in no
+   * Mirror but theirs.
+   *
+   * Not `invalid_usage` either. The argument vector was fine; what it named is
+   * simply not here, which is a thing a script may want to branch on rather than
+   * a thing it got wrong.
+   */
+  | 'playlist_not_tracked'
 
 /**
  * One vocabulary, in one place.

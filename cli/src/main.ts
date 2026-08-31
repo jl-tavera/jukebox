@@ -77,7 +77,10 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   // `sync` as `ok`, and so does a Playlist it could not reach at all: a tool
   // that exits non-zero on the answer it receives most often cannot be
   // scheduled. What is left non-zero is a boot that stopped, a Mirror that
-  // would not open, and a vector naming no command.
+  // would not open, a vector naming no command, and a vector naming a Playlist
+  // this machine does not track. That last one is the same kind of thing as the
+  // typo: somebody named one specific thing, and there is no answer to give
+  // about it.
   return renderable.outcome.ok ? 0 : 1
 }
 
