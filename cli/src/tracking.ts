@@ -1,4 +1,4 @@
-import type { PlaylistId, PlaylistTracks } from '@jukebox/schema'
+import type { ErrorCode, PlaylistId, PlaylistTracks } from '@jukebox/schema'
 import { folderFor } from './folders'
 import type { Mirror } from './mirror'
 
@@ -57,12 +57,26 @@ export const recordPending = (
  * remote failure never costs a reader what they already had, which is DESIGN
  * section 09's rule and the reason `remove` is the only thing that deletes.
  */
-export const markLocalStatus = (
+const markLocalStatus = (
   mirror: Mirror,
   id: PlaylistId,
   status: 'gone' | 'unreachable',
 ): void => {
   mirror.run('UPDATE playlists SET status = ? WHERE id = ?', [status, id])
+}
+
+/**
+ * Records what a refusal means for a Playlist already tracked.
+ *
+ * Here rather than in each command because it is a fact about the Mirror rather
+ * than about who asked. Two of the contract's four codes have a local status and
+ * two deliberately have none: `playlist_not_found` is the server saying it holds
+ * no row, which is not a claim about the Playlist itself, and `invalid_url`
+ * never reaches a Playlist that was recorded.
+ */
+export const recordRefusal = (mirror: Mirror, id: PlaylistId, code: ErrorCode): void => {
+  if (code === 'playlist_gone') markLocalStatus(mirror, id, 'gone')
+  if (code === 'source_unavailable') markLocalStatus(mirror, id, 'unreachable')
 }
 
 /** What one application of a snapshot changed, in namespaced Track ids. */

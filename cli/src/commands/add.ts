@@ -4,7 +4,7 @@ import { createPlaylist, playlistTracks, type Held } from '../api'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { backend, patienceOf, type Patience } from '../session'
-import { applySnapshot, folderNameOf, markLocalStatus, recordPending } from '../tracking'
+import { applySnapshot, folderNameOf, recordPending, recordRefusal } from '../tracking'
 
 /**
  * `jukebox add <url>`: start tracking a public Playlist, and keep what it holds.
@@ -96,8 +96,7 @@ const tracking = async (
     // The Playlist is recorded by now, so what the Source said about it is worth
     // recording too -- `list` should not go on calling it Pending when the answer
     // has arrived and is a permanent one.
-    if (held.code === 'playlist_gone') markLocalStatus(mirror, id, 'gone')
-    if (held.code === 'source_unavailable') markLocalStatus(mirror, id, 'unreachable')
+    recordRefusal(mirror, id, held.code)
 
     return failed('add', held.code, held.message)
   }
