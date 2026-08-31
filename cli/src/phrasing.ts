@@ -38,6 +38,30 @@ export const counted = (n: number, one: string, many: string): string =>
 export const NOTHING_TRACKED = 'Nothing is tracked yet. Add a playlist with `jukebox add <url>`.'
 
 /**
+ * A moment, in the reader's own timezone, to the minute.
+ *
+ * Local rather than UTC because every timestamp the CLI prints is about
+ * something that happened on this machine, and an offset the reader has to
+ * apply in their head is one they will apply wrongly. To the minute because
+ * nothing here happens twice in one, and a column of seconds is a column
+ * nobody reads.
+ *
+ * Built by hand rather than through `toLocaleString`, whose output depends on
+ * the host's locale: the same Mirror would print two different orderings of the
+ * same date on two machines, and a test could only assert on whichever one CI
+ * happened to have.
+ */
+export const stamp = (at: number): string => {
+  const when = new Date(at)
+  const padded = (value: number): string => String(value).padStart(2, '0')
+
+  return (
+    `${when.getFullYear()}-${padded(when.getMonth() + 1)}-${padded(when.getDate())} ` +
+    `${padded(when.getHours())}:${padded(when.getMinutes())}`
+  )
+}
+
+/**
  * Rows of cells, aligned into columns and indented.
  *
  * The last cell of a row is never padded, so a line carries no trailing
@@ -86,3 +110,19 @@ export const columns = (rows: string[][]): string[] => {
  */
 export const skippedly = (skipped: number): string =>
   skipped === 0 ? 'nothing skipped' : `${counted(skipped, 'entry', 'entries')} skipped`
+
+/**
+ * What to call a Playlist where the reader may want to act on it next.
+ *
+ * `named` plus the handle, because `show` and `remove` both print a heading
+ * above a Playlist somebody is deciding something about, and the id is the
+ * string the next command takes. A Playlist with no title is its id once rather
+ * than its id twice.
+ *
+ * Shared for the reason at the top of this file, and this one had a copy in each
+ * of those two commands before it was: `remove`'s said "as `show` does it, so
+ * the two commands agree on a Playlist", which is an argument for one of these
+ * rather than for two that happen to match today.
+ */
+export const identified = (title: string | null, id: PlaylistId): string =>
+  title === null ? id : `${named(title, id)} (${id})`
