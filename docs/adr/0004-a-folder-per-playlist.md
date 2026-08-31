@@ -42,3 +42,38 @@ prevent. The cost is a folder name that can drift from the Playlist's current ti
 Folder names are sanitized — the characters Windows forbids, trailing dots and spaces, and
 reserved device names like `CON`. Two Playlists whose titles sanitize to the same string get a
 numeric suffix.
+
+## Amendment, 2026-08-31: the mechanics, chosen at first use
+
+#35 computed the first folder name, and the four things this ADR named only by category had to
+be decided to do it. Recorded here because each is the kind of choice a later reader would
+otherwise make again, differently, and because two of them are consequences this ADR did not
+mention at all.
+
+- **Forbidden characters are dropped, not replaced.** `Rain / Shine` becomes `Rain Shine`, and the
+  whitespace the removal leaves behind collapses. A title arrives as prose, and `Rain _ Shine` is a
+  name nobody wrote and nobody looking for the Playlist would type.
+- **A reserved device name keeps its title and gains ` (device)`.** `CON` becomes `CON (device)`,
+  and so does `CON.txt`, because the reservation covers a name with an extension too. Suffixed
+  rather than dropped or replaced by the id, so somebody whose Playlist really is called `CON` can
+  still find the folder it made.
+- **The numeric suffix is ` (2)`, ` (3)`.** What Windows itself does with a duplicate. Deliberately
+  not `~2`: that is DESIGN §11's sketch for a colliding *track filename*, it is still marked
+  Proposed, and inheriting it here by looking at it would tie two undecided things together.
+- **Names are capped at 100 characters, cut at a word.** Not in this ADR, and it follows from it:
+  the folder holds a `{nn} - {title}.{ext}` file inside a root the user chose, and it is the whole
+  path that has a limit. Both suffixes are added *after* the cut and may carry the result a few
+  characters past it, because shortening the name to make room would change the thing the suffix
+  exists to distinguish. The order matters more than it looks: a reserved *stem* is four characters
+  but a reserved *name* is any length, so checking for a device before cutting let `CON.` and two
+  hundred more past the cap entirely.
+- **A name with nothing left of it falls back to the Playlist's id**, with the colon ADR-0001 joins
+  it with replaced by a hyphen. This is the case a Playlist whose Source offers no usable title
+  lands in, and `CONTEXT.md` forbids the alternative: a title is absent rather than a placeholder,
+  "which nobody downstream could tell from a real title".
+
+One consequence of the rename rule above, now that a Playlist can be tracked before it is read: the
+name is computed at the first moment there is a title to compute it from, and stored `NULL` until
+then. That is during `add` when the Resolution lands inside its wait, and the first Sync otherwise.
+Naming a folder after the id at add time would have been naming it after the id for ever, because
+this ADR forbids changing it afterwards.
