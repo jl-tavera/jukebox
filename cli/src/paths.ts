@@ -48,6 +48,25 @@ export const thisHost = (): Host => ({
 export const HOME_VARIABLE = 'JUKEBOX_HOME'
 
 /**
+ * A variable's value, or nothing at all.
+ *
+ * **Blank is not set, and whitespace is blank.** Every variable this project
+ * reads follows that rule, because a blank value read as a value is uniformly a
+ * disaster in miniature: a Mirror at the filesystem root, a configuration
+ * directory that is really the drive root.
+ *
+ * Written once because it had been written several times over and they had
+ * drifted. `||` lets a single space through as a path and a bare read lets an
+ * empty string through; both sites carried a comment claiming the same rule,
+ * which is how the divergence survived unnoticed. `phrasing.ts` is the
+ * precedent for moving a shared sentence somewhere every caller can reach it.
+ */
+export const given = (env: Host['env'], name: string): string | undefined => {
+  const value = env[name]?.trim()
+  return value === undefined || value === '' ? undefined : value
+}
+
+/**
  * Capitalised where the platform's own directories are, lower-case where they
  * are not. Windows and macOS put readable names in browsable folders; Linux
  * puts short ones in dotted paths, and a `Jukebox` sitting in `~/.config`
@@ -72,18 +91,17 @@ export const locations = (host: Host = thisHost()): Locations => {
 
   // One variable rather than two, because two can be set inconsistently and one
   // cannot -- and because a person relocating everything has one thing to
-  // remember. Empty is not set: a blank value would otherwise put the Mirror at
-  // the filesystem root.
-  const relocated = host.env[HOME_VARIABLE]
-  if (relocated) {
+  // remember. Blank is not set, per `given`.
+  const relocated = given(host.env, HOME_VARIABLE)
+  if (relocated !== undefined) {
     return { config: join(relocated, 'config'), data: join(relocated, 'data') }
   }
 
   if (host.platform === 'win32') {
     // A stripped environment still has a home. Guessing the two standard
     // folders from it beats writing to the drive root or refusing to boot.
-    const roaming = host.env.APPDATA || join(host.home, 'AppData', 'Roaming')
-    const local = host.env.LOCALAPPDATA || join(host.home, 'AppData', 'Local')
+    const roaming = given(host.env, 'APPDATA') ?? join(host.home, 'AppData', 'Roaming')
+    const local = given(host.env, 'LOCALAPPDATA') ?? join(host.home, 'AppData', 'Local')
 
     // Roaming follows a user between machines and Local does not, which is the
     // right side of that line for each: a setting is worth carrying, and a
@@ -101,7 +119,10 @@ export const locations = (host: Host = thisHost()): Locations => {
   // Linux, and anything else that is neither of the above: the XDG base
   // directory spec, whose own defaults are what these fall back to.
   return {
-    config: join(host.env.XDG_CONFIG_HOME || join(host.home, '.config'), NAME.plain),
-    data: join(host.env.XDG_DATA_HOME || join(host.home, '.local', 'share'), NAME.plain),
+    config: join(given(host.env, 'XDG_CONFIG_HOME') ?? join(host.home, '.config'), NAME.plain),
+    data: join(
+      given(host.env, 'XDG_DATA_HOME') ?? join(host.home, '.local', 'share'),
+      NAME.plain,
+    ),
   }
 }

@@ -106,4 +106,30 @@ describe(HOME_VARIABLE, () => {
   it('ignores an empty value rather than moving everything to the root', () => {
     expect(locations({ ...linux, env: { [HOME_VARIABLE]: '' } })).toEqual(locations(linux))
   })
+
+  it('ignores one that is nothing but whitespace, for the same reason', () => {
+    // A single space is what an empty value looks like after a shell has been
+    // careless with it, and `' '` is a perfectly legal directory name on Linux
+    // -- so reading it as one would put the Mirror somewhere nobody can find.
+    expect(locations({ ...linux, env: { [HOME_VARIABLE]: '  ' } })).toEqual(locations(linux))
+  })
+})
+
+describe('every variable that names a directory', () => {
+  it('treats blank and whitespace alike, wherever it is read', () => {
+    // One rule, written once in `given` and applied at every site. It had been
+    // written several times over and they had drifted: `||` lets a single space
+    // through as a path, and a bare read lets an empty string through.
+    for (const blank of ['', '   ']) {
+      expect(locations({ ...linux, env: { XDG_CONFIG_HOME: blank } }).config).toBe(
+        '/home/ada/.config/jukebox',
+      )
+      expect(locations({ ...linux, env: { XDG_DATA_HOME: blank } }).data).toBe(
+        '/home/ada/.local/share/jukebox',
+      )
+      expect(locations({ ...windows, env: { APPDATA: blank } }).config).toBe(
+        'C:\\Users\\ada\\AppData\\Roaming\\Jukebox',
+      )
+    }
+  })
 })
