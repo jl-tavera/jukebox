@@ -1,16 +1,29 @@
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'bun:test'
 import { defineCommand, type CommandDef } from 'citty'
 import pkg from '../package.json'
+import { shown } from '../src/commands/config'
 import type { Listed } from '../src/commands/list'
 import { LOCAL_ONLY } from '../src/commands/remove'
+import {
+  CONFIG_FILE,
+  INTERVAL_VARIABLE,
+  KNOWN,
+  LIBRARY_VARIABLE,
+  NOTE,
+  type Configured,
+  type SettingKey,
+} from '../src/config'
 import { NARROW_MARK } from '../src/header'
 import {
+  askingFor,
   askingToStop,
   ENTRIES,
   FOR_THIS_PLAYLIST,
   THE_ADDRESS,
   WHICH_PLAYLIST,
+  WHICH_SETTING,
   WORKING,
 } from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
@@ -86,12 +99,29 @@ const typing = (address: string): string[] => [...address, ENTER]
 /** The first Playlist the picker offers, which is the one whose id sorts first. */
 const FIRST = [ENTER]
 
-/** Past every Playlist to the way back, which the picker puts after them. */
+/** Past every entry a picker offers to the way back, which both pickers put after them. */
 const outOf = (playlists: number): string[] => [...new Array<string>(playlists).fill(DOWN), ENTER]
 
 /** On a Playlist's own screen: the way back is first, and `remove` is second. */
 const LEAVE_IT = [ENTER]
 const REMOVE_IT = [DOWN, ENTER]
+
+/**
+ * The keys that walk from the top of the settings picker to one setting and
+ * take it, and the keys that walk past every setting to the way back.
+ *
+ * Counted out of `KNOWN` for the reason `taking` is counted out of `ENTRIES`:
+ * the order of that picker is that array's to decide, and a position written
+ * down here would retarget in silence the day a third setting arrived. The
+ * argument is typed off the same array, so a misspelt key is a typecheck
+ * failure rather than a walk to nowhere.
+ */
+const settingAt = (key: SettingKey): string[] => [
+  ...new Array<string>(KNOWN.indexOf(key)).fill(DOWN),
+  ENTER,
+]
+
+const OUT_OF_SETTINGS = outOf(KNOWN.length)
 
 /**
  * What a confirmation takes. A letter answers it at once, with no return behind
@@ -175,6 +205,26 @@ const listed = (run: Run): Listed => oneObject(run).data as Listed
 const idsIn = async (home: string): Promise<string[]> =>
   listed(await against(home, ['list', '--json'])).playlists.map((one) => one.id)
 
+/** The settings a run reported, as `listed` above is for the Playlists. */
+const settingsIn = (run: Run): Configured => oneObject(run).data as Configured
+
+/**
+ * One run's answer with the home it was given taken out of it.
+ *
+ * The `add` comparison below notes that nothing that command prints names a
+ * home, "which is what makes two of them comparable at all". `config` names one
+ * in every answer it gives -- where the file would be, and where a line was
+ * written to -- so two runs over two homes differ by exactly that string and by
+ * nothing else. `musicDirectory` reads the real profile rather than the home a
+ * run was handed, so the default Library path is not a second one of these.
+ *
+ * Taking it out is what makes the launcher rule assertable for the one entry
+ * that prints a path it also writes to. Leaving it in would mean asserting
+ * something weaker about the only entry that changes anything on this machine.
+ */
+const anywhere = ({ stdout, locations }: Run): string =>
+  stdout.replaceAll(locations.config, '<a configuration directory>')
+
 /**
  * The first row of the art, as it has to arrive on stderr.
  *
@@ -233,20 +283,6 @@ describe('bare jukebox at a terminal', () => {
     // suite is built to make loud, and the reason the assertion is here at all.
     const run = await jukebox([], { keys: [CANCEL] })
 
-    expect(run.stdout).toBe('')
-    expect(run.code).toBe(0)
-  })
-})
-
-describe('an entry this slice has not wired up', () => {
-  it('says what to run instead, and comes back to the menu', async () => {
-    // Down three to `config`, which #57 takes and which is the last one left.
-    // Reaching `quit` at all is the proof that it did come back: the second
-    // press of return has nothing to land on otherwise, and the run hangs.
-    const run = await jukebox([], { keys: [...CONFIG, ...QUIT] })
-
-    expect(run.stderr).toContain('not in the menu yet')
-    expect(run.stderr).toContain('jukebox config')
     expect(run.stdout).toBe('')
     expect(run.code).toBe(0)
   })
@@ -791,6 +827,285 @@ describe('a backend that is down or unreachable', () => {
     // without a client release.
     expect(run.stderr).toContain('Back in an hour.')
     expect(run.stdout).toBe(listing.stdout)
+    expect(run.code).toBe(0)
+  })
+})
+
+/**
+ * The last entry #50 puts at the top level, and the one whose local state has
+ * nothing to do with a Playlist.
+ *
+ * `config` reaches no network at all, so every run below is a plain `session`
+ * pointed at nowhere -- the same nowhere that would make a booting command warn
+ * or stop, which is what says this entry never opens that door.
+ */
+describe('the settings this machine has', () => {
+  it('shows every setting exactly as `config` does', async () => {
+    const home = temporaryHome('jukebox-menu-config-show-')
+
+    const run = await session(home, [...CONFIG, ...OUT_OF_SETTINGS, ...QUIT])
+
+    // The launcher rule, asserted the only way worth asserting it: what the
+    // session put on stdout is what the command put there, to the byte. One
+    // home for both, because showing settings writes nothing.
+    const shell = await against(home, ['config'])
+
+    expect(run.stdout).toBe(shell.stdout)
+    expect(run.stdout).not.toBe('')
+    expect(run.code).toBe(0)
+  })
+
+  it('offers every setting with its value and where that value came from', async () => {
+    const home = temporaryHome('jukebox-menu-config-picker-')
+
+    const run = await session(home, [...CONFIG, ...OUT_OF_SETTINGS, ...QUIT])
+
+    // Composed out of the command's own answer rather than written out again
+    // here, as the Playlist picker's is -- and by the command's own function,
+    // which is what stops the picker and the table above it phrasing an origin
+    // two different ways.
+    const { settings } = settingsIn(await against(home, ['config', '--json']))
+
+    for (const { key, value, from } of shown(settings)) {
+      expect(run.stderr).toContain(`${key}, ${value} (${from})`)
+    }
+
+    expect(run.code).toBe(0)
+  })
+
+  it('names the variable behind a value the environment supplied', async () => {
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-config-shadowed-'),
+      discovery: NO_SITE,
+      env: { [LIBRARY_VARIABLE]: '/mnt/elsewhere' },
+      keys: [...CONFIG, ...OUT_OF_SETTINGS, ...QUIT],
+    })
+
+    // On the row itself, where somebody is standing when they decide whether to
+    // change it. The command says as much in the table above and again in the
+    // warning after a write; this is the only one of the three in front of them
+    // before they type anything.
+    expect(run.stderr).toContain(`library_path, /mnt/elsewhere (environment: ${LIBRARY_VARIABLE})`)
+  })
+
+  it('changes a setting exactly as the command does', async () => {
+    const home = temporaryHome('jukebox-menu-config-set-')
+    const twin = temporaryHome('jukebox-menu-config-set-twin-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('sync_interval_hours'),
+      ...typing('6'),
+      ...QUIT,
+    ])
+
+    // Against a second home rather than the same one, as the `remove`
+    // comparison is: the command being compared with writes to what it is run
+    // against, and the session has already written to the first. Both start
+    // empty, and the pair runs in the order the session ran them in.
+    const showing = await against(twin, ['config'])
+    const writing = await against(twin, ['config', 'sync_interval_hours', '6'])
+
+    expect(anywhere(run)).toBe(anywhere(showing) + anywhere(writing))
+    expect(run.code).toBe(0)
+  })
+
+  it('leaves the setting in the file, where the next run reads it', async () => {
+    const home = temporaryHome('jukebox-menu-config-persisted-')
+
+    await session(home, [...CONFIG, ...settingAt('sync_interval_hours'), ...typing('6'), ...QUIT])
+
+    // The half the comparison above cannot make: two runs printing the same
+    // words would both pass it having written nothing at all.
+    const { settings } = settingsIn(await against(home, ['config', '--json']))
+
+    expect(settings.sync_interval_hours).toEqual({ value: 6, origin: 'file' })
+  })
+
+  it('carries a value with spaces in it through, where a shell needs quoting', async () => {
+    const home = temporaryHome('jukebox-menu-config-spaced-')
+    const spaced = 'D:\\My Music\\Jukebox'
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('library_path'),
+      ...typing(spaced),
+      ...QUIT,
+    ])
+
+    // The one thing this door does that the other cannot. `config.test.ts`
+    // refuses three words rather than write a truncated path, because a shell
+    // splits an unquoted one; a prompt hands over the whole line, so a vector
+    // built from it carries two positionals whatever is in them. The bytes
+    // rather than the reported value, for that file's reason: TOML is the
+    // format here partly because it spells this without escaping.
+    expect(readFileSync(join(run.locations.config, CONFIG_FILE), 'utf8')).toContain(
+      `library_path = '${spaced}'`,
+    )
+    expect(run.code).toBe(0)
+  })
+
+  it('says the environment still wins, when it does', async () => {
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-config-shadow-'),
+      discovery: NO_SITE,
+      env: { [LIBRARY_VARIABLE]: '/mnt/elsewhere' },
+      keys: [...CONFIG, ...settingAt('library_path'), ...typing('/srv/music'), ...QUIT],
+    })
+
+    // #50 asks for this warning in the menu by name, and it arrives without the
+    // menu doing anything: it rides out in the command's result object, folded
+    // into the text of an answer that succeeded, so it lands on stdout beside
+    // the receipt rather than with the chrome.
+    expect(run.stdout).toContain(LIBRARY_VARIABLE)
+    expect(run.stdout).toContain('/mnt/elsewhere')
+    expect(run.code).toBe(0)
+  })
+
+  it('warns that audio already downloaded stays where it is', async () => {
+    const home = temporaryHome('jukebox-menu-config-moved-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('library_path'),
+      ...typing('/srv/music'),
+      ...QUIT,
+    ])
+
+    // Both sentences together, as `config.test.ts` asserts them: the warning is
+    // the policy, and `NOTE` is why the policy costs nothing today.
+    expect(run.stdout).toContain('stays there')
+    expect(run.stdout).toContain(NOTE)
+  })
+
+  it('says why a value was refused, and stays on the settings to try again', async () => {
+    const home = temporaryHome('jukebox-menu-config-refused-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('sync_interval_hours'),
+      ...typing('daily'),
+      // The assertion rather than a flourish. A refusal wrote nothing, so the
+      // picker still describes the file and the screen stays on it -- and these
+      // keys land on that picker. Had a refusal gone back to the top instead,
+      // this walk would have taken `sync` and no receipt could reach stdout.
+      ...settingAt('sync_interval_hours'),
+      ...typing('6'),
+      ...QUIT,
+      // Behind the way out, so that a menu which went somewhere other than this
+      // test expects fails on an assertion rather than by running out of keys
+      // inside a prompt and hanging until the runner gives up.
+      CANCEL,
+    ])
+
+    expect(run.stderr).toContain('whole number of hours')
+    expect(run.stdout).toContain('sync_interval_hours = 6')
+    expect(run.code).toBe(0)
+  })
+
+  it('writes nothing at all for a value it refused', async () => {
+    const home = temporaryHome('jukebox-menu-config-unwritten-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('sync_interval_hours'),
+      ...typing('daily'),
+      ...OUT_OF_SETTINGS,
+      ...QUIT,
+    ])
+
+    // The other half of what `config.test.ts` asserts about a refusal, made
+    // about the menu: nothing written, not even a part file, and no
+    // configuration directory brought into existence to hold one.
+    expect([...new Bun.Glob('**/*').scanSync(home)]).toEqual([])
+    expect(run.code).toBe(0)
+  })
+
+  it('goes back to the settings on an empty answer', async () => {
+    const home = temporaryHome('jukebox-menu-config-empty-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('library_path'),
+      ENTER,
+      // The way out of the picker this went back to. At the top of the menu the
+      // same presses take `list`, which would put its own sentence on stdout --
+      // so the comparison below is what tells the two apart.
+      ...OUT_OF_SETTINGS,
+      ...QUIT,
+      CANCEL,
+    ])
+
+    const shell = await against(home, ['config'])
+
+    expect(run.stdout).toBe(shell.stdout)
+    expect([...new Bun.Glob('**/*').scanSync(home)]).toEqual([])
+  })
+
+  it('asks on stderr, and keeps stdout for what the command answered', async () => {
+    const home = temporaryHome('jukebox-menu-config-streams-')
+
+    const run = await session(home, [
+      ...CONFIG,
+      ...settingAt('sync_interval_hours'),
+      ...typing('6'),
+      ...QUIT,
+    ])
+
+    expect(run.stderr).toContain(WHICH_SETTING)
+    expect(run.stderr).toContain(askingFor('sync_interval_hours'))
+    expect(run.stdout).not.toContain(WHICH_SETTING)
+    expect(run.stdout).toContain('sync_interval_hours = 6')
+  })
+})
+
+/**
+ * The same invariant `list`'s picker is held to, tested the same way: against a
+ * `config` reporting something no machine is configured with.
+ *
+ * Every comparison above would pass just as well for a screen that had gone and
+ * read the configuration file itself, because the file and the command agree.
+ * This is the shape that tells the two apart, and it is one the real program
+ * cannot produce -- which is what `Seams.root` is for.
+ */
+describe('a picker built from what `config` returned', () => {
+  /** A configuration no machine has, in the shape `config` reports one in. */
+  const INVENTED: Configured = {
+    settings: {
+      library_path: { value: '/invented/library', origin: 'file' },
+      sync_interval_hours: { value: 99, origin: 'environment' },
+    },
+    problems: [],
+    file: { path: '/invented/config.toml', state: 'read' },
+    note: NOTE,
+  }
+
+  /** A `config` reporting whatever it was handed, whatever this host resolves to. */
+  const reporting = (reported: Configured): CommandDef =>
+    defineCommand({
+      meta: { name: 'jukebox' },
+      subCommands: {
+        config: defineCommand({
+          meta: { name: 'config', description: 'Reports whatever it was handed' },
+          run: () => succeeded('config', reported, () => 'reported'),
+        }),
+      },
+    })
+
+  it('offers what the command reported, and not what this machine resolves to', async () => {
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-config-derived-'),
+      discovery: NO_SITE,
+      root: reporting(INVENTED),
+      keys: [...CONFIG, ...OUT_OF_SETTINGS, ...QUIT],
+    })
+
+    expect(run.stderr).toContain('library_path, /invented/library (file)')
+    expect(run.stderr).toContain(`sync_interval_hours, 99 (environment: ${INTERVAL_VARIABLE})`)
+
+    // What a home nobody has touched really resolves to, and the assertion a
+    // second reader of local state would fail: both of its rows would say this.
+    expect(run.stderr).not.toContain('(default)')
     expect(run.code).toBe(0)
   })
 })

@@ -2,7 +2,9 @@ import type { Readable } from 'node:stream'
 import { Writable } from 'node:stream'
 import { confirm, isCancel, select, text } from '@clack/prompts'
 import pc from 'picocolors'
+import { shown, type Shown } from './commands/config'
 import type { Listed } from './commands/list'
+import type { Configured, SettingKey } from './config'
 import { header } from './header'
 import type { Io } from './io'
 import type { Renderable } from './outcome'
@@ -22,16 +24,19 @@ import { VERSION } from './version'
  * output a property of `main` rather than of each command. That is
  * docs/adr/0007, and it is the constraint every later ticket in #50 inherits.
  *
- * **What is wired.** #54 built the path from a bare invocation to a menu and
- * back out to a shell, with `quit` as the only entry that did anything. #56
- * wired `list`, and with it the two commands reached through nothing else: pick
- * a Playlist, land on its `show`, and stop tracking it from there, so that the
- * id nobody memorises is never asked for. #55 wired the two that reach the
- * network, and with them the three things an entry reading local state never
- * needed: a prompt that collects an argument, a spinner over the wait, and a
- * boot that can end the session. `config` is the last entry still naming the
- * command to type instead of running it; #57 takes it, and takes `USAGE` with
- * it.
+ * **What is wired.** All of it, as of #57. #54 built the path from a bare
+ * invocation to a menu and back out to a shell, with `quit` as the only entry
+ * that did anything. #56 wired `list`, and with it the two commands reached
+ * through nothing else: pick a Playlist, land on its `show`, and stop tracking
+ * it from there, so that the id nobody memorises is never asked for. #55 wired
+ * the two that reach the network, and with them the three things `list` had
+ * needed none of: a prompt that collects an argument, a spinner over the wait,
+ * and a boot that can end the session. #57 wired `config`, which wanted the
+ * prompt and neither of the other two, and took `list`'s shape otherwise -- a
+ * command's answer offered straight back as a picker -- and took with it the
+ * record of what to type for an entry that did not work yet. There is no such
+ * entry now, and an entry added without one would be the same mistake `root.ts`
+ * names: a thing listed before it works.
  *
  * **Everything written here is chrome, and chrome goes to stderr.** `render.ts`
  * keeps stdout, and keeps it alone, so "stdout is the guarantee" survives a
@@ -84,26 +89,9 @@ export const ENTRIES: { value: Entry; label: string; hint: string }[] = [
   { value: 'add', label: 'add', hint: 'Track a playlist' },
   { value: 'sync', label: 'sync', hint: 'Ask every playlist what changed' },
   { value: 'list', label: 'list', hint: 'Every playlist you track' },
-  { value: 'config', label: 'config', hint: 'Settings, and where each value came from' },
+  { value: 'config', label: 'config', hint: 'Every setting, where it came from, and change one' },
   { value: 'quit', label: 'quit', hint: 'Leave the menu' },
 ]
-
-/**
- * What to type instead, for an entry no slice has wired up yet.
- *
- * They are listed rather than hidden, and rather than shown greyed out -- the
- * prompt library offers a `disabled` flag that would do it. An entry nobody can
- * land on exercises none of the select-and-come-back path, which #54 was built
- * to prove and everything below still rests on.
- *
- * One is left. #57 takes `config` and takes this record with it -- the last
- * unwired entry is the last reason for it to exist, and an empty `Record` over
- * an empty `Exclude` is not a thing to leave behind for somebody to wonder
- * about.
- */
-const USAGE: Record<Exclude<Entry, 'quit' | 'list' | Reaching>, string> = {
-  config: 'jukebox config',
-}
 
 /**
  * What the two screens below the top ask, exported so that a test pins the
@@ -166,6 +154,28 @@ export const WORKING: Record<Reaching, string> = {
  */
 export const askingToStop = (playlist: MirroredPlaylist): string =>
   `Stop tracking ${named(playlist.title, playlist.id)}?`
+
+/**
+ * What the settings screen asks, exported for the reason the two questions
+ * further up are: a test pins the words rather than a paraphrase of them.
+ *
+ * This one says `change` where `WHICH_PLAYLIST` says nothing, because a person
+ * standing here has already read their settings -- the command printed the
+ * whole table before this was drawn -- so a picker that only offered them a
+ * second look at it would be offering nothing. The screen has one thing to do,
+ * and the question is where it says so.
+ *
+ * The value prompt carries its own way back, as `THE_ADDRESS` does and for that
+ * one's reason: a prompt asking for a string has nowhere to put a `back` beside
+ * its answers. It names the setting, because two of these a keystroke apart
+ * would otherwise be indistinguishable on a screen that has scrolled, and the
+ * name it uses is the file's own -- which is what a reader would have to type
+ * to change it from a shell.
+ */
+export const WHICH_SETTING = 'Which setting would you like to change?'
+
+export const askingFor = (key: SettingKey): string =>
+  `A new value for \`${key}\`, or press return to go back`
 
 /**
  * One command, run the way a shell runs it and rendered where a shell would see
@@ -291,7 +301,10 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
         continue
       }
 
-      io.err(`\`${chosen}\` is not in the menu yet. Run \`${USAGE[chosen]}\` for now.\n\n`)
+      if (chosen === 'config') {
+        if ((await configure(launch, asking)) === 'quit') return LEFT
+        continue
+      }
     }
   } finally {
     // Handed back before the process is left to end on its own. `index.ts` sets
@@ -522,3 +535,101 @@ const inspect = async (
   // which is the one thing it may not do. Another `list` is two keystrokes away.
   return 'menu'
 }
+
+/**
+ * `config`, and then the settings it reported offered back as a picker.
+ *
+ * `browse`'s shape, for the reason the two share: the picker is built out of
+ * the result object the command just returned rather than out of a second read
+ * of the configuration file. ADR-0007 rejected the narrower rule that would
+ * have allowed the other thing by name, and this is the entry where it would
+ * have been most tempting -- the file has two keys in it, `configuration()` is
+ * exported and pure, and reading it here would have cost one line.
+ *
+ * What is not `browse`'s shape is everything that follows from `config`
+ * touching no network. It does not go through `reached`: there is no wait to
+ * draw a spinner over and no version gate to be refused by, which is the same
+ * fact that leaves this entry working in a session whose backend said it was
+ * down.
+ *
+ * **A refusal stays here and a write leaves.** Those look like one decision and
+ * are two, each following from what is still true of the rows on the screen. A
+ * value the command refused wrote nothing, so the picker describes the file
+ * exactly as it did a moment ago, and somebody who mistyped an interval wants
+ * that screen back rather than four keystrokes away. A value it wrote means
+ * those rows describe a file this machine no longer has -- which is `inspect`'s
+ * reason for going to the top after a removal, and it is the whole of the
+ * reason here.
+ */
+const configure = async (launch: Launch, asking: Asking): Promise<Next> => {
+  const settings = configured(await launch(['config']))
+
+  // A `config` that failed has already said why, and unlike an empty Mirror
+  // this is not an ordinary answer: a file that will not parse is reported
+  // rather than failed over, so what is left here is a home that would not
+  // resolve. There is nothing to offer and nothing further to say about it.
+  if (settings.length === 0) return 'menu'
+
+  for (;;) {
+    const picked = await select<SettingKey | typeof BACK>({
+      message: WHICH_SETTING,
+      options: [
+        ...settings.map(offerSetting),
+        { value: BACK, label: 'back', hint: 'Back to the menu' },
+      ],
+      ...asking,
+    })
+
+    if (isCancel(picked)) return 'quit'
+    if (picked === BACK) return 'menu'
+
+    const answered = await text({ message: askingFor(picked), ...asking })
+    if (isCancel(answered)) return 'quit'
+
+    // The way back, and one screen up rather than all the way out: this prompt
+    // was opened from a picker that is still behind it, where `add`'s was
+    // opened from the top. Trimmed for that one's reason: a return pressed
+    // after a stray space is the same gesture, and a shell hands a typed vector
+    // the same courtesy for free.
+    const value = answered.trim()
+    if (value === '') continue
+
+    // The key exactly as `KNOWN` spells it, because it came from there -- so
+    // the vector is one a person could have typed, which is the whole of what
+    // an entry is allowed to hand over.
+    if ((await launch(['config', picked, value])).outcome.ok) return 'menu'
+  }
+}
+
+/**
+ * The settings a `config` reported, and none at all for one that failed.
+ *
+ * `tracked`'s cast, made about the other command that answers with a list of
+ * things: a launch runs whatever vector it is handed, so what comes back is
+ * typed `unknown`, and this is the one place that knows the vector was
+ * `config`.
+ */
+const configured = ({ outcome }: Renderable): Shown[] =>
+  outcome.ok ? shown((outcome.data as Configured).settings) : []
+
+/**
+ * One setting, as the picker offers it: its key, its value, and where that
+ * value came from.
+ *
+ * Three of the command's own columns in the command's own words, and by the
+ * command's own function -- `shown` laid out the table printed a few lines
+ * above this picker as well, which is what stops the two spelling
+ * `(environment: JUKEBOX_LIBRARY)` two different ways. `offer` above composes
+ * its label out of two helpers and a field to say as much.
+ *
+ * All of it on the label and none of it in a hint, as `offer` has it, and here
+ * with a second reason of its own. The library draws a hint only for the row a
+ * person is standing on, and one of these three columns has to be read before
+ * the choice rather than after it: a variable shadowing this setting means the
+ * value about to be typed will change nothing anybody can see. The command says
+ * so afterwards, at length. Saying it beforehand costs a parenthesis.
+ */
+const offerSetting = ({ key, value, from }: Shown) => ({
+  value: key,
+  label: `${key}, ${value} (${from})`,
+})
