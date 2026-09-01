@@ -94,3 +94,32 @@ entry condition — both streams terminals, no `--json` — guarantees no caller
 reader is a person's shell prompt, and reporting failure for something that failed earlier in a
 session they then chose to carry on with and leave is noise. The one exception is a version gate
 refusing the binary, which closes the menu because nothing in the session was usable.
+
+## Amendment, 2026-09-01: the spinner is written rather than imported
+
+The consequence above left #55 a choice with two ways out: drive the library's spinner through the
+same error sink as everything else, or write one. It cannot be driven. Read at the version this
+repository pins, `spinner` takes an `output` but no `input`, and its `start` calls `block()`, which
+defaults its input to the real `process.stdin` — a keypress listener on a stream the `Io` that was
+handed over says nothing about, in a program whose whole discipline is that streams are given rather
+than reached for. That listener answers a cancel key with `process.exit(0)`, which is the single
+thing `index.ts` sets an exit code rather than calling. The process-level handlers named above are
+then the third reach outside the run, and measuring its own width from a stream that has none is the
+fourth.
+
+So `cli/src/spinner.ts` is forty lines of this repository's own. Two things about it follow from
+this document rather than from taste:
+
+- **It is handed where to write and whether to animate**, the way `header.ts` is handed a width and
+  a colour. That is what keeps both of its branches reachable from a test, and what keeps the
+  decision about which stream chrome goes on in the one file that already makes it.
+- **It hides no cursor.** Showing one again after a Ctrl-C is the only thing it would need a handler
+  on the process for, and a handler on the process is what this whole amendment is about. A blinking
+  cursor beside a spinner is a smaller cost than a terminal left with an invisible one.
+
+`Launch` grew a second argument in the same ticket, and it is worth saying why that is not the
+widening this document warns about. A launch is compute **and** render, so chrome stopped when one
+returns was still on the screen while the other wrote — a spinner ticking through `render` erases
+the first line of the answer it was covering. The new argument names the moment between the two and
+adds no other power: an entry still cannot ask for anything a typed vector could not, which is the
+property the rule actually protects.
