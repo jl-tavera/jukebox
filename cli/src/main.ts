@@ -87,8 +87,16 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   // and false when nobody is at the keyboard, which is every case #50 requires
   // to keep failing exactly as it does.
   if (argv.length === 0 && promptsAllowed(mode, io)) {
-    return await menu(io, async (vector) => {
+    return await menu(io, async (vector, computed) => {
       const answer = await compute(vector, root, session)
+
+      // The seam the menu cannot see for itself, and the whole of why `Launch`
+      // takes a second argument. A launch is compute *and* render, so chrome
+      // stopped when one returns is chrome that was still on the screen while
+      // the other wrote: a spinner ticking through `render` erases the first
+      // line of the answer it was covering. This says the answer is in and not
+      // yet shown, which is the one moment the screen has to be clear by.
+      computed?.()
 
       // Drained rather than read, so that a warning raised on the way through
       // one command is printed above that command's own output and not again

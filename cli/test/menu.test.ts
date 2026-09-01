@@ -5,10 +5,18 @@ import pkg from '../package.json'
 import type { Listed } from '../src/commands/list'
 import { LOCAL_ONLY } from '../src/commands/remove'
 import { NARROW_MARK } from '../src/header'
-import { askingToStop, ENTRIES, FOR_THIS_PLAYLIST, WHICH_PLAYLIST } from '../src/menu'
+import {
+  askingToStop,
+  ENTRIES,
+  FOR_THIS_PLAYLIST,
+  THE_ADDRESS,
+  WHICH_PLAYLIST,
+  WORKING,
+} from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
 import { held, identified, NOTHING_TRACKED } from '../src/phrasing'
 import type { MirroredPlaylist } from '../src/reading'
+import { ERASED } from '../src/spinner'
 import { WORDMARK } from '../src/wordmark'
 import {
   CANCEL,
@@ -40,16 +48,40 @@ afterAll(removeHomes)
 afterAll(stopServing)
 
 /**
- * From the top of the menu to `quit`, which is the last of five entries.
+ * The keys that walk from the top of the menu to one entry and take it.
  *
- * Every run below ends with these, and not for tidiness. The harness's keyboard
+ * Counted out of `ENTRIES` rather than written down. The order of the menu is
+ * that array's to decide, and five positions spelled out here would every one
+ * of them retarget in silence the day it changed -- a test meaning to press
+ * `sync` would press `list` and still pass. The argument is typed off the same
+ * array, so a misspelt entry is a typecheck failure rather than a walk to
+ * nowhere.
+ */
+const taking = (entry: (typeof ENTRIES)[number]['value']): string[] => [
+  ...new Array<string>(ENTRIES.findIndex((one) => one.value === entry)).fill(DOWN),
+  ENTER,
+]
+
+const ADD = taking('add')
+const SYNC = taking('sync')
+const LIST = taking('list')
+const CONFIG = taking('config')
+
+/**
+ * Every run below ends with this, and not for tidiness. The harness's keyboard
  * never closes, so a prompt handed too few keys waits rather than fails -- a
  * test that forgets the way out hangs until the runner gives up.
  */
-const QUIT = [DOWN, DOWN, DOWN, DOWN, ENTER]
+const QUIT = taking('quit')
 
-/** The third entry, `list`, taken from the top of the menu. */
-const LIST = [DOWN, DOWN, ENTER]
+/**
+ * An address typed into the prompt `add` opens, a character at a time.
+ *
+ * Spread the way `keyboard.test.ts` spreads a typed word, because that is what
+ * a terminal sends: a stream that delivered the whole string as one chunk would
+ * be testing something no keyboard does.
+ */
+const typing = (address: string): string[] => [...address, ENTER]
 
 /** The first Playlist the picker offers, which is the one whose id sorts first. */
 const FIRST = [ENTER]
@@ -118,6 +150,25 @@ const against = (home: string, argv: string[]): Promise<Run> =>
 /** One menu session against a home, driven by the keys a person would press. */
 const session = (home: string, keys: string[]): Promise<Run> =>
   jukebox([], { home, discovery: NO_SITE, keys })
+
+/**
+ * The same two, for the two entries that reach the network.
+ *
+ * Pointed at a site rather than at nowhere, which every other run in this file
+ * deliberately is. `add` and `sync` open the one door to the network, so a run
+ * that exercises either has to be given something on the other side of it.
+ */
+const onSite = (site: Site, home: string, argv: string[]): Promise<Run> =>
+  jukebox(argv, { home, discovery: site.url, patience: BRIEF })
+
+const sessionAt = (site: Site, home: string, keys: string[]): Promise<Run> =>
+  jukebox([], { home, discovery: site.url, patience: BRIEF, keys })
+
+/**
+ * The narrowest terminal this file opens a menu on, and so the width a spinner
+ * message has to fit inside with a frame and a space in front of it.
+ */
+const NARROWEST = 40
 
 const listed = (run: Run): Listed => oneObject(run).data as Listed
 
@@ -189,13 +240,13 @@ describe('bare jukebox at a terminal', () => {
 
 describe('an entry this slice has not wired up', () => {
   it('says what to run instead, and comes back to the menu', async () => {
-    // Down one to `sync`, take it, then quit from the menu that comes back.
+    // Down three to `config`, which #57 takes and which is the last one left.
     // Reaching `quit` at all is the proof that it did come back: the second
     // press of return has nothing to land on otherwise, and the run hangs.
-    const run = await jukebox([], { keys: [DOWN, ENTER, ...QUIT] })
+    const run = await jukebox([], { keys: [...CONFIG, ...QUIT] })
 
     expect(run.stderr).toContain('not in the menu yet')
-    expect(run.stderr).toContain('jukebox sync')
+    expect(run.stderr).toContain('jukebox config')
     expect(run.stdout).toBe('')
     expect(run.code).toBe(0)
   })
@@ -209,7 +260,7 @@ describe('the wordmark at the width it is given', () => {
   })
 
   it('draws the word on one that is not', async () => {
-    const run = await jukebox([], { columns: 40, keys: QUIT })
+    const run = await jukebox([], { columns: NARROWEST, keys: QUIT })
 
     // Five rows of 67 columns wrapped into a 40-column window is not a smaller
     // mark, it is confetti.
@@ -519,6 +570,227 @@ describe('a command that fails inside a session', () => {
     // Reaching `quit` at all is the proof it came back: the keys after the
     // failure have nothing to land on otherwise, and the run hangs.
     expect(run.stdout).toBe('')
+    expect(run.code).toBe(0)
+  })
+})
+
+describe('adding a playlist from the menu', () => {
+  it('prompts for an address and answers exactly as `add` does', async () => {
+    const site = servingItsOwnApi()
+    site.tracking(URL, { id: ID, status: 'ok' })
+    site.holding(ID, twoTracks)
+
+    // A home each, rather than one shared. `add` is the entry that changes what
+    // the next run of it would answer, so the two runs have to start from the
+    // same place -- and nothing `add` prints names a home, which is what makes
+    // two of them comparable at all.
+    const shell = await onSite(site, temporaryHome('jukebox-menu-add-shell-'), ['add', URL])
+    const run = await sessionAt(site, temporaryHome('jukebox-menu-add-picked-'), [
+      ...ADD,
+      ...typing(URL),
+      ...QUIT,
+    ])
+
+    // The launcher rule, asserted the only way worth asserting it: what the
+    // session put on stdout is what the command put there, to the byte. A menu
+    // that had grown an adding screen of its own could not pass this.
+    expect(run.stdout).toBe(shell.stdout)
+    expect(run.stdout).not.toBe('')
+  })
+
+  it('asks for the address on stderr, and keeps stdout for the answer', async () => {
+    const site = servingItsOwnApi()
+    site.tracking(URL, { id: ID, status: 'ok' })
+    site.holding(ID, twoTracks)
+
+    const home = temporaryHome('jukebox-menu-add-streams-')
+    const run = await sessionAt(site, home, [...ADD, ...typing(URL), ...QUIT])
+
+    // The question and the spinner are chrome, and chrome is on stderr. The one
+    // thing on stdout is what `add` computed.
+    expect(run.stderr).toContain(THE_ADDRESS)
+    expect(run.stderr).toContain(WORKING.add)
+    expect(run.stdout).toContain('Rain / Shine')
+    expect(run.stdout).not.toContain(WORKING.add)
+  })
+
+  it('says why an address was refused, and comes back to the menu', async () => {
+    const site = servingItsOwnApi()
+    const home = temporaryHome('jukebox-menu-add-refused-')
+
+    // Nothing is tracked for this address, and the site refuses anything it was
+    // not told about -- the same answer the real API gives a URL no Source
+    // claims.
+    //
+    // `list` after it, and that is the assertion rather than a flourish.
+    // Reaching `quit` proves nothing on its own: the harness's keyboard is
+    // pushed full up front and never ends, so keys nobody reads are dropped and
+    // a session that had closed on the failure would finish just as quietly. A
+    // command answering on stdout afterwards is what says the menu came back
+    // and was still usable.
+    const keys = [...ADD, ...typing('not-an-address'), ...LIST, ...QUIT]
+    const run = await sessionAt(site, home, keys)
+
+    expect(run.stderr).toContain('does not look like a playlist')
+    expect(run.stdout.trim()).toBe(NOTHING_TRACKED)
+    expect(run.code).toBe(0)
+  })
+
+  it('goes back to the menu on an empty answer, without asking the API about it', async () => {
+    const site = servingItsOwnApi()
+    const home = temporaryHome('jukebox-menu-add-empty-')
+
+    const run = await sessionAt(site, home, [...ADD, ENTER, ...QUIT])
+
+    // The way back, on the one screen with nowhere to put one as an entry.
+    // Launching the empty answer instead would be a request asking the API to
+    // recognise nothing, and this is what says none was made -- the boot is
+    // lazy, so a session that reached no command reached no network either.
+    expect(site.asked).toEqual([])
+    expect(run.stdout).toBe('')
+    expect(run.code).toBe(0)
+  })
+})
+
+describe('syncing from the menu', () => {
+  it('answers exactly as `sync` does', async () => {
+    const site = servingItsOwnApi()
+
+    // A home each, as the `add` comparison above uses, so that neither run can
+    // be answering differently for having gone second. Both Mirrors hold the
+    // same two Playlists and the site answers both the same way: the one
+    // holding Tracks revalidates to a 304, the one still being read stays being
+    // read. Swapping the two lines below is a no-op, which is what says the
+    // assertion is about where a command was run from and nothing else.
+    const typed = await twoPlaylists(site, 'jukebox-menu-sync-shell-')
+    const picked = await twoPlaylists(site, 'jukebox-menu-sync-picked-')
+
+    const run = await sessionAt(site, picked, [...SYNC, ...QUIT])
+    const shell = await onSite(site, typed, ['sync'])
+
+    expect(run.stdout).toBe(shell.stdout)
+    expect(run.stdout).not.toBe('')
+  })
+
+  it('draws a spinner over it, on stderr', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-sync-spinner-')
+
+    const run = await sessionAt(site, home, [...SYNC, ...QUIT])
+
+    // #50 wants it because a Sync over a dozen Playlists is the one thing this
+    // tool does that can look like a hang. It is chrome, so it is on stderr and
+    // the report is not.
+    expect(run.stderr).toContain(WORKING.sync)
+    expect(run.stdout).not.toContain(WORKING.sync)
+  })
+
+  it('has cleared the spinner off the line before the report is written', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-sync-order-')
+
+    const run = await sessionAt(site, home, [...SYNC, ...QUIT])
+
+    // The whole of why `Launch` carries a `computed`, and the one property
+    // stdout and stderr cannot be asked about: they are two strings, and both
+    // of them reach one terminal. A launch is compute *and* render, so a
+    // spinner stopped when the launch returned would still have been on the
+    // line while the report was written, and its next frame would erase the
+    // report's first line.
+    const report = run.interleaved.findIndex((text) => text.includes('nothing changed'))
+    const before = run.interleaved.slice(0, report)
+    const lastFrame = before.map((text) => text.includes(WORKING.sync)).lastIndexOf(true)
+
+    expect(report).toBeGreaterThan(-1)
+    expect(lastFrame).toBeGreaterThan(-1)
+
+    // Drawn, then cleared, then answered -- in that order, and the clearing
+    // found inside what was written before the report rather than after it.
+    // `computed?.()` removed from `main` is exactly this going to -1.
+    expect(before.indexOf(ERASED, lastFrame + 1)).toBeGreaterThan(-1)
+  })
+
+  it('keeps every spinner message to one line a narrow terminal can hold', () => {
+    // `spinner.ts` erases the row the cursor is on and no other, so a message
+    // long enough to wrap would leave its first rows on the screen when it
+    // stopped. This file is where that stays true, and the width is the
+    // narrowest one it opens a menu on above.
+    for (const working of Object.values(WORKING)) {
+      expect(working).not.toContain('\n')
+      expect(working.length + 2).toBeLessThanOrEqual(NARROWEST)
+    }
+  })
+})
+
+describe('a backend that will not serve this binary', () => {
+  it('closes the menu and exits non-zero', async () => {
+    const site = servingItsOwnApi({ min_version: '99.0.0' })
+    const home = temporaryHome('jukebox-menu-refused-')
+
+    // The keys go on to `list`, which touches no network and would have
+    // answered on stdout had the menu come back. #50 names this as the one
+    // exception to a session exiting zero: nothing in it was usable, so there
+    // is no menu worth coming back to, and an empty stdout is what says so.
+    const run = await sessionAt(site, home, [...SYNC, ...LIST, ...QUIT])
+
+    expect(run.stderr).toContain('Upgrade to the latest release')
+    expect(run.stdout).toBe('')
+    expect(run.code).toBe(1)
+  })
+
+  it('closes it on an add just the same', async () => {
+    const site = servingItsOwnApi({ min_version: '99.0.0' })
+    const home = temporaryHome('jukebox-menu-refused-add-')
+
+    // The two entries reach the gate through the same helper, and each decides
+    // for itself what to do with the answer. That is two lines rather than one,
+    // so it is two tests rather than one.
+    const run = await sessionAt(site, home, [...ADD, ...typing(URL), ...LIST, ...QUIT])
+
+    expect(run.stderr).toContain('Upgrade to the latest release')
+    expect(run.stdout).toBe('')
+    expect(run.code).toBe(1)
+  })
+})
+
+describe('a backend that is down or unreachable', () => {
+  it('says so, comes back, and leaves the entries reading local state working', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-offline-')
+
+    // Pointed at nowhere, and at an address this home has no saved document
+    // for, so the boot has nothing to fall back on. That is what a network that
+    // is down looks like from inside the CLI.
+    const run = await session(home, [...SYNC, ...LIST, ...outOf(2), ...QUIT])
+    const listing = await against(home, ['list'])
+
+    expect(run.stderr).toContain('does not know where the API is')
+
+    // The half of it that matters. `list` reads only local state, so an
+    // unreachable backend costs the session the two entries that needed one and
+    // nothing else -- and the session it cost them in still ends zero.
+    expect(run.stdout).toBe(listing.stdout)
+    expect(run.code).toBe(0)
+  })
+
+  it('prints an outage message verbatim and carries on the same way', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-down-')
+
+    // A second site, serving the kill switch, because the first one had to be
+    // healthy for the Mirror above to be filled at all. Pointing the session at
+    // a different address is also what makes the boot ask rather than answer
+    // from the copy `twoPlaylists` left behind: the saved document is keyed on
+    // where it came from, and is fresh for an hour.
+    const down = servingItsOwnApi({ status: 'down', message: 'Back in an hour.' })
+
+    const run = await sessionAt(down, home, [...SYNC, ...LIST, ...outOf(2), ...QUIT])
+    const listing = await against(home, ['list'])
+
+    // Verbatim is what the field is for, and it is why that copy can improve
+    // without a client release.
+    expect(run.stderr).toContain('Back in an hour.')
+    expect(run.stdout).toBe(listing.stdout)
     expect(run.code).toBe(0)
   })
 })
