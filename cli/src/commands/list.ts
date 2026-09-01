@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { MirrorUnopenable, withMirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { columns, counted, identified, NOTHING_TRACKED, stamp } from '../phrasing'
+import { columns, held, identified, NOTHING_TRACKED, stamp } from '../phrasing'
 import { mirroredPlaylists, type MirroredPlaylist } from '../reading'
 
 /**
@@ -59,24 +59,6 @@ const row = (playlist: MirroredPlaylist): string[] => [
   held(playlist),
   when(playlist.lastSyncedAt),
 ]
-
-/**
- * What the Mirror holds for it.
- *
- * The Removed count is mentioned only when there is one, the way `sync` names
- * only what moved -- `0 removed` is a phrase every reader has to read past on
- * every line to learn nothing.
- *
- * `no tracks` rather than `0 tracks` whenever the Mirror holds no row at all for
- * it, which is a Playlist that has not resolved yet and equally one whose Source
- * lists nothing. Both are the same sentence honestly: a zero invites the question
- * of what became of them, and in neither case were there ever any. Which of the
- * two it is, the status beside it already says.
- */
-const held = ({ tracks, removed }: MirroredPlaylist): string =>
-  tracks === 0 && removed === 0
-    ? 'no tracks'
-    : counted(tracks, 'track', 'tracks') + (removed === 0 ? '' : `, ${removed} removed`)
 
 /**
  * When this machine's copy of it last moved, to the minute, or that it never
