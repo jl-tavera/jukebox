@@ -2,6 +2,13 @@ name: site
 
 # Path-filtered so touching the API or the CLI never runs the site's checks, and
 # so shipping the landing page never reaches either of them.
+#
+# The wordmark this page renders is also carried by the CLI, and the two are
+# checked against each other by cli.yml, which names `site/lib/content.ts` in its
+# own path filter -- so editing the art here still reaches that check. It runs
+# there rather than here, once rather than twice, the same split the schema
+# checks already use.
+#
 # GitHub Actions does not expand YAML anchors, so the list is written twice.
 on:
   push:
@@ -52,3 +59,4 @@ jobs:
       # `.gitattributes` alone cannot guarantee what gets deployed. See
       # scripts/check-installers.ts.
       - run: bun run --cwd site check:installers
+

@@ -13,6 +13,13 @@
  * (U+2580-U+259F). Those glyphs fall outside a subsetted latin webfont, and
  * a per-glyph fallback with different metrics shears the art apart, which is
  * why the page uses the system monospace stack - see docs/design/SITE.md 03.
+ *
+ * The CLI carries the same five lines in `cli/src/wordmark.ts`, with a note
+ * about terminal width where this one has a note about fonts. They are copies
+ * rather than one import - #50 has the reasoning - and the two files' bytes
+ * are compared in CI by `bun run --cwd cli check:wordmark`, so changing this
+ * one alone fails. Change it here first, then copy it across whole. Both files
+ * are pinned to LF, because the check counts columns.
  */
 export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
      ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
