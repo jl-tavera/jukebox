@@ -27,6 +27,15 @@ export type Run = {
   stdout: string
   /** Everything that is not data. */
   stderr: string
+  /**
+   * Every write to either stream, in the order they were made.
+   *
+   * The two strings above cannot answer a question about order, because they
+   * are two: a run that wrote its chrome after its answer reads exactly like
+   * one that wrote it before. That order is what `Launch`'s `computed` exists
+   * to fix, so it needs somewhere to be observed.
+   */
+  interleaved: string[]
   code: number
   /** The temporary home this run was given. */
   home: string
@@ -199,6 +208,8 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
   let stdout = ''
   let stderr = ''
 
+  const interleaved: string[] = []
+
   // Read once and used twice, because the stream and the flag are the same fact
   // said to two different readers -- `processIo` takes both off the one
   // `process.stdin`, and they have no way to disagree there. A run told nobody
@@ -207,8 +218,14 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
   const stdinIsTty = options.stdin ?? true
 
   const io: Io = {
-    out: (text) => void (stdout += text),
-    err: (text) => void (stderr += text),
+    out: (text) => {
+      stdout += text
+      interleaved.push(text)
+    },
+    err: (text) => {
+      stderr += text
+      interleaved.push(text)
+    },
     in: keyboard(options.keys ?? [], stdinIsTty),
     stdoutIsTty: options.tty ?? true,
     stdinIsTty,
@@ -227,7 +244,7 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
       discovery: options.discovery,
       patience: options.patience,
     })
-    return { stdout, stderr, code, home, locations: where }
+    return { stdout, stderr, interleaved, code, home, locations: where }
   } finally {
     restore()
   }
