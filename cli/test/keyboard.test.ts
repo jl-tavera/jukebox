@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { Writable } from 'node:stream'
 import { select, text } from '@clack/prompts'
-import { keyboard } from './harness'
+import { DOWN, ENTER, keyboard } from './harness'
 
 /**
  * The scripted keyboard, proven against a real prompt rather than a fake one.
@@ -12,15 +12,17 @@ import { keyboard } from './harness'
  * it expects of its input surfaces here rather than in the first ticket that
  * tries to build a menu on top of it.
  *
- * The library is driven directly rather than through `jukebox`, because nothing
- * in production prompts yet -- `promptsAllowed` still has no caller -- and
- * commands are handed a `Session` and deliberately nothing else. The stream
- * under test is the harness's own, the same one `Options.keys` hands to a run.
+ * The library is still driven directly rather than through `jukebox`, and the
+ * reason has changed rather than gone. It used to be that nothing in production
+ * prompted at all; #54 built the menu, so `promptsAllowed` has a caller and
+ * `menu.test.ts` drives one end to end. What is left here is narrower and worth
+ * keeping apart from it: this file asserts what the *stream* is, one library
+ * call at a time. An arrow key that stopped arriving whole fails here in a line
+ * that names it, instead of as a menu that quietly answered the wrong entry.
+ *
+ * The stream under test is the harness's own, the same one `Options.keys` hands
+ * to a run.
  */
-
-/** What a terminal sends. Written out because `\x1b[B` reads as nothing at all. */
-const DOWN = '\x1b[B'
-const ENTER = '\r'
 
 /**
  * Swallows the prompt's own drawing.

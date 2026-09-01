@@ -3,7 +3,8 @@ import { BootStop } from './boot'
 import { reportVersion } from './commands/version'
 import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
-import { selectMode } from './mode'
+import { menu } from './menu'
+import { promptsAllowed, selectMode } from './mode'
 import { failed, succeeded, type Renderable } from './outcome'
 import { render } from './render'
 import { root as jukebox } from './root'
@@ -57,6 +58,21 @@ export type Seams = {
  */
 export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<number> => {
   const mode = selectMode(asked(argv, JSON_FLAGS), io)
+
+  // The one path that does not compute a result object and render it, because
+  // it cannot: a menu session is a loop rather than one answer, and what it
+  // exits with is not an outcome's. Everything it launches still goes through
+  // `compute` and `render` below -- that is the launcher rule, docs/adr/0007,
+  // and the reason a menu does not fork this program into two behaviours.
+  //
+  // Gated on the raw empty vector rather than on `dispatch` finding no command,
+  // and the two are not the same thing: `jukebox --nonsense` names no command
+  // either, and opening a menu that silently swallowed the flag would be worse
+  // than the failure it gets today. `promptsAllowed` is the whole of the rest of
+  // the condition, and until now it had no caller -- it is false in JSON mode,
+  // false into a pipe or a redirect, and false when nobody is at the keyboard,
+  // which is every case #50 requires to keep failing exactly as it does.
+  if (argv.length === 0 && promptsAllowed(mode, io)) return await menu(io)
 
   // Collected rather than printed where they arise, so that `render` stays the
   // only thing that writes and the shape stays compute-then-render. A warning

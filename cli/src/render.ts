@@ -28,7 +28,14 @@ const envelope = (outcome: Outcome, version: string): Envelope =>
     : { ok: false, command: outcome.command, version, error: outcome.error }
 
 /**
- * The one place anything is written, and the whole of the stream discipline.
+ * The one place a result is written, and the whole of the stream discipline.
+ *
+ * This said "the one place anything is written" until #54, and the menu is the
+ * qualifier: a launcher has to draw a wordmark and a prompt before there is any
+ * result to render, so something else does now write. What it writes is chrome
+ * and all of it goes to stderr, which is why the claim worth making survives
+ * word for word -- nothing but this function writes to stdout, and a menu
+ * session that produced no result writes nothing there at all.
  *
  * **stdout is the guarantee, and the only one.** In JSON mode it gets exactly
  * one object, so a caller can read it whole and parse it. In human mode what
