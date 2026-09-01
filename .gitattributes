@@ -11,3 +11,11 @@ worker/worker-configuration.d.ts text eol=lf
 # is the one whose checkout would introduce them.
 site/public/install.sh  text eol=lf
 site/public/install.ps1 text eol=lf
+
+# Both copies of the wordmark, compared byte for byte by
+# cli/scripts/check-wordmark.ts. Most of this repo is checked out CRLF and none
+# of it minds; this art does, because it is measured in columns and a carriage
+# return is a byte on the end of every row that nobody can see. Pinned rather
+# than stripped at read time, so the check can assert there are none and mean it.
+site/lib/content.ts text eol=lf
+cli/src/wordmark.ts text eol=lf
