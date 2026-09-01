@@ -59,21 +59,6 @@ export type Seams = {
 export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<number> => {
   const mode = selectMode(asked(argv, JSON_FLAGS), io)
 
-  // The one path that does not compute a result object and render it, because
-  // it cannot: a menu session is a loop rather than one answer, and what it
-  // exits with is not an outcome's. Everything it launches still goes through
-  // `compute` and `render` below -- that is the launcher rule, docs/adr/0007,
-  // and the reason a menu does not fork this program into two behaviours.
-  //
-  // Gated on the raw empty vector rather than on `dispatch` finding no command,
-  // and the two are not the same thing: `jukebox --nonsense` names no command
-  // either, and opening a menu that silently swallowed the flag would be worse
-  // than the failure it gets today. `promptsAllowed` is the whole of the rest of
-  // the condition, and until now it had no caller -- it is false in JSON mode,
-  // false into a pipe or a redirect, and false when nobody is at the keyboard,
-  // which is every case #50 requires to keep failing exactly as it does.
-  if (argv.length === 0 && promptsAllowed(mode, io)) return await menu(io)
-
   // Collected rather than printed where they arise, so that `render` stays the
   // only thing that writes and the shape stays compute-then-render. A warning
   // emitted from inside the boot would be a second writer, and the first crack
@@ -84,7 +69,38 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
     patience: seams.patience ?? PATIENCE,
   }
 
-  const renderable = await compute(argv, seams.root ?? jukebox, session)
+  const root = seams.root ?? jukebox
+
+  // The one path that does not answer with a result object, because it cannot:
+  // a menu session is a loop rather than one answer, and what it exits with is
+  // not an outcome's. What it launches is another matter -- every entry hands
+  // back an argument vector and gets the two lines below it, so a command run
+  // from the menu is computed, rendered and counted exactly as the same command
+  // typed at a shell. That is the launcher rule, docs/adr/0007, and the reason
+  // a menu does not fork this program into two behaviours.
+  //
+  // Gated on the raw empty vector rather than on `dispatch` finding no command,
+  // and the two are not the same thing: `jukebox --nonsense` names no command
+  // either, and opening a menu that silently swallowed the flag would be worse
+  // than the failure it gets today. `promptsAllowed` is the whole of the rest of
+  // the condition -- it is false in JSON mode, false into a pipe or a redirect,
+  // and false when nobody is at the keyboard, which is every case #50 requires
+  // to keep failing exactly as it does.
+  if (argv.length === 0 && promptsAllowed(mode, io)) {
+    return await menu(io, async (vector) => {
+      const answer = await compute(vector, root, session)
+
+      // Drained rather than read, so that a warning raised on the way through
+      // one command is printed above that command's own output and not again
+      // above the next one's. The boot is memoised, so in practice this fires
+      // for the first command in a session that touches the network.
+      render(answer, mode, VERSION, io, warnings.splice(0))
+
+      return answer
+    })
+  }
+
+  const renderable = await compute(argv, root, session)
   render(renderable, mode, VERSION, io, warnings)
 
   // Zero for every answer the CLI was built to give, non-zero only where the

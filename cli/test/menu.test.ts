@@ -1,9 +1,26 @@
+import { writeFileSync } from 'node:fs'
 import { afterAll, describe, expect, it } from 'bun:test'
+import { defineCommand, type CommandDef } from 'citty'
 import pkg from '../package.json'
+import type { Listed } from '../src/commands/list'
+import { LOCAL_ONLY } from '../src/commands/remove'
 import { NARROW_MARK } from '../src/header'
-import { ENTRIES } from '../src/menu'
+import { askingToStop, ENTRIES, FOR_THIS_PLAYLIST, WHICH_PLAYLIST } from '../src/menu'
+import { failed, succeeded } from '../src/outcome'
+import { held, identified, NOTHING_TRACKED } from '../src/phrasing'
+import type { MirroredPlaylist } from '../src/reading'
 import { WORDMARK } from '../src/wordmark'
-import { CANCEL, DOWN, ENTER, jukebox, oneObject, removeHomes } from './harness'
+import {
+  CANCEL,
+  DOWN,
+  ENTER,
+  jukebox,
+  oneObject,
+  removeHomes,
+  temporaryHome,
+  type Run,
+} from './harness'
+import { servingItsOwnApi, snapshot, stopServing, track, type Site } from './server'
 
 /**
  * The menu, driven at Seam 3 like every other command in this suite.
@@ -20,6 +37,7 @@ import { CANCEL, DOWN, ENTER, jukebox, oneObject, removeHomes } from './harness'
  */
 
 afterAll(removeHomes)
+afterAll(stopServing)
 
 /**
  * From the top of the menu to `quit`, which is the last of five entries.
@@ -29,6 +47,82 @@ afterAll(removeHomes)
  * test that forgets the way out hangs until the runner gives up.
  */
 const QUIT = [DOWN, DOWN, DOWN, DOWN, ENTER]
+
+/** The third entry, `list`, taken from the top of the menu. */
+const LIST = [DOWN, DOWN, ENTER]
+
+/** The first Playlist the picker offers, which is the one whose id sorts first. */
+const FIRST = [ENTER]
+
+/** Past every Playlist to the way back, which the picker puts after them. */
+const outOf = (playlists: number): string[] => [...new Array<string>(playlists).fill(DOWN), ENTER]
+
+/** On a Playlist's own screen: the way back is first, and `remove` is second. */
+const LEAVE_IT = [ENTER]
+const REMOVE_IT = [DOWN, ENTER]
+
+/**
+ * What a confirmation takes. A letter answers it at once, with no return behind
+ * it, which is the library's own behaviour rather than this suite's.
+ */
+const YES = 'y'
+const NO = 'n'
+
+/** Nowhere, as `list.test.ts` spells it: a session that quietly booted would fail. */
+const NO_SITE = 'http://127.0.0.1:1/discovery.json'
+
+/** Short enough for a test suite to watch `add`'s wait run out. */
+const BRIEF = { windowMs: 100, intervalMs: 10 }
+
+/** Sorts first, so the picker's first entry is this one. */
+const URL = 'https://open.spotify.com/playlist/1AbCdEfGhIjKlMnOpQrStU'
+const ID = 'spotify:1AbCdEfGhIjKlMnOpQrStU'
+
+/** A second Playlist, still being read from its Source. Sorts after the first. */
+const PENDING = 'https://open.spotify.com/playlist/3cEYpjA9oz9GiPac4AsH4n'
+const PENDING_ID = 'spotify:3cEYpjA9oz9GiPac4AsH4n'
+
+const twoTracks = snapshot({
+  title: 'Rain / Shine',
+  tracks: [
+    track(),
+    track({ sourceTrackId: 'long-way-down', title: 'Long Way Down', position: 1 }),
+  ],
+})
+
+/**
+ * A home holding one Playlist with Tracks and one still being read from its
+ * Source, filled by `add` because that is the honest way to fill a Mirror.
+ *
+ * The server has no part in anything below it. Every menu session in this file
+ * is pointed at nowhere, and reaches only commands that read local state.
+ */
+const twoPlaylists = async (site: Site, name: string): Promise<string> => {
+  const home = temporaryHome(name)
+
+  site.tracking(URL, { id: ID, status: 'ok' })
+  site.holding(ID, twoTracks)
+  await jukebox(['add', URL, '--json'], { discovery: site.url, patience: BRIEF, home })
+
+  site.tracking(PENDING, { id: PENDING_ID, status: 'pending' })
+  site.holding(PENDING_ID, 'resolving')
+  await jukebox(['add', PENDING, '--json'], { discovery: site.url, patience: BRIEF, home })
+
+  return home
+}
+
+/** One command run against a home, the way a shell would run it. */
+const against = (home: string, argv: string[]): Promise<Run> =>
+  jukebox(argv, { home, discovery: NO_SITE })
+
+/** One menu session against a home, driven by the keys a person would press. */
+const session = (home: string, keys: string[]): Promise<Run> =>
+  jukebox([], { home, discovery: NO_SITE, keys })
+
+const listed = (run: Run): Listed => oneObject(run).data as Listed
+
+const idsIn = async (home: string): Promise<string[]> =>
+  listed(await against(home, ['list', '--json'])).playlists.map((one) => one.id)
 
 /**
  * The first row of the art, as it has to arrive on stderr.
@@ -196,5 +290,235 @@ describe('everywhere a menu must not open', () => {
     // This is the case the entry condition reads `argv.length` for rather than
     // asking the dispatcher what it found.
     refusedInWords(await jukebox(['--nonsense']))
+  })
+})
+
+/**
+ * The reason the menu is worth building: `list`, and the two commands reached
+ * through it.
+ *
+ * `show` and `remove` both take an id that only `list` prints, so using either
+ * from a shell means running a different command first and copying a string
+ * back onto the command line. Here the id is never asked for -- and the picker
+ * that replaces it is built out of what `list` reported, which is what keeps
+ * the menu from becoming a second reader of local state that can disagree with
+ * the command.
+ */
+describe('the playlists this Mirror holds', () => {
+  it('offers every one that `list` reports, with its status and what it holds', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-picker-')
+
+    const run = await session(home, [...LIST, ...outOf(2), ...QUIT])
+
+    // Composed out of the command's own answer rather than written out again
+    // here. A picker built from anything else could disagree with `jukebox
+    // list` about what is tracked, what its status is or how much it holds, and
+    // the disagreement would read as a bug in the command -- which is the drift
+    // ADR-0007 exists to make impossible.
+    const { playlists } = listed(await against(home, ['list', '--json']))
+    expect(playlists).toHaveLength(2)
+
+    for (const playlist of playlists) {
+      const name = identified(playlist.title, playlist.id)
+      expect(run.stderr).toContain(`${name}, ${playlist.status}, ${held(playlist)}`)
+    }
+
+    expect(run.code).toBe(0)
+  })
+
+  it('tells one still being read from its source apart from one that is settled', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-status-')
+
+    const run = await session(home, [...LIST, ...outOf(2), ...QUIT])
+
+    // On the label rather than in a hint, because the library draws a hint only
+    // for the entry a person is standing on, and telling one Playlist from
+    // another is what somebody came to this screen to do.
+    //
+    // The word rather than a colour: `NO_COLOR`, a redirected stream and a
+    // terminal that cannot colour all still have to distinguish them, and the
+    // word is the one `list` prints and `--json` carries, so a reader who goes
+    // looking has the string they would have to match on.
+    //
+    // One status stands for the three that are not `ok`. Nothing in `offer`
+    // branches on which it is -- the word is copied out of the row -- so a Gone
+    // or an Unreachable Playlist reaches the screen down the same line of code.
+    expect(run.stderr).toContain(`${identified(null, PENDING_ID)}, pending, no tracks`)
+    expect(run.stderr).toContain(`${identified('Rain / Shine', ID)}, ok, 2 tracks`)
+  })
+
+  it('shows the one that was picked, exactly as `show` does', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-show-')
+
+    const run = await session(home, [...LIST, ...FIRST, ...LEAVE_IT, ...outOf(2), ...QUIT])
+
+    // The launcher rule, asserted the only way worth asserting it: what the
+    // session put on stdout is what the two commands put there, in order and to
+    // the byte. A menu that had grown a screen of its own could not pass this.
+    const listing = await against(home, ['list'])
+    const showing = await against(home, ['show', ID])
+
+    expect(run.stdout).toBe(listing.stdout + showing.stdout)
+  })
+
+  it('stops tracking from that screen, exactly as `remove` does', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-remove-')
+    const twin = await twoPlaylists(site, 'jukebox-menu-remove-twin-')
+
+    const run = await session(home, [...LIST, ...FIRST, ...REMOVE_IT, YES, ...QUIT])
+
+    // Against a second home rather than the same one, because the command being
+    // compared with deletes what it is run against and there is only one of it
+    // to delete. The two homes were filled identically, and what `remove`
+    // prints carries no clock.
+    const removing = await against(twin, ['remove', ID])
+
+    expect(run.stdout).toEndWith(removing.stdout)
+    expect(await idsIn(home)).toEqual([PENDING_ID])
+  })
+
+  it('asks before it deletes anything, and keeps it when the answer is no', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-confirm-')
+
+    const run = await session(home, [
+      ...LIST,
+      ...FIRST,
+      ...REMOVE_IT,
+      NO,
+      ...outOf(2),
+      ...QUIT,
+    ])
+
+    // Both pinned rather than paraphrased: the question is the menu's and is
+    // exported for this, and the sentence that would have followed a deletion
+    // is `remove`'s own, exported for the same reason.
+    const asked = listed(await against(home, ['list', '--json'])).playlists[0]!
+    expect(run.stderr).toContain(askingToStop(asked))
+    expect(run.stdout).not.toContain(LOCAL_ONLY)
+
+    expect(await idsIn(home)).toEqual([ID, PENDING_ID])
+  })
+})
+
+/**
+ * The invariant the whole ticket rests on, tested where it can only be tested:
+ * against a `list` reporting something no Mirror holds.
+ *
+ * Everything above compares the menu with the real command over a real Mirror,
+ * which a picker that had gone and read the Mirror itself would pass just as
+ * well. This is the shape that tells the two apart, and it is one the real
+ * program cannot produce -- which is what `Seams.root` is for.
+ */
+describe('a picker built from what `list` returned', () => {
+  /** A Playlist no Mirror holds, in the shape `list` reports one in. */
+  const INVENTED: MirroredPlaylist = {
+    id: 'spotify:inventedInventedInvent',
+    url: 'https://open.spotify.com/playlist/inventedInventedInvent',
+    title: 'Invented',
+    status: 'ok',
+    folderName: 'Invented',
+    lastVersion: 1,
+    skipped: 0,
+    lastSyncedAt: null,
+    tracks: 3,
+    removed: 0,
+  }
+
+  /** What this tree's `show` says instead of showing anything. */
+  const NOTHING_TO_SHOW = 'There is nothing to show for that one.'
+
+  /**
+   * A `list` that reports whatever it is handed, and a `show` that cannot show
+   * it. Both are things the real commands can never be -- a report that
+   * disagrees with local state, and a Playlist that lists but will not show.
+   */
+  const reporting = (playlists: MirroredPlaylist[]): CommandDef =>
+    defineCommand({
+      meta: { name: 'jukebox' },
+      subCommands: {
+        list: defineCommand({
+          meta: { name: 'list', description: 'Reports whatever it was handed' },
+          run: () => succeeded('list', { playlists }, () => 'reported'),
+        }),
+        show: defineCommand({
+          meta: { name: 'show', description: 'Refuses' },
+          run: () => failed('show', 'playlist_not_tracked', NOTHING_TO_SHOW),
+        }),
+      },
+    })
+
+  it('offers what the command reported, and not what the Mirror holds', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-derived-')
+
+    const run = await jukebox([], {
+      home,
+      discovery: NO_SITE,
+      root: reporting([INVENTED]),
+      keys: [...LIST, ...outOf(1), ...QUIT],
+    })
+
+    expect(run.stderr).toContain(`${identified(INVENTED.title, INVENTED.id)}, ok, 3 tracks`)
+
+    // The two this home really tracks, and the assertion a second reader of
+    // local state would fail: it would have offered these instead.
+    expect(run.stderr).not.toContain(ID)
+    expect(run.stderr).not.toContain(PENDING_ID)
+    expect(run.code).toBe(0)
+  })
+
+  it('does not offer to stop tracking one that would not show', async () => {
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-unshowable-'),
+      discovery: NO_SITE,
+      root: reporting([INVENTED]),
+      keys: [...LIST, ...FIRST, ...outOf(1), ...QUIT],
+    })
+
+    // Straight back to the picker, with the reason on the screen. Offering to
+    // stop tracking a Playlist that would not show is offering to do the thing
+    // that has just failed -- and where a second terminal is what removed it,
+    // that is precisely what failed.
+    expect(run.stderr).toContain(NOTHING_TO_SHOW)
+    expect(run.stderr).not.toContain(FOR_THIS_PLAYLIST)
+    expect(run.code).toBe(0)
+  })
+})
+
+describe('a Mirror with nothing in it', () => {
+  it('is said in words rather than shown as an empty picker', async () => {
+    const home = temporaryHome('jukebox-menu-empty-')
+
+    const run = await session(home, [...LIST, ...QUIT])
+
+    // The sentence is `list`'s own, and it points at `add`. A picker with
+    // nothing in it would be a screen offering a person nothing to do.
+    expect(run.stdout.trim()).toBe(NOTHING_TRACKED)
+    expect(run.stderr).not.toContain(WHICH_PLAYLIST)
+    expect(run.code).toBe(0)
+  })
+})
+
+describe('a command that fails inside a session', () => {
+  it('says why, comes back to the menu, and the session still exits zero', async () => {
+    const run = await jukebox([], {
+      discovery: NO_SITE,
+      // A file where the data directory has to go, as `mirror.test.ts` does it:
+      // the cheapest way to make a real command fail for a real reason.
+      prepare: (where) => void writeFileSync(where.data, 'not a directory\n'),
+      keys: [...LIST, ...QUIT],
+    })
+
+    expect(run.stderr).toContain('could not open its local record')
+
+    // Reaching `quit` at all is the proof it came back: the keys after the
+    // failure have nothing to land on otherwise, and the run hangs.
+    expect(run.stdout).toBe('')
+    expect(run.code).toBe(0)
   })
 })
