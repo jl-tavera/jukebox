@@ -7,7 +7,8 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "check:discovery": "bun run scripts/check-discovery.ts",
-    "deploy": "bun run build && bun run check:discovery && wrangler deploy"
+    "check:installers": "bun run scripts/check-installers.ts",
+    "deploy": "bun run build && bun run check:discovery && bun run check:installers && wrangler deploy"
   },
   "dependencies": {
     "next": "^16.3.3",

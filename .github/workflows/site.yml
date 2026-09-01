@@ -45,3 +45,10 @@ jobs:
       # ordering a workflow cannot check.
       - run: bun run --cwd site build
       - run: bun run --cwd site check:discovery
+
+      # Both installers, read back from `out/` for the same reason. This one is
+      # mostly about line endings: a CRLF install.sh fails on its own shebang,
+      # and the export is built from the working tree rather than from git, so
+      # `.gitattributes` alone cannot guarantee what gets deployed. See
+      # scripts/check-installers.ts.
+      - run: bun run --cwd site check:installers
