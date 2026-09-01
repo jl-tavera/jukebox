@@ -1,0 +1,228 @@
+name: release
+
+# Triggered by a tag, and therefore not path-filtered -- the one workflow here
+# that is not, against a rule CLAUDE.md states plainly.
+#
+# The short of it: GitHub applies `paths:` to a tag push too, a tag changes no
+# files, so a filter here would suppress the release rather than scope it.
+# `cli.yml` remains the CLI's path-filtered workflow and is untouched.
+#
+# docs/adr/0006-the-release-workflow-has-no-path-filter.md is the long of it,
+# including why folding this into cli.yml cannot work and what is load-bearing
+# instead. Read it before adding a filter back.
+on:
+  push:
+    tags: ['v*']
+  # So `verify` can be re-run on its own after the site is deployed, without
+  # cutting a second tag to do it.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # `event_name`, not just the ref. A workflow_dispatch can be launched from a
+    # tag, which satisfies a `refs/tags/` test just as a push does -- and then
+    # this job re-runs against a tag whose release exists, `gh release create`
+    # fails "already exists", and the one thing dispatch is here for (re-running
+    # `verify` after the site deploys) is the thing it cannot do.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+
+      # Before anything is installed, built or published. `cli/src/version.ts`
+      # reads the version out of package.json and Bun inlines it, so a binary
+      # built from a mismatched tag reports a version the release does not carry
+      # -- and `--version` is what every bug report is written from. The version
+      # gate in DESIGN.md 07 reads the same number, so the two disagreeing is not
+      # cosmetic.
+      #
+      # Read with Bun rather than jq: it is the runtime this release is compiled
+      # with and the one `version.ts` reads the same file through, so the guard
+      # cannot pass against a file the build then reads differently. It is also
+      # the only reading of the two that can be exercised on the maintainer's own
+      # machine.
+      - name: The tag matches the version being built
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(bun --print "require('./cli/package.json').version")"
+          echo "tag $GITHUB_REF_NAME, cli/package.json $declared"
+          if [ "$tagged" != "$declared" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match cli/package.json $declared"
+            exit 1
+          fi
+
+      - run: bun install --frozen-lockfile
+
+      # The tagged commit is proven rather than assumed. `cli.yml` has already
+      # run these on the way to main, but a tag can name any commit.
+      - run: bun run --cwd cli typecheck
+      - run: bun run --cwd cli test
+
+      - run: bun run --cwd cli build
+
+      # The one target this runner can execute. It proves the compile produced a
+      # program rather than a file, which nothing else here would notice until
+      # somebody installed it.
+      #
+      # A pipe is not a terminal, so this answers in JSON. Only the version
+      # number is read out of it, by grep: ADR-0005 makes the shape unstable, and
+      # a number that appears in both renderings survives it moving.
+      - name: The built binary runs and knows its version
+        run: |
+          chmod +x cli/dist/jukebox-linux-x64
+          out="$(./cli/dist/jukebox-linux-x64 --version)"
+          echo "$out"
+          echo "$out" | grep -q "${GITHUB_REF_NAME#v}"
+
+      # Not `--prerelease`, however 0.x this is. GitHub excludes prereleases from
+      # `releases/latest`, and `releases/latest/download` is the address both
+      # installers are built around -- marking this one would leave every install
+      # command downloading nothing.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            cli/dist/jukebox-darwin-arm64 \
+            cli/dist/jukebox-darwin-x64 \
+            cli/dist/jukebox-linux-arm64 \
+            cli/dist/jukebox-linux-x64 \
+            cli/dist/jukebox-windows-x64.exe \
+            cli/dist/SHA256SUMS \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes "$(cat <<'NOTES'
+          ## Install
+
+          macOS and Linux:
+
+          ```sh
+          curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh | sh
+          ```
+
+          Windows:
+
+          ```powershell
+          irm https://jukebox-site.joseluis64tavera.workers.dev/install.ps1 | iex
+          ```
+
+          Verify a download by hand against `SHA256SUMS`; both installers already do.
+
+          ## Known issues
+
+          The Windows binary is unsigned, so SmartScreen warns the first time it runs.
+
+          The JSON shape is unstable before 1.0 and may change in any release. It freezes at 1.0.
+          NOTES
+          )"
+
+  # The other half of #38's acceptance: an installer nobody has run is an
+  # installer that does not work yet. This is that run, made repeatable -- and
+  # the only macOS coverage anything in this repo has.
+  #
+  # It fetches the *published* script rather than the one in the checkout,
+  # because hosting is half of what can break: a Content-Type that arrives wrong
+  # or an asset the export stopped publishing would both pass a test of the file
+  # sitting in git.
+  verify:
+    needs: [release]
+    # `always()` so a workflow_dispatch run, where `release` is skipped, still
+    # verifies. A failed release is the one case worth not proceeding from.
+    if: ${{ always() && needs.release.result != 'failure' && needs.release.result != 'cancelled' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: The published install command
+        run: curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh | sh
+
+      # Two questions, and they fail differently. This one asks whether the
+      # binary was installed and runs.
+      - name: The binary is where the installer said
+        run: |
+          "$HOME/.local/bin/jukebox" --version
+          "$HOME/.local/bin/jukebox" --help
+
+      # And this one asks the question the acceptance criterion actually asks:
+      # whether a shell opened afterwards can find it by name. Login and
+      # interactive, and in the user's *own* shell, because that is the file the
+      # installer chose to write to -- checking with bash on a machine whose
+      # default is zsh would pass or fail for the wrong reason.
+      - name: jukebox answers by name from a fresh shell
+        run: |
+          shell="${SHELL:-/bin/bash}"
+          echo "a fresh $shell"
+          "$shell" -lic 'command -v jukebox && jukebox --version'
+
+      # Rerunning an installer is something people do, and the PATH edit is the
+      # part with something to stack up.
+      - name: Installing twice changes nothing
+        run: |
+          curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh | sh
+          shell="${SHELL:-/bin/bash}"
+          "$shell" -lic 'jukebox --version'
+
+  # #38's own reason for shipping both installers together: "the release that
+  # cannot be installed on Windows is the one whose binary nobody ever
+  # exercises." A verify matrix of Linux and macOS would have left install.ps1 --
+  # the script with by far the most delicate thing in this change, a write to the
+  # user's PATH in the registry -- as the only artifact here nothing ever ran.
+  #
+  # Its own job rather than a third matrix leg, because every step differs: a
+  # different installer, a different shell, and a different question to ask about
+  # PATH.
+  verify-windows:
+    needs: [release]
+    if: ${{ always() && needs.release.result != 'failure' && needs.release.result != 'cancelled' }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: The published install command
+        run: irm https://jukebox-site.joseluis64tavera.workers.dev/install.ps1 | iex
+
+      - name: The binary is where the installer said
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\Jukebox\jukebox.exe'
+          & $exe --version
+          & $exe --help
+
+      # The Windows half of "the version reported from a fresh shell".
+      #
+      # A later step does not inherit the installer's in-process `$env:Path`, and
+      # the runner does not re-read the registry between steps -- so PATH is
+      # rebuilt here the way a newly launched shell builds it, from the machine
+      # and user values. That is what puts the registry write itself under test
+      # rather than the assignment beside it.
+      - name: jukebox answers by name from a fresh shell
+        run: |
+          $env:Path = @(
+            [Environment]::GetEnvironmentVariable('Path', 'Machine'),
+            [Environment]::GetEnvironmentVariable('Path', 'User')
+          ) -join ';'
+          jukebox --version
+
+      # Reinstalling is something people do, and an appended PATH is the part
+      # with something to stack up. Asserted rather than eyeballed: a duplicate
+      # here is invisible until somebody's PATH is too long to edit.
+      - name: Installing twice leaves one PATH entry
+        run: |
+          irm https://jukebox-site.joseluis64tavera.workers.dev/install.ps1 | iex
+
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\Jukebox'
+          $raw = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment').
+            GetValue('Path', '', 'DoNotExpandEnvironmentNames')
+
+          $mine = @($raw -split ';' | Where-Object {
+            [Environment]::ExpandEnvironmentVariables($_).TrimEnd('\') -eq $dir.TrimEnd('\')
+          })
+
+          "PATH entries naming $dir : $($mine.Count)"
+          if ($mine.Count -ne 1) { throw "expected exactly one, found $($mine.Count)" }
