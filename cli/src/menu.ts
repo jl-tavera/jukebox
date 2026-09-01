@@ -9,6 +9,7 @@ import { header } from './header'
 import type { Io } from './io'
 import type { Renderable } from './outcome'
 import { held, identified, named } from './phrasing'
+import { pinning } from './pinned'
 import type { MirroredPlaylist } from './reading'
 import { spinning } from './spinner'
 import { VERSION } from './version'
@@ -260,9 +261,13 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
   // terminal is the case that makes the difference visible.
   const colour = pc.isColorSupported && io.stderrIsTty
 
-  try {
-    io.err(header(io.columns, VERSION, colour) + '\n\n')
+  // Held rather than drawn once, and gated on the stream alone where the colour
+  // above folds in a second question. Whether a terminal can paint the mark
+  // yellow says nothing about whether it can hold it still, so a `NO_COLOR`
+  // console keeps its pinned header and a redirected one gets neither.
+  const release = pinning(header(io.columns, VERSION, colour), io.err, io.rows, io.stderrIsTty)
 
+  try {
     for (;;) {
       const chosen = await select<Entry>({
         message: 'What next?',
@@ -307,6 +312,13 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
       }
     }
   } finally {
+    // The terminal given back before anything else, and from the one place
+    // every way out of this function passes through: `quit`, a cancel from any
+    // screen, and a version gate closing the session. A shell left with a scroll
+    // region set is a shell whose next command scrolls inside the frame this
+    // drew, which is the one failure here a person could not undo by looking.
+    release()
+
     // Handed back before the process is left to end on its own. `index.ts` sets
     // an exit code rather than calling `process.exit`, so a stdin still flowing
     // is an event loop still alive -- a binary that drew a menu, took the quit,
