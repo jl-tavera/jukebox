@@ -8,3 +8,19 @@
 # whenever Cloudflare's heuristics decide it should.
 /discovery.json
   Cache-Control: no-cache
+
+# The two installers, held to the same rule and for the same reason. A broken
+# installer is the same category of artifact as a stale kill switch: the fix has
+# to reach people when it is written, not when Cloudflare's heuristics decide.
+# These are also the only files here a person pipes straight into a shell, so
+# "the copy you fetched is the copy we published" is worth more than the cache.
+#
+# Content-Type is stated rather than sniffed. `irm | iex` hands PowerShell
+# whatever the response says it is, and an octet-stream body can arrive as bytes
+# instead of the string `iex` needs.
+/install.sh
+  Cache-Control: no-cache
+  Content-Type: text/x-shellscript; charset=utf-8
+/install.ps1
+  Cache-Control: no-cache
+  Content-Type: text/plain; charset=utf-8
