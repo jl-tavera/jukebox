@@ -31,6 +31,8 @@ jukebox add https://open.spotify.com/playlist/...
 jukebox sync
 ```
 
+Or run `jukebox` on its own. At a terminal that opens a menu, so there is nothing to memorise to get started. **Only `quit` works so far** — the other entries are listed, and each one names the command to run instead. As they are wired up they will run those same commands and print the same output the flags would have; nothing will be reachable in the menu that a flag cannot reach. In a pipe, a redirect or a script, bare `jukebox` is unchanged — see [Scripting and agents](#scripting-and-agents).
+
 Both installers put a single self-contained binary in a per-user folder and add that folder to your PATH. Nothing is compiled, and neither one needs root or an administrator.
 
 > **On the address.** `jukebox.dev` is registered to somebody else, so Jukebox is served from a `workers.dev` address until that is settled. The CLI reads its backend's address from this same site at runtime rather than having one compiled in, so moving is one edited line and a deploy — no reinstall. See [SITE.md §08](docs/design/SITE.md).
