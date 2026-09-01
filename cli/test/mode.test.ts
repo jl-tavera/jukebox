@@ -24,6 +24,9 @@ const io = (streams: { stdout?: boolean; stdin?: boolean }): Io => ({
   // asks how wide anything is; the one thing that does is the header the menu
   // draws, and it is handed a number rather than an `Io`.
   columns: 80,
+  // And inert for the same reason, one line further on. The height is #66's,
+  // and it is asked of the pinned header rather than of either predicate here.
+  rows: 24,
 })
 
 describe('choosing how to render', () => {

@@ -77,6 +77,15 @@ export type Options = {
    * test reaching for the narrow header says a number below 67 here.
    */
   columns?: number
+  /**
+   * How tall this run's terminal is.
+   *
+   * Twenty-four by default, which leaves room under the wordmark for #66 to pin
+   * it -- the case a run that says nothing about height almost always means. A
+   * test reaching for the unpinned fallback says a number here small enough that
+   * the mark and a usable menu will not both fit.
+   */
+  rows?: number
   /** A command tree of this test's own, for the paths the real one cannot reach. */
   root?: CommandDef
   /**
@@ -231,6 +240,7 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
     stdinIsTty,
     stderrIsTty: options.stderrTty ?? true,
     columns: options.columns ?? 80,
+    rows: options.rows ?? 24,
   }
 
   const restore = forThisRun({ ...options.env, [HOME_VARIABLE]: home })
