@@ -1,14 +1,18 @@
 name: cli
 
 # Path-filtered so touching the API or the landing page never runs the CLI's
-# checks. GitHub Actions does not expand YAML anchors, so the list is written
-# twice.
+# checks -- with one deliberate exception. `site/lib/content.ts` holds the
+# wordmark this CLI keeps a copy of, and a check spanning two workspaces has to
+# run in one of them. It is named as a single file rather than a glob, so the
+# rest of the landing page's churn still stays out.
+# GitHub Actions does not expand YAML anchors, so the list is written twice.
 on:
   push:
     branches: [main]
     paths:
       - 'cli/**'
       - 'schema/**'
+      - 'site/lib/content.ts'
       - '.github/workflows/cli.yml'
       - 'package.json'
       - 'bun.lock'
@@ -16,6 +20,7 @@ on:
     paths:
       - 'cli/**'
       - 'schema/**'
+      - 'site/lib/content.ts'
       - '.github/workflows/cli.yml'
       - 'package.json'
       - 'bun.lock'
@@ -33,3 +38,9 @@ jobs:
       # is still caught, once rather than twice.
       - run: bun run --cwd cli typecheck
       - run: bun run --cwd cli test
+
+      # The CLI's copy of the site's wordmark, compared byte for byte. It runs
+      # here rather than in site.yml because this is the cheaper workflow -- no
+      # build -- and because the copy that can drift is the one under `cli/src`.
+      # site.yml carries a note pointing here; once rather than twice.
+      - run: bun run --cwd cli check:wordmark
