@@ -123,3 +123,58 @@ returns was still on the screen while the other wrote — a spinner ticking thro
 the first line of the answer it was covering. The new argument names the moment between the two and
 adds no other power: an entry still cannot ask for anything a typed vector could not, which is the
 property the rule actually protects.
+
+## Amendment, 2026-09-01: the wordmark is pinned, and what that costs the scrollback
+
+The consequence above headed **"The menu stays in the terminal's normal buffer"** argued that a
+full-screen application "restores the terminal on the way out and takes every result the session
+printed with it", and concluded that what is left in the scrollback is the same text the flags would
+have produced. #66 keeps the first half of that and gives up part of the second, deliberately.
+
+The mark was drawn once, above the loop, and the first Sync report pushed it off the top. So the
+thing that makes the CLI look like the site it was installed from was on screen for about one action,
+which is not what "the menu opens under the wordmark" was meant to mean. `cli/src/pinned.ts` fences
+the rows under it into a scroll region — DECSTBM, two row numbers — and everything else scrolls
+beneath.
+
+**What this document was protecting survives intact.** There is no alternate screen: nothing is
+restored out from under the reader on the way out, and the last screenful is exactly where it was
+when they quit.
+Results still reach stdout from `render`, and they scroll under the header without the menu drawing
+them, because a scroll region is a property of the terminal rather than of a stream and both streams
+reach the same one. The launcher rule is untouched by the whole file — no entry gained anything, and
+the menu still writes no result of its own.
+
+**What it costs is the older scrollback.** A terminal banks a line when that line scrolls off the top
+of the whole screen; with a top margin set, a line leaving the region is discarded instead. Of #50's
+two stories about this, story 12 — the output of what I just ran stays on screen — survives, until
+enough scrolls past it. Story 13 — everything still in my scrollback after I quit — does not, beyond
+the last screenful.
+
+**It costs the screen on the way in as well.** A region is written as absolute row numbers, so the
+mark has to start on row 1 for the rows under it to be the ones fenced, and getting it there means
+clearing. Whatever the reader had on screen when they typed `jukebox` — their prompt, and whatever
+they ran before it — goes with that clear. The sentence above about nothing being restored out from
+under the reader is a promise about leaving, and this is the price of arriving; naming only the
+scrollback would have been the same half-truth this document twice accuses a comment of.
+
+That is a real loss and it is accepted rather than argued away. It is also the cheapest thing in this
+repository to reverse: one call in `menu.ts` returns the header to being drawn once, and the tests
+that would then fail are the ones that name the escape sequences.
+
+Two things about `pinned.ts` follow from this document rather than from taste, and they are the same
+two the spinner's amendment above lists:
+
+- **It is handed where to write, how tall the terminal is, and whether to do anything at all.** Both
+  branches are then reachable from a test that drives `main`, including the one a short window takes
+  — below a header plus room for the menu it falls back to drawing the mark once, which is what every
+  session did before this.
+- **It installs nothing on the process.** A `SIGWINCH` listener would keep the region right across a
+  resize and would be the first such reach this program makes. The four the amendment above counts
+  are the prompt library's, which is why its spinner went unused; continuing that tally here would
+  be borrowing an arithmetic that was never ours. #50 puts resize handling out of scope by name,
+  which is the same answer reached from the other side.
+
+The release is in the `finally` that already gives back the input stream, because every way out of a
+session passes through it: `quit`, a cancel from any screen, and a version gate closing the menu. A
+shell left with a scroll region set is the one failure here a person could not undo by looking at it.
