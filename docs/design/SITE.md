@@ -30,12 +30,13 @@ Design decisions here are mostly **Proposed**. The exceptions are marked, and th
 
 ## 01 · What the site is for
 
-The site Worker serves five things. Two are built today.
+The site Worker serves six things. Four are built today.
 
 | Artifact | Purpose | Built? |
 |---|---|---|
 | `/` | The landing page. Show what this is, hand over the install command. | yes |
-| `install.sh` | What `curl \| sh` fetches. | no — §08 |
+| `install.sh` | What `curl \| sh` fetches. | yes — #38 |
+| `install.ps1` | What `irm \| iex` fetches. Windows is the primary environment, so it is not an afterthought. | yes — #38 |
 | `discovery.json` | Read by every installed CLI on boot. The API URL, `min_version`, kill switch. | yes |
 | `/docs` | Longer-form usage. | no — §08 |
 | `/status` | Coverage stats. Listed under `README.md` "Later". | no — §08 |
@@ -52,7 +53,7 @@ What the document does not yet name is a *stable* address, and that is the one t
 
 Two things, in priority order:
 
-1. **Hand over the install command.** A visitor who reads one line should leave with `curl -fsSL https://jukebox.dev/install.sh | sh`.
+1. **Hand over the install command.** A visitor who reads one line should leave with `curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh | sh`, or the PowerShell line beside it. Both are on the page rather than one: Windows is this project's primary environment, and a page publishing only the `curl` line excludes the visitor most likely to be reading it.
 2. **Say what Jukebox is** in one sentence, in the register of the tool itself.
 
 That is the whole brief. Explaining match coverage, the pipeline, and the non-goals is work the page does not currently do — see §08.
@@ -79,7 +80,11 @@ One screen. No routes, no nav, no footer.
            public playlists and downloads the matching tracks
                        from open music libraries.
 
-           $ curl -fsSL https://jukebox.dev/install.sh | sh  [copy]
+                         macos · linux
+        $ curl -fsSL https://jukebox-site...../install.sh | sh  [copy]
+
+                            windows
+        > irm https://jukebox-site...../install.ps1 | iex      [copy]
                                 █
 
                              [donate]
@@ -181,7 +186,9 @@ Four strings. `README.md` is the source of truth for user-facing copy (`DESIGN.m
 | Wordmark | The ASCII `JUKEBOX` block | `DESIGN.md` L4–9, byte-for-byte |
 | Tagline | Sync your playlists. Own your music. | `README.md` L3, verbatim |
 | Lede | Jukebox is an open-source CLI that mirrors your public playlists and downloads the matching tracks from open music libraries. | `README.md` L9, verbatim |
-| Install | `curl -fsSL https://jukebox.dev/install.sh \| sh` | `README.md` L16, verbatim |
+| Install (posix) | `curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh \| sh` | `README.md`, verbatim |
+| Install (windows) | `irm https://jukebox-site.joseluis64tavera.workers.dev/install.ps1 \| iex` | `README.md`, verbatim |
+| Platform labels | `macos · linux` · `windows` | new |
 | Disclosure | `[donate]` / `[close]` | new |
 | Support label | `support` | new |
 | Chain rows | `btc` · `eth` · `sol` · `xmr`, plus `also base · arbitrum · optimism · polygon · usdc` and `also usdc` | new |
@@ -249,9 +256,21 @@ The first is the one to actually measure rather than eyeball — a per-glyph fon
 
 **An ENS name for the EVM row.** `jukebox.eth` would be one readable string covering five chains, where the alternative is a 42-character hex blob. Cheap, and it makes the best line on the list also the most legible.
 
-**`install.sh` hosting and contents.** The README already publishes the `curl | sh` line, so the URL is a commitment. The script needs a release to install and there are no releases. Blocks nothing on the landing page; blocks the page being truthful the moment anyone runs the command.
+**The domain is not ours.** `jukebox.dev` is registered to somebody else, so the site deploys to `jukebox-site.<account>.workers.dev` and that is where `discovery.json` and both installers are served from today. This is a naming decision rather than a technical one.
 
-**The domain is not ours.** `jukebox.dev` is registered to somebody else. Every document in this repo names it — `README.md`'s `curl | sh` line, `DESIGN.md` §07's `https://jukebox.dev/discovery.json`, `app/layout.tsx`'s `metadataBase`, `openapi.yaml`'s server entry — and none of it resolves. So the site deploys to `jukebox-site.<account>.workers.dev` and that is where `discovery.json` is served from today. This is a naming decision rather than a technical one, and it is the last thing blocking the install command from being true. Nothing else in this document changes when it is settled: the Worker gains one `custom_domain` route and the discovery document gains one edited line.
+It used to be the last thing blocking the install command from being true, and it is not any more: #38 published the command against the address that actually answers. What changed with it is the cost of settling the domain. This document used to say that nothing else changes when it does — that the Worker gains one `custom_domain` route and the discovery document gains one edited line. **That is no longer true**, because a published install command is a string that has to be written down wherever anyone might read it. The workers.dev address now appears in:
+
+| Where | What |
+|---|---|
+| `site/lib/content.ts` | `SITE`, which both install commands are built from |
+| `README.md` | both install commands, and the note explaining the address |
+| `docs/design/SITE.md` | §01, §02's wireframe, §04's copy deck — this document |
+| `site/public/install.sh` | the usage comment at the top |
+| `site/public/install.ps1` | the same |
+| `.github/workflows/release.yml` | the release notes, and both `verify` jobs |
+| `cli/src/discovery.ts` | `DISCOVERY_URL`, the one address compiled into the binary |
+
+Only the last of those costs a client release; the rest are one commit. The alternative — holding the install command back until a domain exists — was the more expensive one, because it left the headline command in `README.md` untrue for everybody in the meantime. `app/layout.tsx`'s `metadataBase` and `openapi.yaml`'s server entry still name `jukebox.dev` and are the two places where doing so is harmless, because nothing resolves them.
 
 **Docs route.** Whether `/docs` is MDX inside this app, a redirect to the GitHub README, or a separate surface.
 

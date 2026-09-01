@@ -12,11 +12,30 @@ You give it a playlist URL. It tracks the songs in that playlist and keeps a loc
 
 Spotify first. Apple Music and YouTube later — the design treats playlist sources as pluggable from day one.
 
+**macOS and Linux:**
+
 ```bash
-curl -fsSL https://jukebox.dev/install.sh | sh
+curl -fsSL https://jukebox-site.joseluis64tavera.workers.dev/install.sh | sh
+```
+
+**Windows:**
+
+```powershell
+irm https://jukebox-site.joseluis64tavera.workers.dev/install.ps1 | iex
+```
+
+Then, on any of them:
+
+```bash
 jukebox add https://open.spotify.com/playlist/...
 jukebox sync
 ```
+
+Both installers put a single self-contained binary in a per-user folder and add that folder to your PATH. Nothing is compiled, and neither one needs root or an administrator.
+
+> **On the address.** `jukebox.dev` is registered to somebody else, so Jukebox is served from a `workers.dev` address until that is settled. The CLI reads its backend's address from this same site at runtime rather than having one compiled in, so moving is one edited line and a deploy — no reinstall. See [SITE.md §08](docs/design/SITE.md).
+
+> **On Windows, the first run shows a SmartScreen warning.** The binary is not code-signed yet. Choose *More info → Run anyway*, or check the SHA-256 against `SHA256SUMS` on the [release](https://github.com/jl-tavera/jukebox/releases) first. Tracked in [#48](https://github.com/jl-tavera/jukebox/issues/48), and a blocker on announcing Jukebox anywhere.
 
 ---
 
@@ -185,7 +204,7 @@ Bun is the pick because `bun:sqlite` is built into the runtime — no native mod
 | Contract | OpenAPI spec → generated types for both sides |
 | IaC | Wrangler (Cloudflare) |
 | CI/CD | GitHub Actions |
-| Distribution | GitHub Releases + `curl \| sh` |
+| Distribution | GitHub Releases + `curl \| sh` and `irm \| iex` install scripts |
 
 TypeScript end to end. The CLI and the backend share generated types from one OpenAPI spec, so a change to the API contract breaks the typecheck on both sides until it's handled.
 
