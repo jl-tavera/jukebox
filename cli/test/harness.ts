@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Readable } from 'node:stream'
 import { Database } from 'bun:sqlite'
 import type { CommandDef } from 'citty'
 import type { Io } from '../src/io'
@@ -38,6 +39,18 @@ export type Options = {
   tty?: boolean
   /** Whether anybody is there to answer a question. */
   stdin?: boolean
+  /**
+   * What that somebody types, in the order they type it.
+   *
+   * The terminal flags above say a question *may* be asked; this is the answer
+   * to it. Together they are the whole of driving a prompt at this seam, which
+   * is why the menu #50 describes needs none of its own -- see `Io`'s input
+   * stream for why that is a property of where it lives.
+   *
+   * A key is written the way a terminal sends it -- `\r` for return, `\x1b[B`
+   * for a press downward. See `keyboard`.
+   */
+  keys?: string[]
   /** A command tree of this test's own, for the paths the real one cannot reach. */
   root?: CommandDef
   /**
@@ -71,6 +84,46 @@ export type Options = {
    * have to carry in production for a test's sake.
    */
   prepare?: (locations: Locations) => void
+}
+
+/** A stream that types. What `Io`'s input stream is, for a run that is a test. */
+export type Keyboard = Readable & { isTTY: boolean; setRawMode: (raw: boolean) => void }
+
+/**
+ * Somebody at a keyboard, faked well enough that a real prompt cannot tell.
+ *
+ * Three things make that true, and each one is a way it would otherwise fail
+ * quietly rather than loudly:
+ *
+ * `isTTY` and `setRawMode` come as a pair. The prompt library guards its
+ * raw-mode call with `if (input.isTTY)`, so a stream that did not claim to be a
+ * terminal would skip raw mode and exercise a path production never takes --
+ * quietly, with every assertion still passing. Claiming to be one without
+ * supplying `setRawMode` fails the other way and loudly: readline calls it as
+ * well, and the library's guard then passes straight into a method that is not
+ * there. So the method is always here, and the claim defaults to true; a run
+ * told nobody is at the keyboard says so here too, and nothing in it should be
+ * reaching a prompt at all.
+ *
+ * Each key is pushed as its own chunk, so that an escape sequence arrives whole
+ * and is read as the one key it is rather than as the characters it is made of.
+ *
+ * The stream is never ended, and this is the one worth knowing before writing
+ * the first test that scripts too few keys. A prompt whose input has run out
+ * does not answer and does not fail: it waits. So a stream that closed itself
+ * behind the last key would turn a missing keystroke into a suite that hangs
+ * until the runner gives up, which is the least readable failure there is.
+ */
+export const keyboard = (keys: string[], isTty = true): Keyboard => {
+  // Nothing to do on demand: everything there is to say was said up front, and
+  // a `read` that pushed would be a second writer into the same buffer.
+  const stream = new Readable({ read() {} }) as Keyboard
+
+  stream.isTTY = isTty
+  stream.setRawMode = () => {}
+  for (const key of keys) stream.push(key)
+
+  return stream
 }
 
 const homes: string[] = []
@@ -109,11 +162,20 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
 
   let stdout = ''
   let stderr = ''
+
+  // Read once and used twice, because the stream and the flag are the same fact
+  // said to two different readers -- `processIo` takes both off the one
+  // `process.stdin`, and they have no way to disagree there. A run told nobody
+  // is at the keyboard, handed a stream insisting it is a terminal, would be a
+  // shape the real program cannot produce.
+  const stdinIsTty = options.stdin ?? true
+
   const io: Io = {
     out: (text) => void (stdout += text),
     err: (text) => void (stderr += text),
+    in: keyboard(options.keys ?? [], stdinIsTty),
     stdoutIsTty: options.tty ?? true,
-    stdinIsTty: options.stdin ?? true,
+    stdinIsTty,
   }
 
   const restore = forThisRun({ ...options.env, [HOME_VARIABLE]: home })

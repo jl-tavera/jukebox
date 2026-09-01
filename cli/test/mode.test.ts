@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { Readable } from 'node:stream'
 import type { Io } from '../src/io'
 import { promptsAllowed, selectMode } from '../src/mode'
 
@@ -10,6 +11,10 @@ import { promptsAllowed, selectMode } from '../src/mode'
 const io = (streams: { stdout?: boolean; stdin?: boolean }): Io => ({
   out: () => {},
   err: () => {},
+  // Empty, and inert like the two sinks above it. Both questions below are
+  // asked about whether a keyboard may be read, never by reading one -- a
+  // stream with anything in it here would suggest otherwise.
+  in: Readable.from([]),
   stdoutIsTty: streams.stdout ?? true,
   stdinIsTty: streams.stdin ?? true,
 })
