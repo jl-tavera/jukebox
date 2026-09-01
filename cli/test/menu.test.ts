@@ -15,7 +15,7 @@ import {
   type Configured,
   type SettingKey,
 } from '../src/config'
-import { NARROW_MARK } from '../src/header'
+import { header, NARROW_MARK } from '../src/header'
 import {
   askingFor,
   askingToStop,
@@ -27,6 +27,7 @@ import {
   WORKING,
 } from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
+import { MINIMUM_BELOW, region, RELEASED } from '../src/pinned'
 import { held, identified, NOTHING_TRACKED } from '../src/phrasing'
 import type { MirroredPlaylist } from '../src/reading'
 import { ERASED } from '../src/spinner'
@@ -1107,5 +1108,122 @@ describe('a picker built from what `config` returned', () => {
     // second reader of local state would fail: both of its rows would say this.
     expect(run.stderr).not.toContain('(default)')
     expect(run.code).toBe(0)
+  })
+})
+
+/**
+ * The mark held still, which is #66 and the one piece of chrome that outlives
+ * the write that drew it.
+ *
+ * Everything here is asserted about the escape sequences on stderr, because that
+ * is what a person's terminal is actually handed. Where the region starts is
+ * counted off the header rather than written down: the mark is five rows and a
+ * version line today, and a number spelled out here would go quietly wrong the
+ * day either changed.
+ */
+describe('the wordmark, held still', () => {
+  /** The rows the mark and its blank line occupy, at a given width. */
+  const heightAt = (columns: number): number =>
+    header(columns, pkg.version, false).split('\n').length + 1
+
+  /** The first row that may scroll, which is the one under all of that. */
+  const firstScrolling = (columns: number): number => heightAt(columns) + 1
+
+  it('fences the rows under it, and gives them back on the way out', async () => {
+    const run = await jukebox([], { keys: QUIT })
+
+    // The region set while the menu is up, and released before the shell gets
+    // its terminal back. A session that set one and did not release it would
+    // leave the next command scrolling inside a frame this drew, which is the
+    // one failure here nobody could undo by looking at it.
+    expect(run.stderr).toContain(region(firstScrolling(80), 24))
+    expect(run.stderr).toEndWith(RELEASED)
+    expect(run.code).toBe(0)
+  })
+
+  it('gives them back when the session is left with a cancel', async () => {
+    // The other way out, and the one that does not pass through `quit`. Ctrl-C
+    // returns from inside a prompt, so the release has to be in the `finally`
+    // rather than beside the return -- this is what says it is.
+    const run = await jukebox([], { keys: [CANCEL] })
+
+    expect(run.stderr).toEndWith(RELEASED)
+    expect(run.code).toBe(0)
+  })
+
+  it('holds while a command answers underneath it', async () => {
+    const home = temporaryHome('jukebox-menu-pinned-under-')
+
+    const run = await session(home, [...CONFIG, ...OUT_OF_SETTINGS, ...QUIT])
+
+    // The claim everything else here rests on prose for, and the reason the pin
+    // is worth anything: a result written to stdout scrolls inside a region set
+    // on stderr, because a region belongs to the terminal rather than to either
+    // stream and both reach the same one.
+    //
+    // Order is the only way to ask it, and the two strings cannot answer a
+    // question about order because they are two -- which is what `interleaved`
+    // is for. `NOTE` is the marker because `config` writes it and no chrome
+    // does, so finding it is finding the moment stdout was written to.
+    const fenced = run.interleaved.findIndex((text) =>
+      text.includes(region(firstScrolling(80), 24)),
+    )
+    const answered = run.interleaved.findIndex((text) => text.includes(NOTE))
+    const given = run.interleaved.findIndex((text) => text.includes(RELEASED))
+
+    expect(fenced).toBeGreaterThan(-1)
+    expect(answered).toBeGreaterThan(fenced)
+    expect(given).toBeGreaterThan(answered)
+    expect(run.stdout).toContain(NOTE)
+  })
+
+  it('keeps every byte of it off stdout', async () => {
+    const run = await jukebox([], { keys: QUIT })
+
+    // The same guarantee the wordmark itself is held to. A region is chrome, and
+    // an escape sequence on stdout is the one thing that would survive a pipe.
+    expect(run.stdout).toBe('')
+  })
+
+  it('writes none of it to an error stream that is not a terminal', async () => {
+    // `jukebox 2>log.txt` at a console. The mark still has to arrive as bytes
+    // somebody can read, and a scroll region written into a file is neither
+    // readable nor undone by anything.
+    const run = await jukebox([], { stderrTty: false, keys: QUIT })
+
+    expect(run.stderr).toContain(ART)
+    expect(run.stderr).not.toContain(region(firstScrolling(80), 24))
+    expect(run.stderr).not.toContain(RELEASED)
+  })
+
+  it('draws the mark once on a terminal with no room to hold it', async () => {
+    // One row short of what `MINIMUM_BELOW` asks for. A frame around a menu with
+    // nowhere to answer is worse than the unpinned header every session drew
+    // before #66, so this falls back to exactly that.
+    const run = await jukebox([], { rows: heightAt(80) + MINIMUM_BELOW - 1, keys: QUIT })
+
+    expect(run.stderr).toContain(ART)
+    expect(run.stderr).not.toContain(RELEASED)
+    expect(run.code).toBe(0)
+  })
+
+  it('holds it on a terminal with exactly enough room', async () => {
+    // The row above, and the pair is the assertion: one of these two numbers
+    // pins and the other does not, so `MINIMUM_BELOW` means something rather
+    // than being a constant nothing reads.
+    const rows = heightAt(80) + MINIMUM_BELOW
+    const run = await jukebox([], { rows, keys: QUIT })
+
+    expect(run.stderr).toContain(region(firstScrolling(80), rows))
+  })
+
+  it('holds the one-line mark the same way', async () => {
+    // The narrow header is two rows where the art is six, and nothing about the
+    // pin is written in terms of either -- it is counted off whatever `header`
+    // returned, which is what makes this fall out rather than need a branch.
+    const run = await jukebox([], { columns: NARROWEST, keys: QUIT })
+
+    expect(run.stderr).toContain(NARROW_MARK)
+    expect(run.stderr).toContain(region(firstScrolling(NARROWEST), 24))
   })
 })
