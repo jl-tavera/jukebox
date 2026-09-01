@@ -24,8 +24,11 @@ import { fileURLToPath } from 'node:url'
  *
  * A CI step and not a unit test, for the reason #29 gave about the discovery
  * document: a test would pin the constant's location rather than the property
- * that matters. Nothing imports either copy yet -- the header is drawn in #54 --
- * so there is no unit here to test.
+ * that matters. #54 drew the header, so `cli/src/header.ts` imports the CLI's
+ * copy now -- and it changes nothing here, because what it imports is a string
+ * and what this asserts is that two files on disk hold the same bytes. A test
+ * that imported both would agree with itself while they disagreed, which is the
+ * paragraph above.
  *
  * Run by `cli.yml`, which carries `site/lib/content.ts` in its path filter for
  * it, named as one exact file rather than a glob so the landing page's other

@@ -11,9 +11,11 @@
  *
  * **Sixty-seven columns, every row.** A page too narrow for the art clips it; a
  * terminal too narrow wraps every row onto the next, and the mark becomes noise
- * rather than a smaller mark. Below 67 columns something else has to be drawn,
- * which is #54's job. This file is the art at its natural width and carries no
- * escape sequences, so that the width stays countable.
+ * rather than a smaller mark. Below 67 columns something else is drawn instead,
+ * which `header.ts` does. This file is the art at its natural width and carries
+ * no escape sequences: the colour goes on around each row on the way out and is
+ * never stored here, which is what keeps the width countable and these bytes
+ * comparable to the site's.
  *
  * Built from Block Elements (U+2580-U+259F) and spaces. On the site that range
  * is the reason there is no webfont; here it is the reason the art renders at
