@@ -1,7 +1,8 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DiscoveryDocument } from '@jukebox/schema'
 import { readDiscovery } from './discovery'
+import { replaceFile } from './files'
 import { locations } from './paths'
 
 /**
@@ -134,22 +135,22 @@ export const isFresh = (seen: Seen, now: number = Date.now()): boolean => {
  * this one to fail. A cache that can break a working command is worse than no
  * cache at all.
  *
- * Written to a temporary name in the same directory and renamed onto the
- * target, which is `DESIGN.md` section 06's own discipline for the same reason:
- * a reader either sees the old file or the new one, never half of either. The
- * same directory because that is where a rename is atomic. The process id is in
- * the temporary name so two runs at once cannot interleave into one file --
- * last writer wins, and both wrote a whole document.
+ * The write-to-a-part-and-rename discipline this had of its own moved to
+ * `files.ts` when #53 gave the configuration file the same need. **The
+ * swallowing did not move with it**, and that is the whole reason the two are
+ * separable: `replaceFile` throws, and its two callers disagree about what a
+ * throw means. This one already has what it came for. A `config` that swallowed
+ * would tell somebody their setting was saved when it was not.
+ *
+ * It also gained something in the move. A rename this used to lose left the part
+ * file sitting in the data directory forever, unmentioned, because the `catch`
+ * below hid that too.
  */
 export const remember = (source: string, document: DiscoveryDocument): void => {
   const seen: Seen = { source, fetched_at: Date.now(), document }
-  const target = cacheFile()
-  const part = `${target}.${process.pid}.part`
 
   try {
-    mkdirSync(locations().data, { recursive: true })
-    writeFileSync(part, JSON.stringify(seen, null, 2) + '\n')
-    renameSync(part, target)
+    replaceFile(cacheFile(), JSON.stringify(seen, null, 2) + '\n')
   } catch {
     // Deliberately nothing. See above.
   }
