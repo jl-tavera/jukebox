@@ -20,7 +20,50 @@ export const WORDMARK = `     ███ ███   ███ ███   ██
 ███▄▄███ ███▄▄▄███ ███   ███ ███▄▄▄▄▄ ███▄▄▄██ ▀███▄▄███▀ ▄███▀███▄
  ▀▀▀▀▀▀   ▀▀▀▀▀▀▀  ▀▀▀   ▀▀▀ ▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀    ▀▀▀▀▀▀   ▀▀▀   ▀▀▀`
 
-export const INSTALL_COMMAND = 'curl -fsSL https://jukebox.dev/install.sh | sh'
+/**
+ * Where the site is actually served from.
+ *
+ * `README.md` publishes this address and `cli/src/discovery.ts` already carries
+ * the reason at length: `jukebox.dev` is registered to somebody else, so until
+ * that is settled the site lives on workers.dev. `docs/design/SITE.md` 08
+ * tracks it.
+ *
+ * Written once because three things point at it -- both install commands and
+ * the discovery document the CLI reads -- and an address that disagrees with
+ * itself across a landing page is the kind of thing nobody notices until
+ * somebody pastes the wrong half.
+ */
+const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
+
+export interface InstallCommand {
+  /** The platforms this line is for, lower-case like the rest of the page. */
+  platforms: string
+  /**
+   * The shell's own prompt glyph, decorative and aria-hidden. Carried per
+   * command rather than fixed at the markup, because a `$` in front of a
+   * PowerShell line is a small untruth on a page whose whole job is handing
+   * over a command someone will paste.
+   */
+  prompt: string
+  command: string
+}
+
+/**
+ * Both of them, and the order is deliberate.
+ *
+ * The POSIX line is first because it is the one `README.md` leads with and the
+ * one every other document in this repo quotes. The PowerShell line is here at
+ * all -- rather than a footnote or a docs page -- because Windows is this
+ * project's primary environment, and a page that hands over only the `curl` line
+ * excludes the visitor most likely to be reading it. Both installers ship
+ * together for that reason; publishing only one would undo it.
+ *
+ * README.md owns this copy. Change it there first.
+ */
+export const INSTALL_COMMANDS: readonly InstallCommand[] = [
+  { platforms: 'macos · linux', prompt: '$', command: `curl -fsSL ${SITE}/install.sh | sh` },
+  { platforms: 'windows', prompt: '>', command: `irm ${SITE}/install.ps1 | iex` },
+]
 
 export const hero = {
   /** README.md L3, verbatim. */
