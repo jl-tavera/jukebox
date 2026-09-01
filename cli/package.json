@@ -6,7 +6,8 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:wordmark": "bun run scripts/check-wordmark.ts"
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
