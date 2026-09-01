@@ -149,3 +149,30 @@ export const notTracked = (reference: string): string =>
  */
 export const identified = (title: string | null, id: PlaylistId): string =>
   title === null ? id : `${named(title, id)} (${id})`
+
+/**
+ * What the Mirror holds for a Playlist, counted.
+ *
+ * The Removed count is mentioned only when there is one, the way `sync` names
+ * only what moved -- `0 removed` is a phrase every reader has to read past on
+ * every line to learn nothing.
+ *
+ * `no tracks` rather than `0 tracks` whenever the Mirror holds no row at all for
+ * it, which is a Playlist that has not resolved yet and equally one whose Source
+ * lists nothing. Both are the same sentence honestly: a zero invites the question
+ * of what became of them, and in neither case were there ever any. Which of the
+ * two it is, the status beside it already says.
+ *
+ * `list`'s own until #56, where the menu's Playlist picker had to say the same
+ * thing about the same two numbers -- and a picker that phrased it differently
+ * would be the drift ADR-0007 keeps the menu out of, on the one screen built to
+ * show what `list` reported.
+ *
+ * The shape rather than a `MirroredPlaylist`, so that the file every command
+ * borrows its words from does not come to depend on the file that reads the
+ * Mirror. A caller passes the row and TypeScript takes the two fields it named.
+ */
+export const held = ({ tracks, removed }: { tracks: number; removed: number }): string =>
+  tracks === 0 && removed === 0
+    ? 'no tracks'
+    : counted(tracks, 'track', 'tracks') + (removed === 0 ? '' : `, ${removed} removed`)
