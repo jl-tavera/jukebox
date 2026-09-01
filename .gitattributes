@@ -4,3 +4,10 @@
 # machine, reporting drift that is not there.
 schema/src/generated.ts          text eol=lf
 worker/worker-configuration.d.ts text eol=lf
+
+# Both installers are served to a shell, so their line endings are part of what
+# is published rather than a checkout detail. A CRLF install.sh fails on the
+# first line with an error naming no cause, and this repo's primary environment
+# is the one whose checkout would introduce them.
+site/public/install.sh  text eol=lf
+site/public/install.ps1 text eol=lf
