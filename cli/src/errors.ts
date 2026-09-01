@@ -4,13 +4,12 @@ import type { ErrorCode } from '@jukebox/schema'
  * Codes the CLI raises on its own behalf, where the API's four say what the
  * server could not do.
  *
- * Seven now. Six arrived with the things that raise them, and the seventh is
- * `playlist_not_tracked`: #37 is where the Mirror is first asked about one by
- * name, so it is where being asked about one that is not there first has
- * something to say. The rule the file set down -- no code before something
- * raises it -- is kept the way it was kept for the other six: the code raising
- * it ships in the same commit as the code, and is exercised at the seam its
- * commands are exercised at.
+ * Eight now. Each arrived with the thing that raises it, and the latest is
+ * `config_unwritable`: #53 is where the configuration file is first written, so
+ * it is where failing to write it first has something to say. The rule the file
+ * set down -- no code before something raises it -- is kept the way it was kept
+ * for the other seven: the code raising it ships in the same commit as the code,
+ * and is exercised at the seam its commands are exercised at.
  */
 export type ClientErrorCode =
   /** The argument vector names no command, or one that does not exist. */
@@ -71,6 +70,30 @@ export type ClientErrorCode =
    * a thing it got wrong.
    */
   | 'playlist_not_tracked'
+  /**
+   * The configuration file was not written.
+   *
+   * Its own code rather than `unexpected`, which says of itself that it is always
+   * a bug here: a read-only home, a full disk, and a rename Windows refuses
+   * because another process holds the file are none of them bugs in this binary.
+   * `mirror_unopenable` is the precedent, and its sentence applies word for word
+   * -- unlike the discovery cache, a failure here is never swallowed, because
+   * that cache writes for the next run and this is what the user just asked for.
+   *
+   * One code for three causes, deliberately. A write the filesystem refused; a
+   * write Jukebox refused because the file already there will not parse and
+   * rewriting it would throw away whatever else is in it; and a value the writer
+   * could not spell back exactly, which its own postcondition catches before
+   * anything reaches the disk. Three sentences to read and one fact to branch on:
+   * the setting is not in the file. The message says which, and no caller would
+   * do anything different with three codes.
+   *
+   * A vector naming no key, an unknown key, or a value that will not parse stays
+   * `invalid_usage`. That is the line `playlist_not_tracked` draws from the other
+   * side: a Playlist this machine does not track is a real thing that is absent,
+   * and a setting called `libary_path` is not a thing that could exist.
+   */
+  | 'config_unwritable'
 
 /**
  * One vocabulary, in one place.
