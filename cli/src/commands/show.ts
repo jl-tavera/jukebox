@@ -120,10 +120,12 @@ const REMOVED_HEADING = 'Removed, and still recorded here:'
  * up with the present ones instead of each block being square on its own. That
  * alignment is what lets a reader run an eye down the titles across the gap.
  *
- * Nothing is truncated to a terminal width, and nothing here knows one. `Io`
- * carries `stdoutIsTty` and deliberately not a number of columns, and a long
- * title cut off is a title a reader cannot search for. A narrow terminal wraps,
- * and anybody who wants to slice this has `--json`.
+ * Nothing is truncated to a terminal width, and nothing here asks for one. `Io`
+ * has carried a column count since #54, where the wordmark needed one to know
+ * whether it fits; this deliberately does not read it, and the reason it gave
+ * for there being none to read is the reason it still ignores the one there is.
+ * A long title cut off is a title a reader cannot search for. A narrow terminal
+ * wraps, and anybody who wants to slice this has `--json`.
  */
 const listing = ({ tracks, removed }: MirroredTracks): string[] => {
   if (tracks.length === 0 && removed.length === 0) return []

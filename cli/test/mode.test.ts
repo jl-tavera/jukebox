@@ -17,6 +17,13 @@ const io = (streams: { stdout?: boolean; stdin?: boolean }): Io => ({
   in: Readable.from([]),
   stdoutIsTty: streams.stdout ?? true,
   stdinIsTty: streams.stdin ?? true,
+  // Neither predicate here asks about the error stream. Whether chrome may
+  // carry colour is the menu's question, and it asks it of `Io` directly.
+  stderrIsTty: true,
+  // Inert for the same reason the streams above are. Neither predicate here
+  // asks how wide anything is; the one thing that does is the header the menu
+  // draws, and it is handed a number rather than an `Io`.
+  columns: 80,
 })
 
 describe('choosing how to render', () => {

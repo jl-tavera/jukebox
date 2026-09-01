@@ -1,7 +1,7 @@
 import type { Readable } from 'node:stream'
 
 /**
- * The streams, and the two questions about them that change what the CLI does.
+ * The streams, and the four questions about them that change what the CLI does.
  *
  * Handed to `main` rather than reached for. A test hands over its own and reads
  * back what a command wrote, the way `worker/test/api.ts` hands the worker
@@ -41,7 +41,41 @@ export type Io = {
   stdoutIsTty: boolean
   /** Whether anybody is there to answer a question. */
   stdinIsTty: boolean
+  /**
+   * Whether the stream everything-that-is-not-data goes to is a terminal.
+   *
+   * Asked separately from `stdoutIsTty` because the two genuinely differ, and
+   * the menu is where it first matters: all of its chrome is written to `err`,
+   * so whether that chrome may carry colour is a question about this stream and
+   * not about the one carrying results. `jukebox 2>log.txt` at a terminal is the
+   * case -- gating colour on stdout there writes escape sequences into a file.
+   *
+   * It is deliberately not part of what opens the menu. #50 settled that on
+   * stdout and stdin, and a third stream in that condition would mean a person
+   * who redirected their logs quietly lost the menu instead of their colour.
+   */
+  stderrIsTty: boolean
+  /**
+   * How wide that someone's terminal is, for the one thing that has a natural
+   * width: #52's wordmark is 67 columns on every row, and a terminal narrower
+   * than that wraps each row onto the next until the mark is noise rather than
+   * a smaller mark.
+   *
+   * Here for the same reason the input stream is, and against the same
+   * alternative: `Seams` is for paths the real program cannot reach, and the
+   * width of a terminal is an ordinary thing the real program reads. Reaching
+   * for `process.stdout.columns` from wherever the art is drawn would work and
+   * would put the narrow branch out of reach of every test that drives `main`.
+   *
+   * Eighty where there is no terminal to ask, which is the historical default
+   * and never consulted in practice -- the only reader is the menu, and the
+   * menu opens only when both streams are terminals.
+   */
+  columns: number
 }
+
+/** What a terminal is assumed to be when there is none to measure. */
+const ASSUMED = 80
 
 /** The real streams. Built in one place, and only by the binary's entry point. */
 export const processIo = (): Io => ({
@@ -50,4 +84,6 @@ export const processIo = (): Io => ({
   in: process.stdin,
   stdoutIsTty: Boolean(process.stdout.isTTY),
   stdinIsTty: Boolean(process.stdin.isTTY),
+  stderrIsTty: Boolean(process.stderr.isTTY),
+  columns: process.stdout.columns ?? ASSUMED,
 })
