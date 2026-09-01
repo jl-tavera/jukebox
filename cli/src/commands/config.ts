@@ -2,15 +2,16 @@ import { defineCommand } from 'citty'
 import {
   configuration,
   ConfigUnwritable,
-  INTERVAL_VARIABLE,
   isKnown,
   KNOWN,
-  LIBRARY_VARIABLE,
   understood,
   unknownSetting,
+  variableOf,
   write,
   type Configured,
   type Origin,
+  type SettingKey,
+  type Settings,
   type Wrote,
 } from '../config'
 import { failed, succeeded, type Renderable } from '../outcome'
@@ -59,26 +60,8 @@ export const reportConfig = (): Renderable<Configured> => {
 const human = (reported: Configured): string => {
   const { file, settings, problems, note } = reported
 
-  const rows = [
-    { key: 'library_path', setting: settings.library_path, variable: LIBRARY_VARIABLE },
-    {
-      key: 'sync_interval_hours',
-      setting: {
-        ...settings.sync_interval_hours,
-        value: String(settings.sync_interval_hours.value),
-      },
-      variable: INTERVAL_VARIABLE,
-    },
-  ]
-
   return [
-    ...columns(
-      rows.map(({ key, setting, variable }) => [
-        key,
-        setting.value,
-        `(${came(setting.origin, variable)})`,
-      ]),
-    ),
+    ...columns(shown(settings).map(({ key, value, from }) => [key, value, `(${from})`])),
     '',
     whereFrom(file),
     ...(problems.length === 0 ? [] : ['', ...problems]),
@@ -86,6 +69,32 @@ const human = (reported: Configured): string => {
     note,
   ].join('\n')
 }
+
+/** One setting, as everything that shows one says it. */
+export type Shown = { key: SettingKey; value: string; from: string }
+
+/**
+ * Every setting, its value, and where that value came from, in this command's
+ * own words.
+ *
+ * Built from `KNOWN` rather than written out, for the reason `THE_SETTINGS`
+ * gives further down: a hand-kept list of the two names is the copy nothing
+ * typechecks, and until #57 the rows here were exactly that -- a pair of object
+ * literals naming each key and each variable by hand, which a renamed setting
+ * would have left printing a key that no longer exists.
+ *
+ * Exported because #57's menu offers these rows straight back as a picker, and
+ * a picker spelling an origin differently from the table printed three lines
+ * above it would be the drift ADR-0007 keeps the menu out of. What that costs
+ * is one shape rather than two, which is why the value is a string here: the
+ * interval is a number everywhere else and a column never was one.
+ */
+export const shown = (settings: Settings): Shown[] =>
+  KNOWN.map((key) => ({
+    key,
+    value: String(settings[key].value),
+    from: came(settings[key].origin, variableOf(key)),
+  }))
 
 /**
  * The variable is named, not just the word `environment`.

@@ -150,6 +150,20 @@ const RULE: Record<SettingKey, { variable: string; expected: string }> = {
   },
 }
 
+/**
+ * The variable that moves one setting, looked up rather than written out.
+ *
+ * `RULE` stays private -- what it holds beside the variable is this module's
+ * own business -- and this is the one thing outside it that has to know which
+ * variable belongs to which key. One caller: `shown`, which builds the
+ * command's rows out of `KNOWN` and so has a key in hand where the code it
+ * replaced had the name written beside it. The two constants above are
+ * unaffected and still exported -- they are what a test names when it wants one
+ * of these spelled out. Named per key rather than exported as a table, so a
+ * caller cannot reach a key that is not a setting.
+ */
+export const variableOf = (key: SettingKey): string => RULE[key].variable
+
 /** The one sentence about a key nobody recognises, so its two callers agree. */
 export const unknownSetting = (key: string): string =>
   `Jukebox does not know a setting called \`${key}\``
