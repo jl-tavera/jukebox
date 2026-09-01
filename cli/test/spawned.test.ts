@@ -14,9 +14,17 @@ import { oneObject, removeHomes, temporaryHome } from './harness'
  * `main` returned. Without this, "a pipe selects JSON" would be a claim about
  * the harness.
  *
- * It runs the entry point, not the compiled binary -- nothing compiles one yet,
- * and #38 is where a release does. What is under test here is the boundary
- * between the program and the operating system, which is the same either way.
+ * It runs the entry point, not the compiled binary, and now that #38 compiles
+ * one that is a choice rather than a limitation. What is under test here is the
+ * boundary between the program and the operating system, and that boundary is
+ * the same either way -- while cross-compiling five targets on every `bun test`
+ * would cost about fifteen seconds to learn nothing this file does not already
+ * know.
+ *
+ * The compiled binary is exercised where compiling it is the point: the release
+ * workflow runs the freshly built Linux binary before publishing anything, and
+ * its `verify` job installs the published one on macOS and Linux and asks it for
+ * its version from a fresh shell.
  */
 
 const entry = join(import.meta.dir, '..', 'src', 'index.ts')
