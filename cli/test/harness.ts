@@ -40,6 +40,14 @@ export type Options = {
   /** Whether anybody is there to answer a question. */
   stdin?: boolean
   /**
+   * Whether the stream the menu draws itself on is a terminal.
+   *
+   * A terminal by default, like the other two. A run that says `false` here is
+   * the `jukebox 2>log.txt` case: the menu still opens, because #50 gates that
+   * on stdout and stdin, and its chrome goes somewhere that cannot show colour.
+   */
+  stderrTty?: boolean
+  /**
    * What that somebody types, in the order they type it.
    *
    * The terminal flags above say a question *may* be asked; this is the answer
@@ -51,6 +59,14 @@ export type Options = {
    * for a press downward. See `keyboard`.
    */
   keys?: string[]
+  /**
+   * How wide this run's terminal is.
+   *
+   * Eighty by default, which is wider than the wordmark's 67 and so draws the
+   * art -- the case a run that says nothing about width almost always means. A
+   * test reaching for the narrow header says a number below 67 here.
+   */
+  columns?: number
   /** A command tree of this test's own, for the paths the real one cannot reach. */
   root?: CommandDef
   /**
@@ -176,6 +192,8 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
     in: keyboard(options.keys ?? [], stdinIsTty),
     stdoutIsTty: options.tty ?? true,
     stdinIsTty,
+    stderrIsTty: options.stderrTty ?? true,
+    columns: options.columns ?? 80,
   }
 
   const restore = forThisRun({ ...options.env, [HOME_VARIABLE]: home })
