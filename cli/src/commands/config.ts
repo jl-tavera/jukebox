@@ -146,7 +146,8 @@ const THE_SETTINGS = `The settings are ${inWords(KNOWN.map((known) => `\`${known
  *
  * `decide` checks before asking about a value, so that a misspelled key with
  * nothing after it is answered about the key rather than about the missing value.
- * `setConfig` checks because it is exported and #50's menu will call it directly.
+ * `setConfig` checks because its own signature takes a `string`, and that check
+ * is what earns the narrowing to a `SettingKey` everything under it relies on.
  * The guard has to be in both places; the wording does not.
  */
 const noSuchSetting = (key: string): Renderable<never> =>
@@ -155,11 +156,19 @@ const noSuchSetting = (key: string): Renderable<never> =>
 /**
  * One setting changed, by name.
  *
- * Exported and taking plain strings, so that #50's menu can reach it the way it
- * will reach `addPlaylist` -- the menu is a launcher, and a screen that edited
- * configuration itself would be the first thing in it that no flag can do.
+ * Not exported, and it used to be. The reason given was that #50's menu would
+ * call it directly, "the way it will reach `addPlaylist`" -- which is neither
+ * how the menu reaches this nor how it reaches that one. ADR-0007 settled the
+ * shape after that comment was written: an entry hands `main` an argument
+ * vector and `main` dispatches it, so a setting changed from the menu arrives
+ * here down the same line as one typed at a shell. A second door in would be
+ * the second behaviour that document exists to prevent, and closing this one
+ * costs nothing, because the vector was always going to be the way through.
+ *
+ * It still takes plain strings rather than a `SettingKey`, because what a
+ * vector carries is whatever somebody typed.
  */
-export const setConfig = (key: string, typed: string): Renderable<Wrote> => {
+const setConfig = (key: string, typed: string): Renderable<Wrote> => {
   if (!isKnown(key)) return noSuchSetting(key)
 
   const value = understood(key, typed)
