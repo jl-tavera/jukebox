@@ -72,10 +72,26 @@ export type Io = {
    * menu opens only when both streams are terminals.
    */
   columns: number
+  /**
+   * How tall it is, for the one thing that needs a bottom as well as a top:
+   * #66 pins the wordmark by fencing the rows under it into a scroll region,
+   * and a region is written as two row numbers.
+   *
+   * Here rather than in `Seams` for `columns`' reason, and against the same
+   * alternative. The height of a terminal is an ordinary thing the real program
+   * reads, and reaching for `process.stdout.rows` from where the region is set
+   * would put the too-short branch -- a window with no room to pin anything in
+   * -- out of reach of every test that drives `main`.
+   *
+   * Twenty-four where there is no terminal to ask, which is the historical
+   * default and, like the eighty above it, never consulted in practice.
+   */
+  rows: number
 }
 
 /** What a terminal is assumed to be when there is none to measure. */
-const ASSUMED = 80
+const ASSUMED_COLUMNS = 80
+const ASSUMED_ROWS = 24
 
 /** The real streams. Built in one place, and only by the binary's entry point. */
 export const processIo = (): Io => ({
@@ -85,5 +101,6 @@ export const processIo = (): Io => ({
   stdoutIsTty: Boolean(process.stdout.isTTY),
   stdinIsTty: Boolean(process.stdin.isTTY),
   stderrIsTty: Boolean(process.stderr.isTTY),
-  columns: process.stdout.columns ?? ASSUMED,
+  columns: process.stdout.columns ?? ASSUMED_COLUMNS,
+  rows: process.stdout.rows ?? ASSUMED_ROWS,
 })
