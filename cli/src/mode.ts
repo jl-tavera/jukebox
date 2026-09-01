@@ -21,11 +21,17 @@ export const selectMode = (json: boolean, io: Io): Mode =>
 /**
  * Whether anything may ask a question.
  *
- * Nothing in this release prompts, so this is the guarantee rather than its
- * enforcement: it is the one predicate a prompt must pass, and it is false
- * whenever the output is being parsed or nobody is at the keyboard. In either
- * case a missing answer has to be an error, never a wait -- a command that
- * hangs in a cron entry is worse than one that fails in it.
+ * This said that nothing in the release prompted, and that it was therefore the
+ * guarantee rather than its enforcement -- true while it was written, and the
+ * reason it was written. #54 is where it stops being true: a bare `jukebox`
+ * opens a menu on this predicate and on nothing else, so the guarantee is now
+ * enforced at the one place that could break it.
+ *
+ * What it means has not moved. It is still the one predicate a prompt must
+ * pass, and it is still false whenever the output is being parsed or nobody is
+ * at the keyboard. In either case a missing answer has to be an error, never a
+ * wait -- a command that hangs in a cron entry is worse than one that fails in
+ * it, and that is exactly what a menu drawn into a pipe would be.
  */
 export const promptsAllowed = (mode: Mode, io: Io): boolean =>
   mode === 'human' && io.stdinIsTty

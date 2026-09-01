@@ -209,8 +209,13 @@ describe('exit codes', () => {
   })
 
   it('is non-zero only for something that genuinely failed', async () => {
+    // Piped, and the bare vector is why. At a terminal `jukebox` on its own no
+    // longer fails at all -- it opens the menu, which is a session rather than
+    // an answer and always exits zero. See `menu.test.ts`. A vector naming
+    // nothing is still a failure everywhere something is reading the output,
+    // which is what this asserts and what every script sees.
     for (const argv of [['sing'], []]) {
-      expect((await jukebox(argv)).code).not.toBe(0)
+      expect((await jukebox(argv, { tty: false })).code).not.toBe(0)
     }
   })
 })

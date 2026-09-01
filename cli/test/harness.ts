@@ -51,9 +51,10 @@ export type Options = {
    * What that somebody types, in the order they type it.
    *
    * The terminal flags above say a question *may* be asked; this is the answer
-   * to it. Together they are the whole of driving a prompt at this seam, which
-   * is why the menu #50 describes needs none of its own -- see `Io`'s input
-   * stream for why that is a property of where it lives.
+   * to it. Together they turned out to be the whole of driving a prompt at this
+   * seam: #54's menu needed no seam of its own, and `menu.test.ts` drives it on
+   * these two options and nothing more. See `Io`'s input stream for why that is
+   * a property of where the keyboard lives rather than of the menu.
    *
    * A key is written the way a terminal sends it -- `\r` for return, `\x1b[B`
    * for a press downward. See `keyboard`.
@@ -101,6 +102,25 @@ export type Options = {
    */
   prepare?: (locations: Locations) => void
 }
+
+/**
+ * What a terminal sends, written out because `\x1b[B` reads as nothing at all.
+ *
+ * Here rather than in each test file for the reason every shared fixture is
+ * here: two files already script keystrokes -- `keyboard.test.ts` against the
+ * prompt library and `menu.test.ts` against a whole session -- and a second
+ * spelling of an escape sequence is the kind of copy that goes wrong silently,
+ * answering the wrong entry instead of failing.
+ */
+export const DOWN = '\x1b[B'
+export const UP = '\x1b[A'
+export const ENTER = '\r'
+
+/**
+ * Ctrl-C, which in raw mode is a byte and not a signal: it reaches the program
+ * and the program decides what it means.
+ */
+export const CANCEL = '\x03'
 
 /** A stream that types. What `Io`'s input stream is, for a run that is a test. */
 export type Keyboard = Readable & { isTTY: boolean; setRawMode: (raw: boolean) => void }
