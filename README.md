@@ -135,13 +135,24 @@ Addresses are matched exactly as you typed them when you added the playlist. Not
   sync_interval_hours   24                           (default)
 ```
 
-Two settings ship, in a TOML file in your platform's configuration directory — `%APPDATA%\Jukebox` on Windows, `~/Library/Preferences/Jukebox` on macOS, `$XDG_CONFIG_HOME/jukebox` (or `~/.config/jukebox`) on Linux. `jukebox config` prints the exact path, including when there is no file there yet. Nothing creates one for you; write it yourself when you want to change something.
+Two settings ship, in a TOML file in your platform's configuration directory — `%APPDATA%\Jukebox` on Windows, `~/Library/Preferences/Jukebox` on macOS, `$XDG_CONFIG_HOME/jukebox` (or `~/.config/jukebox`) on Linux. `jukebox config` prints the exact path, including when there is no file there yet.
 
 ```toml
 # Single quotes, so a Windows path needs no escaping.
 library_path = 'D:\Music\Jukebox'
 sync_interval_hours = 6
 ```
+
+Give `jukebox config` a setting and a value and it writes that file for you, creating it if there is none:
+
+```
+jukebox config library_path 'D:\Music\Jukebox'
+jukebox config sync_interval_hours 6
+```
+
+Quote a path with spaces in it, or the shell hands Jukebox two words and it refuses rather than storing half a path. A setting it does not know and a value that will not parse are both refused with the reason, and nothing is written in either case.
+
+Writing rebuilds the file from the two settings Jukebox understands, so any comments you kept in there go — it says so when that happens. A file it cannot parse at all is left exactly as it is rather than replaced; fix it or delete it, then set the value again.
 
 | Setting | Default | Environment |
 |---|---|---|
@@ -151,6 +162,8 @@ sync_interval_hours = 6
 Your music directory is `~/Music` on Windows and macOS. On Linux it honours `XDG_MUSIC_DIR` if you export it, and falls back to `~/Music`.
 
 The environment wins over the file, and the file wins over the default. `jukebox config` names the variable beside any value the environment supplied, so there is always something to unset. Anything Jukebox had to ignore — a file that will not parse, a misspelled key, a value of the wrong type — is reported in the output rather than passed over, and the setting falls back rather than the command failing.
+
+Setting a value whose variable is exported writes it and then tells you the variable still wins, so a change that cannot take effect never looks like it did. Moving `library_path` tells you that anything already downloaded stays in the old folder: Jukebox never moves your files, and it will not look there again.
 
 **Nothing acts on either setting yet.** There is no scheduler and no daemon in this release, so `sync_interval_hours` is recorded and never read. Fetching does not exist either, so no file is written to `library_path` and no folder is created there — not even by setting it. Both are real settings governing decided behaviour ([ADR-0004](docs/adr/0004-a-folder-per-playlist.md) is the Library's layout), and they take effect when the features that read them land.
 

@@ -110,3 +110,31 @@ The consequence this ADR anticipated still holds and is now visible: **nothing c
 `jukebox config` reports the path and says outright that no Library folder is created and nothing is
 downloaded, because a user who sets a path and finds an empty folder has been misled by output that
 was technically accurate.
+
+## Amendment, 2026-09-01: the file becomes writable
+
+The amendment above settled how `library_path` is read. #53 settles how it is written: `jukebox
+config` takes two optional positional arguments, so a setting can be changed without hand-editing
+TOML. Four more choices, each recorded for the reason the last four were -- a later reader would
+otherwise decide them again, differently.
+
+- **Two positional arguments rather than a `config set` subcommand.** The command tree is one level
+  deep, and `main` resolves a command name by looking the first non-flag token up in it exactly
+  once. A nested subcommand would mean teaching that dispatch to recurse for the sake of one
+  command. Spec #50 asked for `config set` by name; this is the shape that answer takes.
+- **The file is rebuilt, not patched.** `Bun.TOML.parse` reads TOML and nothing in the runtime
+  writes it, so a writer was needed either way. It emits the settings Jukebox understands and
+  nothing else, which means comments do not survive a write -- the command says so, and only when
+  the file had something to lose. Patching in place would need an editor that preserves tables,
+  dotted keys and multi-line strings, which is a great deal of machinery for two keys.
+- **A file that will not parse is never rewritten.** Its contents are opaque, so replacing it is
+  unbounded destruction of something hand-written; a readable file's settings are all known, so the
+  loss is bounded and can be named. That one refuses with `config_unwritable` and says to fix or
+  delete the file first.
+- **Only what the user chose is written down.** A default never goes in the file. It would come back
+  as `(file)` for something nobody picked, and the defaults are machine-dependent -- this machine's
+  `%APPDATA%` answer written into a file makes the file wrong on the next machine.
+
+The consequence stays exactly as the previous amendment left it. **Nothing creates the folder**, and
+setting `library_path` does not either: a write brings the configuration directory and the file into
+existence, and nothing else.
