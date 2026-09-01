@@ -1,6 +1,6 @@
 import type { Readable } from 'node:stream'
 import { Writable } from 'node:stream'
-import { confirm, isCancel, select } from '@clack/prompts'
+import { confirm, isCancel, select, text } from '@clack/prompts'
 import pc from 'picocolors'
 import type { Listed } from './commands/list'
 import { header } from './header'
@@ -8,6 +8,7 @@ import type { Io } from './io'
 import type { Renderable } from './outcome'
 import { held, identified, named } from './phrasing'
 import type { MirroredPlaylist } from './reading'
+import { spinning } from './spinner'
 import { VERSION } from './version'
 
 /**
@@ -25,9 +26,12 @@ import { VERSION } from './version'
  * back out to a shell, with `quit` as the only entry that did anything. #56
  * wired `list`, and with it the two commands reached through nothing else: pick
  * a Playlist, land on its `show`, and stop tracking it from there, so that the
- * id nobody memorises is never asked for. `add`, `sync` and `config` still name
- * the command to type instead of running it; #55 and #57 replace one of those
- * lines each. `USAGE` below is where that is written down.
+ * id nobody memorises is never asked for. #55 wired the two that reach the
+ * network, and with them the three things an entry reading local state never
+ * needed: a prompt that collects an argument, a spinner over the wait, and a
+ * boot that can end the session. `config` is the last entry still naming the
+ * command to type instead of running it; #57 takes it, and takes `USAGE` with
+ * it.
  *
  * **Everything written here is chrome, and chrome goes to stderr.** `render.ts`
  * keeps stdout, and keeps it alone, so "stdout is the guarantee" survives a
@@ -50,6 +54,17 @@ import { VERSION } from './version'
 
 /** The top level. One entry per command #50 puts here, and the way out. */
 type Entry = 'add' | 'sync' | 'list' | 'config' | 'quit'
+
+/**
+ * The two entries that open the one door to the network.
+ *
+ * Written as an `Extract` rather than as two literals again, so that a renamed
+ * entry breaks here rather than quietly leaving this naming nothing. Everything
+ * that separates these two from the rest of the menu follows from the single
+ * fact that they boot: they are the two that wait long enough to need a
+ * spinner, and the two a version gate can refuse.
+ */
+type Reaching = Extract<Entry, 'add' | 'sync'>
 
 /**
  * The entries, in the order #50 sets: the two that reach the network, the two
@@ -81,13 +96,12 @@ export const ENTRIES: { value: Entry; label: string; hint: string }[] = [
  * land on exercises none of the select-and-come-back path, which #54 was built
  * to prove and everything below still rests on.
  *
- * Two are left, and each is one line: #55 takes `add` and `sync`, #57 takes
- * `config`. `list` was the third and is gone from here, which is what a wired
- * entry looks like.
+ * One is left. #57 takes `config` and takes this record with it -- the last
+ * unwired entry is the last reason for it to exist, and an empty `Record` over
+ * an empty `Exclude` is not a thing to leave behind for somebody to wonder
+ * about.
  */
-const USAGE: Record<Exclude<Entry, 'quit' | 'list'>, string> = {
-  add: 'jukebox add <url>',
-  sync: 'jukebox sync',
+const USAGE: Record<Exclude<Entry, 'quit' | 'list' | Reaching>, string> = {
   config: 'jukebox config',
 }
 
@@ -103,6 +117,43 @@ const USAGE: Record<Exclude<Entry, 'quit' | 'list'>, string> = {
  */
 export const WHICH_PLAYLIST = 'Which playlist?'
 export const FOR_THIS_PLAYLIST = 'What next for this playlist?'
+
+/**
+ * What `add` asks for, and the way back out of asking.
+ *
+ * The one screen that cannot carry a `back` beside its answers, because there
+ * are no answers to put it beside -- so the empty answer is the way back, and
+ * the message says so rather than leaving it to be found. This file's rule that
+ * a cancel means leave, from every screen, is what makes that necessary: with
+ * cancel spoken for, a person who picked `add` by mistake would otherwise have
+ * no move that was not the end of the session.
+ *
+ * No placeholder, though the library offers one and a real address would be the
+ * obvious thing to put in it. Every address anybody could paste today is a
+ * Spotify one, and the project's standing rule is that a Spotify assumption
+ * lives in the Source adapter and nowhere else. A menu is about as far from
+ * that adapter as this repository goes.
+ */
+export const THE_ADDRESS = 'Paste the playlist address, or press return to go back'
+
+/**
+ * What the spinner says while each of the two waits.
+ *
+ * Exported so a test pins the words rather than a paraphrase, as `ENTRIES` and
+ * the two questions above are, and kept short deliberately: `spinner.ts` erases
+ * the row the cursor is on and no other, so a message long enough to wrap would
+ * leave its first rows on the screen. This is the file that keeps that true.
+ *
+ * `sync` says its own entry's hint back in the present tense, because that is
+ * exactly what is happening. `add` says more than its hint does, because the
+ * waiting is the shape of that command rather than an unlucky run: every add is
+ * a cold Resolution, so a person watching this is watching the normal case and
+ * should be told what it is waiting for.
+ */
+export const WORKING: Record<Reaching, string> = {
+  add: 'Adding it, and waiting for its tracks',
+  sync: 'Asking every playlist what changed',
+}
 
 /**
  * What is asked before anything is deleted.
@@ -126,8 +177,16 @@ export const askingToStop = (playlist: MirroredPlaylist): string =>
  * `--json` would have carried. A menu wanting to do something no vector can
  * express would have to widen this signature first, which is the whole point of
  * it being this narrow.
+ *
+ * `computed` is that widening, made deliberately by #55 and saying nothing
+ * about *what* runs. A launch is compute **and** render, and the moment between
+ * them is the only one a caller cannot see from out here -- so chrome stopped
+ * when a launch returns is chrome that was still on the screen while the answer
+ * was written. A spinner ticking through `render` erases the first line of the
+ * thing it was covering. This names that moment and adds no other power: an
+ * entry still cannot ask for anything a typed vector could not.
  */
-export type Launch = (argv: string[]) => Promise<Renderable>
+export type Launch = (argv: string[], computed?: () => void) => Promise<Renderable>
 
 /** What every prompt in a session is handed: the keyboard, and where to draw. */
 type Asking = { input: Readable; output: Writable }
@@ -155,14 +214,20 @@ const writingTo = (io: Io): Writable =>
 /**
  * Runs until the person quits, and answers with the session's exit code.
  *
- * **Always zero.** Exit codes exist for callers, and no caller can reach this:
- * the entry condition in `main` is that both streams are terminals, so the only
- * reader is a shell prompt. Reporting failure for something that failed earlier
- * in a session the person then chose to carry on with and leave is noise -- and
- * a command that fails inside a session renders its own message and comes
- * straight back here. #55 adds the one exception #50 names -- a version gate
- * refusing this binary, which closes the menu because nothing in the session
- * was usable.
+ * **Zero, with one exception.** Exit codes exist for callers, and no caller can
+ * reach this: the entry condition in `main` is that both streams are terminals,
+ * so the only reader is a shell prompt. Reporting failure for something that
+ * failed earlier in a session the person then chose to carry on with and leave
+ * is noise -- and a command that fails inside a session renders its own message
+ * and comes straight back here.
+ *
+ * The exception is the one #50 names, and #55 is where it lands: a version gate
+ * refusing this binary closes the menu, because nothing in the session was
+ * usable. The other two ways the boot can stop are deliberately not exceptions
+ * and must not become ones. `service_down` and `network_unreachable` leave
+ * `list`, `show` and `config` working exactly as they were -- the boot is lazy,
+ * and none of the three opens it -- so a session that met either has plenty
+ * left to do and no reason to be ended on the reader's behalf.
  *
  * Ctrl-C leaves the same way `quit` does. It is how a person says they are
  * finished with a menu, and answering it with a failure would make the ordinary
@@ -195,10 +260,34 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
         ...asking,
       })
 
-      if (isCancel(chosen) || chosen === 'quit') return 0
+      if (isCancel(chosen) || chosen === 'quit') return LEFT
+
+      if (chosen === 'add') {
+        const answered = await text({ message: THE_ADDRESS, ...asking })
+        if (isCancel(answered)) return LEFT
+
+        // The way back, spoken as an empty answer because this screen has
+        // nowhere to put one as an entry. Trimmed first: a return pressed after
+        // a stray space is the same gesture, and a shell hands a typed vector
+        // the same courtesy for free.
+        //
+        // Launching the empty one instead would be a request to the API asking
+        // it to recognise nothing, answered `invalid_url` -- a round trip and a
+        // failure on screen for a keystroke that meant the opposite.
+        const url = answered.trim()
+        if (url === '') continue
+
+        if (refused(await reached(io, launch, ['add', url], WORKING.add))) return REFUSED
+        continue
+      }
+
+      if (chosen === 'sync') {
+        if (refused(await reached(io, launch, ['sync'], WORKING.sync))) return REFUSED
+        continue
+      }
 
       if (chosen === 'list') {
-        if ((await browse(launch, asking)) === 'quit') return 0
+        if ((await browse(launch, asking)) === 'quit') return LEFT
         continue
       }
 
@@ -222,6 +311,65 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
  * word, rather than the two screens saying `back` by two different mechanisms.
  */
 const BACK = 'back'
+
+/**
+ * What a session is worth to the shell prompt that reads it.
+ *
+ * Named rather than written as two bare numbers, because there are two of them
+ * now and the interesting one is the rare one. See the note on `menu` for why
+ * the ordinary end of a session is zero however much failed inside it.
+ */
+const LEFT = 0
+const REFUSED = 1
+
+/**
+ * One command that reaches the network, run: the spinner over it, and the
+ * answer back.
+ *
+ * Past tense, and a word away from the `Reaching` above rather than the same
+ * word in another case. That type is the two entries; this is running one of
+ * them, and two things one capital apart would be two things a reader has to
+ * hold separately for no reason.
+ *
+ * Both of the things that separate these two entries from the rest of the menu
+ * live here, and they live together because they are one fact said twice. An
+ * entry that opens the boot is an entry that can wait long enough to look like
+ * a hang, and it is also the only kind of entry a version gate can refuse. A
+ * third such entry would be wired through this and would get both without
+ * anybody remembering to ask for them.
+ *
+ * The spinner is stopped twice on purpose. `computed` stops it at the one
+ * moment that matters -- the answer is in and `render` has not written it yet
+ * -- and the `finally` covers a launch that never reached that moment. Stopping
+ * is idempotent, so the second one costs nothing and the first is never the one
+ * that gets skipped.
+ */
+const reached = async (
+  io: Io,
+  launch: Launch,
+  argv: string[],
+  working: string,
+): Promise<Renderable> => {
+  const stop = spinning(working, io.err, io.stderrIsTty)
+
+  try {
+    return await launch(argv, stop)
+  } finally {
+    stop()
+  }
+}
+
+/**
+ * Whether the backend has refused this binary outright.
+ *
+ * The one failure that ends a session rather than returning to it, and it is
+ * matched by code rather than by anything looser: `main` turns every `BootStop`
+ * into a result object of exactly this shape, and the other two codes it can
+ * carry are ones a session carries on after. Reading the message would be the
+ * same test written so that improving the copy could break it.
+ */
+const refused = ({ outcome }: Renderable): boolean =>
+  !outcome.ok && outcome.error.code === 'version_unsupported'
 
 /**
  * `list`, and then the answer it gave offered back as a picker.
