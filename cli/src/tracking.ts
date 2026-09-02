@@ -107,10 +107,12 @@ export type NamedTrack = { trackId: string; title: string }
  * Records what a refusal means for a Playlist already tracked.
  *
  * Here rather than in each command because it is a fact about the Mirror rather
- * than about who asked. Two of the contract's four codes have a local status and
- * two deliberately have none: `playlist_not_found` is the server saying it holds
- * no row, which is not a claim about the Playlist itself, and `invalid_url`
- * never reaches a Playlist that was recorded.
+ * than about who asked. Two of the contract's five codes have a local status and
+ * three deliberately have none: `playlist_not_found` is the server saying it
+ * holds no row, which is not a claim about the Playlist itself; `invalid_url`
+ * never reaches a Playlist that was recorded; and `snapshot_unavailable` is the
+ * server saying something about itself, so recording it against the Playlist
+ * would put a fault on a Playlist that has nothing wrong with it.
  */
 export const recordRefusal = (mirror: Mirror, id: PlaylistId, code: ErrorCode): void => {
   if (code === 'playlist_gone') markLocalStatus(mirror, id, 'gone')
