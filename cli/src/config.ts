@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { replaceFile } from './files'
-import { defaultLibrary, given, locations, thisHost, type Host } from './paths'
+import { defaultLibrary, given, joiner, locations, thisHost, type Host } from './paths'
 
 /**
  * The two settings, where each one's value came from, and anything written down
@@ -314,7 +313,12 @@ export const configuration = (host: Host = thisHost()): Configured => {
   return { file: { path, state: state.kind }, ...resolved(host, state), note: NOTE }
 }
 
-const configFile = (host: Host): string => join(locations(host).config, CONFIG_FILE)
+/**
+ * The target's dialect rather than the running machine's, which is the whole
+ * reason `joiner` is imported and `node:path`'s own `join` is not. This line
+ * was the latter until #71.
+ */
+const configFile = (host: Host): string => joiner(host)(locations(host).config, CONFIG_FILE)
 
 const read = (path: string): FileState => {
   let text: string
