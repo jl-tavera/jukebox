@@ -64,8 +64,14 @@ export type Broken = { breaks: number; body: string }
 
 export const breaking = (breaks: number, body: string): Broken => ({ breaks, body })
 
-/** What `POST /playlists` says about one URL. */
-export type Tracked = { id: PlaylistId; status: PlaylistStatus } | Refusal
+/**
+ * What `POST /playlists` says about one URL.
+ *
+ * `Broken` is here for the reason it is in `Answer`: what sits in front of the
+ * API answers this route as readily as the other one, and a fixture that could
+ * only break the second would leave `add`'s first request untestable.
+ */
+export type Tracked = { id: PlaylistId; status: PlaylistStatus } | Refusal | Broken
 
 /**
  * What `GET /playlists/{id}/tracks` says. `'resolving'` is the 202 a Playlist
@@ -208,6 +214,19 @@ const envelope = (refusal: Refusal): Response =>
   })
 
 /**
+ * Served as it arrived, with no envelope under it, because the point of it is
+ * that it is not the contract's shape.
+ *
+ * Shared by both routes rather than written twice, so that the thing they are
+ * both meant to be answering with cannot come to differ between them.
+ */
+const broken = (answer: Broken): Response =>
+  new Response(answer.body, {
+    status: answer.breaks,
+    headers: { 'content-type': 'text/html' },
+  })
+
+/**
  * Starts a server serving the document given, on a port nothing else holds.
  *
  * Registered for teardown on the way out, the way `temporaryHome` registers a
@@ -237,15 +256,7 @@ export const serving = (document: DiscoveryDocument = healthy()): Site => {
 
     if (next === 'resolving') return Response.json({ status: 'pending' }, { status: 202 })
     if ('refuse' in next) return envelope(next)
-
-    // Served as it arrived, with no envelope under it, because the point of it
-    // is that it is not the contract's shape.
-    if ('breaks' in next) {
-      return new Response(next.body, {
-        status: next.breaks,
-        headers: { 'content-type': 'text/html' },
-      })
-    }
+    if ('breaks' in next) return broken(next)
 
     // The ETag and Cache-Control the contract requires, on the answer with a
     // body and on the empty one that revalidates it -- the same tag either way,
@@ -271,6 +282,7 @@ export const serving = (document: DiscoveryDocument = healthy()): Site => {
     if (answered === undefined) return envelope(REFUSALS.invalidUrl)
 
     if ('refuse' in answered) return envelope(answered)
+    if ('breaks' in answered) return broken(answered)
 
     // 202 for a Playlist with no Tracks yet, 200 for one already resolved --
     // the two statuses the contract gives this route on success.
