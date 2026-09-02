@@ -1,7 +1,7 @@
 import type { ErrorCode } from '@jukebox/schema'
 
 /**
- * Codes the CLI raises on its own behalf, where the API's four say what the
+ * Codes the CLI raises on its own behalf, where the API's five say what the
  * server could not do.
  *
  * Eight now. Each arrived with the thing that raises it, and the latest is

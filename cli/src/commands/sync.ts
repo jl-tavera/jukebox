@@ -118,7 +118,7 @@ const askedAbout = async (
   if (held.kind === 'resolving') return { id, title, answer: 'resolving' }
 
   if (held.kind === 'refused') {
-    // Which of the four codes mean something locally is `tracking.ts`'s to know,
+    // Which of the five codes mean something locally is `tracking.ts`'s to know,
     // not this command's -- `add` asks it the same question. Nothing else moves
     // either way: neither status has Tracks, so whatever the Playlist already
     // had it keeps.

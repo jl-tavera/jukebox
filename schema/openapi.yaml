@@ -173,14 +173,27 @@ paths:
             -- it was deleted, made private, or is curated by the Source itself
             and closed to other apps. The Source does not distinguish the three,
             so neither does this, and the message names the likely causes.
+
+            Only for a Playlist that never resolved. One that has Tracks goes on
+            being served them, at the Version it last reached, however its Source
+            has answered since: a remote failure never costs a caller what it
+            already had. `POST /playlists` still answers `410` for it, and the
+            two are not in conflict -- the Source will not serve that Playlist
+            again, and these are the Tracks from when it did.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '503':
           description: |
-            Resolution failed for a reason believed temporary, and there are no
-            Tracks to serve yet. Worth asking again.
+            No Tracks to serve, for a reason believed temporary. Two of them,
+            told apart by the code rather than by the status: `source_unavailable`
+            is a Resolution that failed and has none yet, and
+            `snapshot_unavailable` is a Playlist whose Tracks exist and cannot be
+            assembled just now. Worth asking again either way.
+
+            `source_unavailable` carries the same rule as the `410` above: a
+            Playlist that has Tracks is served them rather than this.
           content:
             application/json:
               schema:
@@ -336,11 +349,19 @@ components:
     ErrorCode:
       type: string
       description: |
-        Stable, machine-readable, and what the CLI branches on. Each answers a
-        different question about what the caller should do next: correct the
-        address, add the Playlist first, stop tracking it, or try again later.
+        Stable, machine-readable, and what the CLI branches on. Each says what
+        the caller should do next: correct the address, add the Playlist first,
+        stop tracking it, or try again later.
+
+        Four things to do and five codes, because the last two share a status and say different things about where the
+        fault is. `source_unavailable` is about a Playlist's Source, and a
+        client is right to record the Playlist as unreachable on it;
+        `snapshot_unavailable` is about this service, and says nothing about the
+        Playlist at all -- a client that treated it as the Source's failure
+        would be recording something untrue.
       enum:
         - invalid_url
         - playlist_not_found
         - playlist_gone
         - source_unavailable
+        - snapshot_unavailable
