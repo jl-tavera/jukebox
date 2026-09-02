@@ -1,4 +1,4 @@
-import type { PlaylistId, PlaylistTracks } from '@jukebox/schema'
+import type { PlaylistId, PlaylistTracks, Track } from '@jukebox/schema'
 
 /**
  * The KV snapshot store -- the hot read path. Most reads are served from here
@@ -16,24 +16,48 @@ const snapshotKey = (id: PlaylistId, version: string) => `playlist:${id}:v${vers
 export type SnapshotContents = Omit<PlaylistTracks, 'version'>
 
 /**
+ * One Track, with its fields in the order the document stores them.
+ *
+ * Rebuilt rather than passed through, which is the whole of its job. Every
+ * comparison below is over serialized text, so the key order inside a Track is
+ * part of what a Version means -- and the Tracks reaching here are built by a
+ * Source adapter, or by a rebuild reading D1, and neither is under any
+ * obligation to list them the same way. Fixing the order here is what stops
+ * that being each caller's problem to get right silently.
+ */
+const inStoredOrder = (track: Track): Track => ({
+  sourceTrackId: track.sourceTrackId,
+  title: track.title,
+  artists: track.artists,
+  album: track.album,
+  durationMs: track.durationMs,
+  isrc: track.isrc,
+  position: track.position,
+  coverImageUrl: track.coverImageUrl,
+})
+
+/**
  * The document a Version is stored and served as.
  *
- * Built here and nowhere else, because `comparedWithServed` compares one of these
- * against stored bytes and the comparison is over the serialized text. Two call
- * sites listing the same fields in a different order would compare unequal
- * while meaning the same thing, and the symptom would be a Version moving on
- * every Resolution for no reason anybody could see.
+ * Built here and nowhere else, because two things compare one of these against
+ * stored bytes and both comparisons are over the serialized text:
+ * `comparedWithServed` asks whether a Resolution changed anything, and a
+ * rebuild has to produce the bytes the cache would have served. Two call sites
+ * listing the same fields in a different order would compare unequal while
+ * meaning the same thing -- as a Version moving on every Resolution for no
+ * reason anybody could see, or as a rebuilt answer a client could tell from a
+ * stored one.
  *
  * The title is in here, so a Playlist renamed on its Source moves its Version
  * even when its membership did not. That is right rather than incidental: the
  * Version is the whole of a client's "am I current?", and a client holding a
  * name the Source has since changed is not current.
  */
-const document = (version: number, contents: SnapshotContents): PlaylistTracks => ({
+export const document = (version: number, contents: SnapshotContents): PlaylistTracks => ({
   version,
   title: contents.title,
   skipped: contents.skipped,
-  tracks: contents.tracks,
+  tracks: contents.tracks.map(inStoredOrder),
 })
 
 /**
