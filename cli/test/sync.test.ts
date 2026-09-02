@@ -436,8 +436,10 @@ describe('an answer the CLI cannot make sense of', () => {
 
     // A 502 carrying an HTML page rather than the contract's error envelope --
     // an edge or a rate limiter in front of the API, not the worker. `api.ts`
-    // throws on it, because a shape that does not fit the contract is a bug; a
-    // Sync must still come back with an answer for every other Playlist.
+    // answers `unreachable` for it, because the thing that produced it sits in
+    // front of the API rather than in it; a Sync must still come back with an
+    // answer for every other Playlist. `add.test.ts` asks the same question of
+    // the other command that calls `api.ts`, which is #70.
     site.holding(OTHER_ID, breaking(502, '<html><body>Bad gateway</body></html>'))
     site.holding(ID, snapshot({ ...twoTracks, version: 2, tracks: [track()] }))
 

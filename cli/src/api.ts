@@ -17,10 +17,21 @@ import type {
  * `message`, carried verbatim -- which is what the envelope was designed for, and
  * why that copy can improve without a client release.
  *
- * An answer the contract does not describe is thrown rather than folded into one
- * that it does. Both sides generate from `openapi.yaml`, so a shape that does not
- * fit is a bug somewhere in this repository, and `main`'s catch-all says exactly
- * that: a problem Jukebox has no answer for.
+ * An answer the contract does not describe is `unreachable`, which is what it is
+ * from the caller's side: nothing usable came back, and the next move is to try
+ * again later. Both sides generate from `openapi.yaml`, so a shape that does not
+ * fit is not the worker's -- the things that produce one sit in front of the API
+ * rather than in it, an edge answering 502, a rate limiter, a block page served
+ * as HTML, and every one of them is one request going wrong. The cause travels in
+ * the message rather than being swallowed, so a reply nothing understands is
+ * still legible as the bug it may well be.
+ *
+ * Decided here rather than by each caller, which is the whole of #70: `sync` had
+ * this fold and `add` did not, so the same block page was one Playlist's problem
+ * under one command and `unexpected` -- always a bug here -- under the other.
+ * A fault in this module's own code is caught nowhere in it, so it still reaches
+ * `main`'s catch-all as `unexpected`. That is the line a blanket `catch` around
+ * the call could not draw: it would fold the bug in with the block page.
  */
 
 /**
@@ -94,12 +105,12 @@ export const createPlaylist = async (api: string, url: string): Promise<Created>
 
   if (response.status === 200 || response.status === 202) {
     const id = tracked(body)
-    if (id === undefined) throw new Error('the API described a Playlist it did not name')
+    if (id === undefined) return garbled(url, 'it described a Playlist it did not name')
 
     return { kind: 'tracked', id }
   }
 
-  return refused(response, body)
+  return refused(url, response, body)
 }
 
 /**
@@ -140,7 +151,9 @@ export const playlistTracks = async (
 
   if (response.status === 200) {
     const snapshot = readSnapshot(body)
-    if (snapshot === undefined) throw new Error('the API answered with something that is not a snapshot')
+    if (snapshot === undefined) {
+      return garbled(id, 'it answered with something that is not a snapshot')
+    }
 
     return { kind: 'snapshot', snapshot }
   }
@@ -150,15 +163,16 @@ export const playlistTracks = async (
   // tell them apart stops waiting too early.
   if (response.status === 202) return { kind: 'resolving' }
 
-  return refused(response, body)
+  return refused(id, response, body)
 }
 
 /**
  * One request, and whatever came back with it.
  *
  * A request that never arrives is the caller's business rather than an exception,
- * because "the network is not there" is an answer a command has words for. A
- * request that arrives and is not what the contract describes is not.
+ * because "the network is not there" is an answer a command has words for. Since
+ * #70 so is a request that arrives carrying something the contract does not
+ * describe -- see `garbled` -- which is why nothing in this module raises one.
  */
 const asked = async (
   url: string,
@@ -185,8 +199,32 @@ const asked = async (
   return { kind: 'answered', response, body }
 }
 
-/** The four statuses that carry an error envelope, read as the code and the sentence in it. */
-const refused = (response: Response, body: unknown): Refused => {
+/**
+ * A reply that arrived and is not the one the contract describes.
+ *
+ * Returned rather than thrown, and typed rather than caught: both `Created` and
+ * `Held` already carry `Unreachable`, so the compiler is what proves every caller
+ * handles this -- and the next command to call this module inherits the answer
+ * instead of having to arrive at it again.
+ *
+ * Named for the reply rather than for the answer it becomes, because `unreadable`
+ * and `unreachable` sitting a letter apart in one file is a line somebody reads
+ * as the other one.
+ *
+ * `about` is what the request was for, because "the API said something odd" is
+ * not actionable and "the API said something odd about this Playlist" is.
+ */
+const garbled = (about: string, said: string): Unreachable => ({
+  kind: 'unreachable',
+  message: `Jukebox could not make sense of what the API said about ${about}: ${said}.`,
+})
+
+/**
+ * The four statuses that carry an error envelope, read as the code and the
+ * sentence in it -- or `garbled` where there is no envelope to read, which is the
+ * whole of why `about` is carried this far down.
+ */
+const refused = (about: string, response: Response, body: unknown): Refused | Unreachable => {
   const envelope = body as ErrorEnvelope | undefined
   const error = envelope?.error
 
@@ -195,7 +233,7 @@ const refused = (response: Response, body: unknown): Refused => {
     typeof error?.message !== 'string' ||
     error.message === ''
   ) {
-    throw new Error(`the API answered ${response.status} without saying why`)
+    return garbled(about, `it answered ${response.status} without saying why`)
   }
 
   return { kind: 'refused', code: error.code, message: error.message }

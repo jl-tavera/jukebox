@@ -12,7 +12,15 @@ import {
   type Options,
   type Run,
 } from './harness'
-import { REFUSALS, servingItsOwnApi, snapshot, stopServing, track, type Site } from './server'
+import {
+  breaking,
+  REFUSALS,
+  servingItsOwnApi,
+  snapshot,
+  stopServing,
+  track,
+  type Site,
+} from './server'
 
 /**
  * Seam 3: the CLI's command entry point, driven with an argument vector against
@@ -296,6 +304,59 @@ describe('a backend that cannot be reached', () => {
 
     expect(refusal(run).code).toBe('network_unreachable')
     expect(run.code).toBe(1)
+  })
+})
+
+/**
+ * The other half of `sync.test.ts`'s "an answer the CLI cannot make sense of",
+ * and it is here because for a long time it was only there.
+ *
+ * `sync` folded a reply it could not read into `unreachable` and `add` did not,
+ * so the same 502 from an edge was one Playlist's problem under one command and
+ * `unexpected` -- the code that says of itself that it is always a bug here --
+ * under the other. #70 moved the fold into `api.ts`, which is what makes these
+ * two the same question asked at both of `add`'s requests.
+ */
+describe('an answer add cannot make sense of', () => {
+  it('is a backend that gave no answer, not a bug in Jukebox', async () => {
+    const site = servingItsOwnApi()
+    site.tracking(URL, { id: ID, status: 'pending' })
+
+    // A 502 carrying an HTML page rather than the contract's error envelope --
+    // an edge or a rate limiter in front of the API, not the worker.
+    site.holding(ID, breaking(502, '<html><body>Bad gateway</body></html>'))
+
+    const run = await adding(site)
+
+    expect(refusal(run).code).toBe('network_unreachable')
+
+    // The cause travels rather than being swallowed, so a reply nothing
+    // understands is still legible as the bug it may well be.
+    expect(refusal(run).message).toContain('502')
+    expect(run.code).toBe(1)
+  })
+
+  it('is the same answer when the very first request meets one', async () => {
+    const site = servingItsOwnApi()
+
+    // Nothing is tracked by the time this arrives, so this is the one an `add`
+    // meets before it has an id to poll for -- and the request `sync` never
+    // makes, which is why nothing exercised this path before.
+    site.tracking(URL, breaking(502, '<html><body>Bad gateway</body></html>'))
+
+    const run = await adding(site)
+
+    expect(refusal(run).code).toBe('network_unreachable')
+    expect(refusal(run).message).toContain('502')
+    expect(run.code).toBe(1)
+
+    // Nothing was recorded. The Playlist has no id, and a row for one the server
+    // never accepted would be a Playlist only this machine believes in.
+    expect(
+      mirrorOf(run, (mirror) =>
+        mirror.query<{ n: number }, []>('SELECT count(*) AS n FROM playlists').get()?.n,
+      ),
+    ).toBe(0)
   })
 })
 
