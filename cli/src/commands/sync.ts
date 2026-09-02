@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import type { ErrorCode, PlaylistId } from '@jukebox/schema'
-import { playlistTracks, type Held } from '../api'
+import { playlistTracks } from '../api'
 import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { counted, named, NOTHING_TRACKED } from '../phrasing'
@@ -76,10 +76,11 @@ export const syncPlaylists = async (data: unknown): Promise<Renderable<Synced>> 
  * fixed order and one Playlist's writes never interleaving with another's.
  *
  * Nothing here catches anything, because by the time a Playlist gets back here
- * everything the API could do to it is already a `Reported` rather than a throw --
- * see `answered`. What is still allowed through is a Mirror that will not write,
- * which is not an answer about one Playlist and not something this command should
- * dress up as one; `main`'s catch-all has it, as everywhere else.
+ * everything the API could do to it is already an answer rather than a throw --
+ * `api.ts` decides that, for every command rather than for this one. What is
+ * still allowed through is a Mirror that will not write, which is not an answer
+ * about one Playlist and not something this command should dress up as one;
+ * `main`'s catch-all has it, as everywhere else.
  */
 const asking = async (mirror: Mirror, api: string): Promise<Renderable<Synced>> => {
   const playlists: Reported[] = []
@@ -97,7 +98,11 @@ const askedAbout = async (
   playlist: TrackedPlaylist,
 ): Promise<Reported> => {
   const { id, title } = playlist
-  const held = await answered(api, playlist)
+
+  // The Version last seen goes with the ask, which is the whole of the
+  // conditional request. A Playlist that has never resolved holds none and is
+  // asked outright.
+  const held = await playlistTracks(api, id, playlist.lastVersion)
 
   if (held.kind === 'unchanged') return { id, title, answer: 'unchanged' }
 
@@ -130,39 +135,6 @@ const askedAbout = async (
   }
 
   return { id, title, answer: 'unreachable', message: held.message }
-}
-
-/**
- * One ask, with a reply this command can always do something with.
- *
- * `api.ts` throws rather than inventing a meaning for a reply it cannot read, and
- * that is right there: both sides generate from one contract, so a shape that
- * does not fit is a bug. It is not right *here*. The things that produce one are
- * in front of the API rather than in it -- an edge answering 502, a rate limiter,
- * a block page served as HTML -- and every one of them is one request going wrong
- * rather than this command. Left to escape, a single Playlist meeting one would
- * take the whole run down and throw away every answer already collected, which is
- * the one thing this command promises not to do.
- *
- * Folded into `unreachable` because that is what it is from the reader's side:
- * there is no usable answer about this Playlist, and the next move is to try
- * again later. The cause is carried in the message rather than swallowed, so a
- * reply nothing understands is still legible as the bug it may well be.
- *
- * The Version last seen goes with the ask, which is the whole of the conditional
- * request. A Playlist that has never resolved holds none and is asked outright.
- */
-const answered = async (api: string, playlist: TrackedPlaylist): Promise<Held> => {
-  try {
-    return await playlistTracks(api, playlist.id, playlist.lastVersion)
-  } catch (error) {
-    const cause = error instanceof Error ? error.message : String(error)
-
-    return {
-      kind: 'unreachable',
-      message: `Jukebox could not make sense of what the API said about ${playlist.id}: ${cause}.`,
-    }
-  }
 }
 
 /**
