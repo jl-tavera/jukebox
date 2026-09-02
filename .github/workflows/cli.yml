@@ -1,10 +1,17 @@
 name: cli
 
 # Path-filtered so touching the API or the landing page never runs the CLI's
-# checks -- with one deliberate exception. `site/lib/content.ts` holds the
-# wordmark this CLI keeps a copy of, and a check spanning two workspaces has to
-# run in one of them. It is named as a single file rather than a glob, so the
-# rest of the landing page's churn still stays out.
+# checks -- with two deliberate exceptions, both of them the wordmark. Since #60
+# `docs/design/DESIGN.md` is the source both shipping copies are generated from,
+# and `site/lib/content.ts` is one of those copies; a check spanning two
+# workspaces has to run in one of them, and the generator lives under `cli/`
+# so that `cli/tsconfig.json` typechecks it. Each is named as a single file
+# rather than a glob, so the rest of the landing page's churn -- and the rest of
+# the documentation's -- still stays out.
+#
+# Editing the main design document now runs this suite. #52 declined that cost
+# when the document was only prose naming itself as the source; it is worth
+# paying now that it is the file two others are written from.
 # GitHub Actions does not expand YAML anchors, so the list is written twice.
 on:
   push:
@@ -13,6 +20,7 @@ on:
       - 'cli/**'
       - 'schema/**'
       - 'site/lib/content.ts'
+      - 'docs/design/DESIGN.md'
       - '.github/workflows/cli.yml'
       - 'package.json'
       - 'bun.lock'
@@ -21,6 +29,7 @@ on:
       - 'cli/**'
       - 'schema/**'
       - 'site/lib/content.ts'
+      - 'docs/design/DESIGN.md'
       - '.github/workflows/cli.yml'
       - 'package.json'
       - 'bun.lock'
@@ -39,8 +48,17 @@ jobs:
       - run: bun run --cwd cli typecheck
       - run: bun run --cwd cli test
 
-      # The CLI's copy of the site's wordmark, compared byte for byte. It runs
-      # here rather than in site.yml because this is the cheaper workflow -- no
-      # build -- and because the copy that can drift is the one under `cli/src`.
-      # site.yml carries a note pointing here; once rather than twice.
-      - run: bun run --cwd cli check:wordmark
+      # Both shipping copies of the wordmark, regenerated from the banner in
+      # DESIGN.md and diffed -- the shape worker.yml already uses twice, for
+      # schema/src/generated.ts and worker-configuration.d.ts. Since #60 the
+      # document is the source rather than a third copy naming itself as one,
+      # so a copy that no longer matches it is a diff rather than a comparison
+      # nobody ran.
+      #
+      # It runs here rather than in site.yml because this is the cheaper
+      # workflow -- no build -- and site.yml carries a note pointing here; once
+      # rather than twice.
+      - name: The committed wordmarks match DESIGN.md
+        run: |
+          bun run --cwd cli generate:wordmark
+          git diff --exit-code -- cli/src/wordmark.ts site/lib/content.ts

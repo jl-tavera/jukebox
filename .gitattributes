@@ -12,10 +12,17 @@ worker/worker-configuration.d.ts text eol=lf
 site/public/install.sh  text eol=lf
 site/public/install.ps1 text eol=lf
 
-# Both copies of the wordmark, compared byte for byte by
-# cli/scripts/check-wordmark.ts. Most of this repo is checked out CRLF and none
-# of it minds; this art does, because it is measured in columns and a carriage
-# return is a byte on the end of every row that nobody can see. Pinned rather
-# than stripped at read time, so the check can assert there are none and mean it.
+# The wordmark's source and the two files scripts/generate-wordmark.ts writes
+# from it. Most of this repo is checked out CRLF and none of it minds; this art
+# does, because it is measured in columns and a carriage return is a byte on the
+# end of every row that nobody can see.
+#
+# The document is pinned since #60, where it stopped being prose that named
+# itself as the source and became the file two others are generated from. The
+# generator drops carriage returns on the way in as well, which is not the same
+# thing said twice: the pin is what stops a checkout carrying them, and dropping
+# them is what stops a checkout that predates the pin writing them into two
+# files pinned against them.
+docs/design/DESIGN.md text eol=lf
 site/lib/content.ts text eol=lf
 cli/src/wordmark.ts text eol=lf

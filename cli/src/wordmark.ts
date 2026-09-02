@@ -1,13 +1,17 @@
 /**
  * The wordmark, and the one thing a terminal does with it that a page does not.
  *
- * A copy of `site/lib/content.ts`'s constant, byte for byte, checked against it
- * by `bun run --cwd cli check:wordmark`. Duplicated rather than shared: #50
- * settled that `schema/` is the client/server contract and a piece of art is not
- * that, and that one string does not earn a workspace of its own. The two copies
- * want different notes around them as well -- the site's explains a webfont
- * fallback, and this one explains width. Change the site's first, then copy it
- * across whole.
+ * **Generated. Do not edit the constant below by hand.** It is written from the
+ * banner at the top of `docs/design/DESIGN.md` by `bun run --cwd cli
+ * generate:wordmark`, and CI regenerates and diffs, so an edit made here is an
+ * edit CI will undo. Change the document, run the generator, commit what it
+ * wrote.
+ *
+ * Generated rather than shared: #50 settled that `schema/` is the client/server
+ * contract and a piece of art is not that, and that one string does not earn a
+ * workspace of its own. The prose around each copy still differs -- the site's
+ * explains a webfont fallback, and this one explains width -- which is why the
+ * generator splices the literal rather than writing the file.
  *
  * **Sixty-seven columns, every row.** A page too narrow for the art clips it; a
  * terminal too narrow wraps every row onto the next, and the mark becomes noise
@@ -23,9 +27,10 @@
  * decorative range, because terminals need them.
  *
  * Two rows end in a space, and losing one shears the letterforms. That has
- * already happened once to the site's copy by hand-copying, which is why this
- * one was extracted rather than retyped, and why the check counts columns
- * instead of only comparing the two.
+ * already happened once, by hand-copying, which is why nothing here is typed by
+ * a person any more and why the generator counts columns before it writes
+ * rather than only checking that two files agree -- two copies can be wrong
+ * together, and were.
  */
 export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
      ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
