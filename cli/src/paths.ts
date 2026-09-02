@@ -82,8 +82,15 @@ const NAME = { titled: 'Jukebox', plain: 'jukebox' }
  * wrong in every message that prints it, and `node:path`'s default is the
  * host's spelling rather than the target's. Shared by both resolvers below, so
  * that a second one cannot quietly answer in the running machine's dialect.
+ *
+ * Exported since #71, because a third one did. `config.ts` appended a filename
+ * to a `locations(host)` answer with the bare `join`, and produced
+ * `...\Jukebox/config.toml` when asked for a Windows Host from a POSIX machine
+ * -- which `jukebox config` then printed as the file to edit. Being private
+ * kept the rule to the two resolvers that happen to live in this file, and it
+ * is a rule about every path built from a Host, wherever that path is built.
  */
-const joiner = (host: Host) => (host.platform === 'win32' ? win32.join : posix.join)
+export const joiner = (host: Host) => (host.platform === 'win32' ? win32.join : posix.join)
 
 /**
  * The platform's own answer, or the one thing that overrides it.

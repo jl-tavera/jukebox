@@ -8,6 +8,7 @@ import {
   INTERVAL_VARIABLE,
   LIBRARY_VARIABLE,
   NOTE,
+  configuration,
   planned,
   resolved,
   understood,
@@ -534,6 +535,30 @@ describe('a file a rewrite would take something out of', () => {
 
     expect(warnings.some((warning) => warning.includes('sync_interval_hours'))).toBe(true)
     expect(text).not.toContain('sync_interval_hours')
+  })
+})
+
+/**
+ * The one thing above the pure seam that a Host still reaches.
+ *
+ * `configuration` reads the real filesystem, but *where* it looks is decided
+ * from the Host alone -- so this is the same question `paths.test.ts` asks, and
+ * it has to be asked from both sides. The Windows answer is the one that fails
+ * on Linux CI; the Linux answer is the one that fails on the Windows machine
+ * this was written on. Either alone would pass wherever it ran first, which is
+ * how the filename came to be appended in the host's dialect rather than the
+ * target's.
+ *
+ * Only the path is asserted. Every home named here belongs to nobody, so the
+ * read behind it finds nothing on any machine, and saying so would tie the test
+ * to something it is not about.
+ */
+describe('where the configuration file is', () => {
+  it('spells it the way the platform it is for spells it', () => {
+    expect(configuration(windows).file.path).toBe(
+      'C:\\Users\\ada\\AppData\\Roaming\\Jukebox\\config.toml',
+    )
+    expect(configuration(linux).file.path).toBe('/home/ada/.config/jukebox/config.toml')
   })
 })
 
