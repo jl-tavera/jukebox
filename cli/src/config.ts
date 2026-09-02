@@ -600,8 +600,8 @@ export const planned = (
  * A write that did not happen, and the sentence saying so.
  *
  * A class rather than a returned failure, because `write` has one honest answer
- * and several ways of not having it, and the command turns every one of them into
- * the same code. Recognised with `instanceof` for the reason `BootStop` is: it is
+ * and several ways of not having it, and `main` turns every one of them into the
+ * same code. Recognised with `instanceof` for the reason `BootStop` is: it is
  * ours, so the stronger check is available and a rename cannot quietly stop it
  * being caught.
  */

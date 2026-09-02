@@ -1,7 +1,6 @@
 import { defineCommand } from 'citty'
 import {
   configuration,
-  ConfigUnwritable,
   isKnown,
   KNOWN,
   understood,
@@ -180,19 +179,12 @@ const setConfig = (key: string, typed: string): Renderable<Wrote> => {
     )
   }
 
-  try {
-    const written = write(key, value.value)
+  // A write that did not happen throws, and `main` converts it. Not caught here,
+  // and never swallowed on the way -- `write`'s own docblock says why that is the
+  // one thing it must not do.
+  const written = write(key, value.value)
 
-    return succeeded('config', written, () => wrote(written))
-  } catch (error) {
-    // The one thing this must never do is what `cache.ts` does with the same
-    // write. A swallowed failure here tells somebody their setting was saved.
-    if (error instanceof ConfigUnwritable) {
-      return failed('config', 'config_unwritable', error.message)
-    }
-
-    throw error
-  }
+  return succeeded('config', written, () => wrote(written))
 }
 
 /**

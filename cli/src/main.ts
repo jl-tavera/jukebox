@@ -1,9 +1,11 @@
 import { renderUsage, runCommand, type ArgsDef, type CommandDef, type Resolvable } from 'citty'
 import { BootStop } from './boot'
 import { reportVersion } from './commands/version'
+import { ConfigUnwritable } from './config'
 import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
 import { menu } from './menu'
+import { MirrorUnopenable } from './mirror'
 import { promptsAllowed, selectMode } from './mode'
 import { failed, succeeded, type Renderable } from './outcome'
 import { render } from './render'
@@ -213,6 +215,23 @@ const compute = async (
     // citty does not export its class and this one is ours, so the stronger
     // check is available here and a rename cannot quietly stop it being caught.
     if (cause instanceof BootStop) return failed('jukebox', cause.code, cause.message)
+
+    // The Mirror could not be opened, or could not be brought up to date. Five
+    // commands used to convert this themselves, which is #70: five copies of one
+    // sentence, and the copies had already begun to disagree about neighbouring
+    // things. The thing that knows throws and this converts, exactly as the boot
+    // above does, so a sixth command reading the Mirror inherits the answer.
+    if (cause instanceof MirrorUnopenable) {
+      return failed('jukebox', 'mirror_unopenable', cause.message)
+    }
+
+    // A setting that was not written, which is its own code rather than
+    // `unexpected` for the reason `errors.ts` gives: a read-only home and a full
+    // disk are not bugs in this binary. Why it is never swallowed on the way here
+    // is `config.ts`'s `write` to say, and it says it.
+    if (cause instanceof ConfigUnwritable) {
+      return failed('jukebox', 'config_unwritable', cause.message)
+    }
 
     // citty's own error, which it raises for an argument vector it cannot
     // parse. The class is not exported, so it is recognised by name. A usage
