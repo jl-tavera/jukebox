@@ -93,8 +93,35 @@ export const refusingUpdates = (db: D1Database): D1Database =>
   allBut(db, 'prepare', (target) => (sql: string) => refusingToRun(target.prepare(sql)))
 
 /**
- * A cache that answers its first read as a miss, and everything after it
+ * A cache that answers its `ordinal`th read as a miss, and every other read
  * truthfully.
+ *
+ * Counted rather than keyed, and the two exports below are the two counts a
+ * read of Tracks can lose something at. Which keys exist and what they are
+ * called is `snapshots.ts`'s business, so a stand-in that spelled one here
+ * would pin what that module owns -- and the order the reads happen in is
+ * fixed by something a test may legitimately hold on to: DESIGN section 05
+ * makes head first and alone the cheap path.
+ */
+const missingTheRead = (cache: KVNamespace, ordinal: number): KVNamespace => {
+  let reads = 0
+
+  return allBut(cache, 'get', (target) => {
+    // Through `Reflect.get` because `get` is overloaded five ways, and this
+    // forwards whichever one the caller meant without naming any of them.
+    const real = Reflect.get(target, 'get') as (...args: unknown[]) => Promise<unknown>
+
+    return (...args: unknown[]) => {
+      reads += 1
+      if (reads === ordinal) return Promise.resolve(null)
+
+      return real.apply(target, args)
+    }
+  })
+}
+
+/**
+ * A cache that has lost head.
  *
  * The state a client polling for Tracks puts a real KV into. A miss is
  * negatively cached for up to a minute in the colo that made it, so a poll sent
@@ -103,25 +130,22 @@ export const refusingUpdates = (db: D1Database): D1Database =>
  * KV is strongly consistent and has no such window, so nothing in this suite
  * meets it without being stood in for.
  *
- * The *first* read rather than a named one, for two reasons that agree. Head is
- * read before anything else and will stay that way -- DESIGN section 05 makes
- * that the cheap path -- so the first `get` is the one the window swallows. And
- * which keys exist and what they are called is `snapshots.ts`'s business, so a
- * stand-in that spelled one here would pin what that module owns.
+ * Head is the first read, so this is the first read missing.
  */
-export const missingTheFirstRead = (cache: KVNamespace): KVNamespace => {
-  let missed = false
+export const missingTheFirstRead = (cache: KVNamespace): KVNamespace =>
+  missingTheRead(cache, 1)
 
-  return allBut(cache, 'get', (target) => {
-    // Through `Reflect.get` because `get` is overloaded five ways, and this
-    // forwards whichever one the caller meant without naming any of them.
-    const real = Reflect.get(target, 'get') as (...args: unknown[]) => Promise<unknown>
-
-    return (...args: unknown[]) => {
-      if (missed) return real.apply(target, args)
-
-      missed = true
-      return Promise.resolve(null)
-    }
-  })
-}
+/**
+ * A cache that answers head and has lost the snapshot it names.
+ *
+ * The failure DESIGN section 09 answers with "fall back to D1 + rebuild
+ * snapshot", and the one this suite could not reach before: an immutable key
+ * that was written, named by a head that is still right about it, and gone.
+ * Nothing in the worker's own writes produces it -- which is exactly why it
+ * has to be stood up rather than waited for.
+ *
+ * The snapshot is the second read, after head. A conditional request never
+ * makes it, which is the point of the cheap path and worth a test of its own.
+ */
+export const missingTheSecondRead = (cache: KVNamespace): KVNamespace =>
+  missingTheRead(cache, 2)
