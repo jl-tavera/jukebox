@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
+import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { columns, counted, identified, notTracked, skippedly, stamp } from '../phrasing'
 import {
@@ -37,14 +37,7 @@ import type { MirrorStatus } from '../tracking'
 export type Shown = { playlist: MirroredPlaylist } & MirroredTracks
 
 export const showPlaylist = async (reference: string): Promise<Renderable<Shown>> => {
-  try {
-    return await withMirror((mirror) => looked(mirror, reference))
-  } catch (error) {
-    if (error instanceof MirrorUnopenable) {
-      return failed('show', 'mirror_unopenable', error.message)
-    }
-    throw error
-  }
+  return await withMirror((mirror) => looked(mirror, reference))
 }
 
 const looked = (mirror: Mirror, reference: string): Renderable<Shown> => {

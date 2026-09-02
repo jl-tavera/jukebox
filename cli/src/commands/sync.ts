@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
 import type { ErrorCode, PlaylistId } from '@jukebox/schema'
 import { playlistTracks } from '../api'
-import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
-import { failed, succeeded, type Renderable } from '../outcome'
+import { withMirror, type Mirror } from '../mirror'
+import { succeeded, type Renderable } from '../outcome'
 import { counted, named, NOTHING_TRACKED } from '../phrasing'
 import { backend } from '../session'
 import {
@@ -58,14 +58,7 @@ export const syncPlaylists = async (data: unknown): Promise<Renderable<Synced>> 
   // a hard stop that has already created and migrated a database is not one.
   const { api } = await backend(data)
 
-  try {
-    return await withMirror((mirror) => asking(mirror, api))
-  } catch (error) {
-    if (error instanceof MirrorUnopenable) {
-      return failed('sync', 'mirror_unopenable', error.message)
-    }
-    throw error
-  }
+  return await withMirror((mirror) => asking(mirror, api))
 }
 
 /**

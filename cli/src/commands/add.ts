@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import type { PlaylistId } from '@jukebox/schema'
 import { createPlaylist, playlistTracks, type Held } from '../api'
-import { MirrorUnopenable, withMirror, type Mirror } from '../mirror'
+import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { counted, named, skippedly } from '../phrasing'
 import { backend, patienceOf, type Patience } from '../session'
@@ -51,12 +51,7 @@ export const addPlaylist = async (url: string, data: unknown): Promise<Renderabl
   const { api } = await backend(data)
   const patience = patienceOf(data)
 
-  try {
-    return await withMirror((mirror) => tracking(mirror, api, url, patience))
-  } catch (error) {
-    if (error instanceof MirrorUnopenable) return failed('add', 'mirror_unopenable', error.message)
-    throw error
-  }
+  return await withMirror((mirror) => tracking(mirror, api, url, patience))
 }
 
 const tracking = async (
