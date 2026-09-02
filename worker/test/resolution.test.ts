@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import { createPlaylist, resolvePlaylist, tracksOf } from './api'
+import { refusingUpdates } from './bindings'
 
 /**
  * The path from Pending to Tracks, driven end to end through the worker's own
@@ -169,6 +170,42 @@ describe('what a Resolution records', () => {
         position: 3,
       },
     ])
+  })
+
+  it('records how many entries were not Tracks', async () => {
+    await createPlaylist('stub:playlist:counted-in-d1')
+    await resolvePlaylist('stub:counted-in-d1')
+
+    const row = await env.DB.prepare('SELECT skipped FROM playlists WHERE id = ?')
+      .bind('stub:counted-in-d1')
+      .first<{ skipped: number | null }>()
+
+    // The one part of a snapshot that could not be reconstructed from anywhere
+    // else, which is why migration 0004 put it here. Everything around it --
+    // the Version, the title, the Tracks -- D1 already held; `skipped` lived
+    // only inside the KV document, so a rebuild had to invent it. See #25.
+    expect(row?.skipped).toBe(1)
+  })
+
+  it('records it again when a later Resolution finds nothing changed', async () => {
+    await createPlaylist('stub:playlist:counted-again')
+
+    // The first delivery writes the snapshot and cannot move the row, so the
+    // second takes the unchanged branch -- the one that writes no snapshot and
+    // no membership. A count written only on the other branch would leave this
+    // Playlist unrebuildable for ever, which is the same hole `title` had
+    // before it was written on both.
+    await expect(
+      resolvePlaylist('stub:counted-again', { DB: refusingUpdates(env.DB) }),
+    ).rejects.toThrow()
+
+    await resolvePlaylist('stub:counted-again')
+
+    const row = await env.DB.prepare('SELECT skipped FROM playlists WHERE id = ?')
+      .bind('stub:counted-again')
+      .first<{ skipped: number | null }>()
+
+    expect(row?.skipped).toBe(1)
   })
 
   it('lets two Playlists hold the same Track', async () => {

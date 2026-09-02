@@ -109,11 +109,19 @@ export const resolve = async (env: Env, id: PlaylistId): Promise<void> => {
     // own read of the Playlist, which happened whether or not anything else
     // moved. Writing it only on the path below would leave a Playlist that never
     // changes again holding the empty column it has held since migration 0001.
-    await markResolved(env.DB, id, { version: served.version, title: contents.title, at })
+    //
+    // `skipped` rides along for the same reason and with more at stake: it is
+    // what lets the snapshot be rebuilt at all, and a Playlist that only ever
+    // reaches this branch -- one whose Resolution wrote the snapshot and could
+    // not move the row -- would otherwise never record it.
+    await markResolved(env.DB, id, {
+      version: served.version,
+      title: contents.title,
+      skipped: contents.skipped,
+      at,
+    })
     return
   }
-
-  await recordTracks(env.DB, id, playlist.source, contents.tracks, at)
 
   // Past both records of where this Playlist has got to. Head is what has been
   // *served*; the row is what has been *acknowledged*, and it lags whenever an
@@ -124,8 +132,20 @@ export const resolve = async (env: Env, id: PlaylistId): Promise<void> => {
   //
   // A Playlist with neither is on its first Resolution, and gets Version 1:
   // Pending had none.
+  //
+  // Named before the membership is written rather than after, because the
+  // membership is stamped with it: these rows are about to become what this
+  // Version means, and the stamp is how a rebuild later tells that they still
+  // are.
   const version = Math.max(served?.version ?? 0, playlist.version) + 1
 
+  await recordTracks(env.DB, id, playlist.source, contents.tracks, at, version)
+
   await writeSnapshot(env.CACHE, id, version, contents)
-  await markResolved(env.DB, id, { version, title: contents.title, at })
+  await markResolved(env.DB, id, {
+    version,
+    title: contents.title,
+    skipped: contents.skipped,
+    at,
+  })
 }
