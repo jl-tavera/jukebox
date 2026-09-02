@@ -1,4 +1,5 @@
 import type { PlaylistId } from '@jukebox/schema'
+import { TRACK_COLUMN_NAMES, type TrackRow } from './migrations'
 import type { Mirror } from './mirror'
 import type { MirrorStatus } from './tracking'
 
@@ -14,6 +15,14 @@ import type { MirrorStatus } from './tracking'
  * Every row is mapped to camelCase on the way out, so that a column renamed in
  * a migration is renamed in one file rather than in every command that prints
  * it. That is the same boundary `tracking.ts` keeps in the other direction.
+ *
+ * Since #72's C4 the snake_case half is not spelled here either. The row type
+ * is `migrations.ts`'s `TrackRow` and the projection is built from the column
+ * names declared beside it, so both stand next to the `CREATE TABLE` a test
+ * holds them against. What stays here is the mapping itself, which is not
+ * mechanical -- `artists` changes type on the way through and `playlist_id` is
+ * dropped -- and the camelCase names. ADR-0005 keeps that shape the CLI's own
+ * rather than the API contract's, so it is spelled where it is rendered.
  */
 
 /**
@@ -157,19 +166,6 @@ export const playlistNamed = (mirror: Mirror, reference: string): MirroredPlayli
   return row === null ? null : asPlaylist(row)
 }
 
-type TrackRow = {
-  track_id: string
-  title: string
-  artists: string
-  album: string | null
-  duration_ms: number | null
-  isrc: string | null
-  cover_image_url: string | null
-  position: number
-  added_at: number
-  removed_at: number | null
-}
-
 /**
  * What one Playlist holds, in two lists: the Tracks its Source still lists, and
  * the Removed ones whose rows the Mirror keeps.
@@ -204,12 +200,16 @@ export type MirroredTracks = { tracks: MirroredTrack[]; removed: MirroredTrack[]
  * The partial index answers neither half of this, and that is expected. It
  * covers the present-only read `applySnapshot` makes on every Sync, which is the
  * hot one; this runs when a person asks.
+ *
+ * The projection is every column rather than the ten that are read, because
+ * there is one declaration of them and a subset here would be a second.
+ * `playlist_id` comes back for that reason and `asTrack` drops it: one TEXT per
+ * row, on the read whose own point is that a person is waiting for it.
  */
 export const mirroredTracks = (mirror: Mirror, id: PlaylistId): MirroredTracks => {
   const rows = mirror
     .query<TrackRow, [PlaylistId]>(
-      `SELECT track_id, title, artists, album, duration_ms, isrc, cover_image_url,
-              position, added_at, removed_at
+      `SELECT ${TRACK_COLUMN_NAMES.join(', ')}
          FROM tracks
         WHERE playlist_id = ?
         ORDER BY removed_at IS NOT NULL, position, track_id`,
