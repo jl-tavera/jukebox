@@ -8,8 +8,8 @@
  * The wordmark. **Generated - do not edit the literal below by hand.**
  *
  * Written from the banner at the top of docs/design/DESIGN.md by
- * `bun run --cwd cli generate:wordmark`, which #60 added and which SITE.md 03
- * had described for some time before it existed. CI regenerates and diffs, so an
+ * `bun run --cwd cli generate:wordmark`, which #60 added and which SITE.md 03 had
+ * described for some time before it existed. CI regenerates and diffs, so an
  * edit made here is an edit CI will undo: change the document, run the
  * generator, commit what it wrote. Two of these lines carry trailing spaces and
  * hand-copying has already dropped them once, which is the whole reason nobody
@@ -24,8 +24,14 @@
  * note about terminal width where this one has a note about fonts - which is
  * why the generator splices the literal rather than writing the file. Both are
  * pinned to LF, and so is the document, because the generator counts columns.
+ *
+ * It opens with a blank row, which is #68's and is for the CLI: its header is
+ * pinned to the top of a terminal and the art sat flush against the edge. This
+ * page centres the mark already and drops that row at the render site - see the
+ * note in app/page.tsx, which is about hydration rather than taste.
  */
-export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
+export const WORDMARK = `
+     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
      ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
 ███  ███ ███   ███ ███▀▀██▄  ███▀▀▀   ███▀▀▀█▄ ███    ███   ▄███▄  
 ███▄▄███ ███▄▄▄███ ███   ███ ███▄▄▄▄▄ ███▄▄▄██ ▀███▄▄███▀ ▄███▀███▄

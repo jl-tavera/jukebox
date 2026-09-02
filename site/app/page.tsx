@@ -10,7 +10,15 @@ export default function Home() {
         <ThemeToggle />
       </div>
 
-      <pre className="u-art" role="img" aria-label="Jukebox">{WORDMARK}</pre>
+      {/* The banner opens with a blank row, which #68 added for the CLI: its
+          header is pinned to the top of a terminal and the art sat flush
+          against the edge. Nothing here needs it -- this page centres the mark
+          in the viewport already -- and a browser drops a newline immediately
+          after a `<pre>` start tag, so it would not show even if it were
+          wanted. It is dropped rather than left because this is a static
+          export: the served HTML would lose it while React's render kept it,
+          which is a hydration mismatch waiting to be reported as a bug. */}
+      <pre className="u-art" role="img" aria-label="Jukebox">{WORDMARK.replace(/^\n/, '')}</pre>
 
       <p className="mt-10 text-[clamp(1rem,2.8vw,1.625rem)] sm:mt-14">
         {hero.tagline}
