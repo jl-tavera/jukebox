@@ -82,7 +82,22 @@ const OPENS = 'export const WORDMARK = `'
 /** What opens and closes the banner in the document. */
 const FENCE = '```'
 
-const ROWS = 5
+/**
+ * One empty row, then the art.
+ *
+ * The blank is #68's, and it is part of the banner so that the art and the room
+ * above it travel together -- a surface that wanted the mark would otherwise
+ * have to remember the gap. Two surfaces still decide for themselves, and
+ * neither is the art: `header.ts` gives the narrow *word* a matching row, and
+ * `page.tsx` drops this one because a browser would swallow it anyway. It is
+ * exempt from the width below and cannot be
+ * anything but empty: a row of 67 spaces would satisfy both rules while being
+ * exactly the trailing whitespace every file here warns about, and the first
+ * editor to save the document would silently take it away again.
+ */
+const BLANK_ROWS = 1
+const ART_ROWS = 5
+const ROWS = BLANK_ROWS + ART_ROWS
 const COLUMNS = 67
 
 /**
@@ -154,12 +169,27 @@ const banner = (): string[] => {
 const checked = (rows: string[]): string[] => {
   if (rows.length !== ROWS) {
     fail(
-      `${SOURCE} has ${rows.length} row(s) of wordmark, and must have ${ROWS}.`,
-      'The art is a rectangle. Anything else is a handful of ragged strings.',
+      `${SOURCE} has ${rows.length} row(s) of wordmark, and must have ${ROWS}:`,
+      `one blank row and then ${ART_ROWS} of art. The art is a rectangle, and anything`,
+      'else is a handful of ragged strings.',
     )
   }
 
-  for (const [index, row] of rows.entries()) {
+  // Split off rather than skipped inside the loop, so the width rule below has
+  // nothing to except and reads as the flat statement it is.
+  const [blank, ...art] = rows
+
+  if (blank !== '') {
+    fail(
+      `${SOURCE}'s wordmark opens with ${[...blank].length} column(s), and must open with an empty row.`,
+      'The blank above the art is part of the banner. Spaces would read the same here',
+      'and be taken by the first thing that trims trailing whitespace.',
+    )
+  }
+
+  for (const [offset, row] of art.entries()) {
+    const index = offset + BLANK_ROWS
+
     // Before the width, because it is what lets the width be counted this way.
     if (!BLOCKS.test(row)) {
       const stray = [...row].find((character) => !BLOCKS.test(character))!
@@ -253,7 +283,7 @@ const splices = [SITE, CLI]
 
 for (const { where, text } of splices) writeFileSync(at(where), text)
 
-const shape = `${ROWS} rows of ${COLUMNS}`
+const shape = `a blank row and ${ART_ROWS} of ${COLUMNS}`
 
 console.log(
   splices.length === 0

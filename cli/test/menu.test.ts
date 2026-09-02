@@ -232,8 +232,12 @@ const anywhere = ({ stdout, locations }: Run): string =>
  * `header` brackets each row in its own escapes rather than wrapping the block,
  * so the row stays one contiguous run of bytes and this matches whether or not
  * the run drew in colour. Nothing here has to strip escapes first.
+ *
+ * The first **non-empty** row, since #68 gave the mark a blank one to open
+ * with. Row zero is `''`, and every `toContain` below would pass on any output
+ * at all -- including none.
  */
-const ART = WORDMARK.split('\n')[0]!
+const ART = WORDMARK.split('\n').find((row) => row !== '')!
 
 /** The brand yellow `header` emits, and the only escape this file asserts about. */
 const YELLOW = '\x1b[38;2;255;212;0m'

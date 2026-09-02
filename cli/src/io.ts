@@ -57,9 +57,10 @@ export type Io = {
   stderrIsTty: boolean
   /**
    * How wide that someone's terminal is, for the one thing that has a natural
-   * width: #52's wordmark is 67 columns on every row, and a terminal narrower
-   * than that wraps each row onto the next until the mark is noise rather than
-   * a smaller mark.
+   * width: #52's wordmark is 67 columns on every row of art, and a terminal
+   * narrower than that wraps each row onto the next until the mark is noise
+   * rather than a smaller mark. The blank row it opens with since #68 is the
+   * one exception, and measures nothing.
    *
    * Here for the same reason the input stream is, and against the same
    * alternative: `Seams` is for paths the real program cannot reach, and the

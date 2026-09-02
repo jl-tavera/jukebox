@@ -2,10 +2,10 @@
  * The wordmark, and the one thing a terminal does with it that a page does not.
  *
  * **Generated. Do not edit the constant below by hand.** It is written from the
- * banner at the top of `docs/design/DESIGN.md` by `bun run --cwd cli
- * generate:wordmark`, and CI regenerates and diffs, so an edit made here is an
- * edit CI will undo. Change the document, run the generator, commit what it
- * wrote.
+ * banner at the top of `docs/design/DESIGN.md` by
+ * `bun run --cwd cli generate:wordmark`, and CI regenerates and diffs, so an edit made
+ * here is an edit CI will undo. Change the document, run the generator, commit
+ * what it wrote.
  *
  * Generated rather than shared: #50 settled that `schema/` is the client/server
  * contract and a piece of art is not that, and that one string does not earn a
@@ -13,7 +13,10 @@
  * explains a webfont fallback, and this one explains width -- which is why the
  * generator splices the literal rather than writing the file.
  *
- * **Sixty-seven columns, every row.** A page too narrow for the art clips it; a
+ * **Sixty-seven columns, every row of art.** The row it opens with is blank and
+ * is the exception: #68 put it there because #66 pins this to the top of a
+ * terminal, where the art otherwise sits hard against the edge. A page too
+ * narrow for the art clips it; a
  * terminal too narrow wraps every row onto the next, and the mark becomes noise
  * rather than a smaller mark. Below 67 columns something else is drawn instead,
  * which `header.ts` does. This file is the art at its natural width and carries
@@ -32,7 +35,8 @@
  * rather than only checking that two files agree -- two copies can be wrong
  * together, and were.
  */
-export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
+export const WORDMARK = `
+     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
      ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 
 ███  ███ ███   ███ ███▀▀██▄  ███▀▀▀   ███▀▀▀█▄ ███    ███   ▄███▄  
 ███▄▄███ ███▄▄▄███ ███   ███ ███▄▄▄▄▄ ███▄▄▄██ ▀███▄▄███▀ ▄███▀███▄

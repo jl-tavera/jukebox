@@ -20,9 +20,10 @@ import { WORDMARK } from './wordmark'
 /**
  * The art's natural width, and the whole of why there is a second rendering.
  *
- * Every row is exactly this. A terminal one column narrower wraps all five rows
- * onto five more, and the letterforms come apart into noise rather than into a
- * smaller mark.
+ * Every row of art is exactly this -- the blank one the mark opens with is the
+ * exception, and the only one. A terminal one column narrower wraps all five
+ * rows onto five more, and the letterforms come apart into noise rather than
+ * into a smaller mark.
  *
  * The number is written twice on purpose: `cli/scripts/generate-wordmark.ts`
  * carries its own `COLUMNS = 67` and measures the banner against it before
@@ -64,10 +65,12 @@ const YELLOW = '\x1b[38;2;255;212;0m'
 const PLAIN = '\x1b[39m'
 
 /**
- * The two lines above the menu: the mark, and what this binary is.
+ * What sits above the menu: a blank row, the mark, and what this binary is.
  *
  * The version is a line under the wordmark rather than an entry in the menu,
- * because it is a fact rather than a task.
+ * because it is a fact rather than a task. The blank row above the mark is
+ * #68's, and #66 is why it is wanted: the header is pinned to the top of the
+ * screen now, so without it the art sits hard against the edge.
  *
  * Each row is bracketed on its own rather than the block being wrapped whole,
  * and not because of width -- an escape is zero columns either way. It is that
@@ -78,8 +81,17 @@ const PLAIN = '\x1b[39m'
  * it first.
  */
 export const header = (columns: number, version: string, colour: boolean): string => {
-  const mark = columns >= NATURAL ? WORDMARK : NARROW_MARK
-  const rows = mark.split('\n').map((row) => (colour ? YELLOW + row + PLAIN : row))
+  // The art carries its own blank row, out of the banner it is generated from.
+  // The word does not, and gets one here rather than in `wordmark.ts` -- that
+  // file is the art, and this is what stands in for the art where it will not
+  // fit. Without it a narrow terminal sits flush against the top of the screen
+  // while a wide one does not, which is the whole of what #68 was about.
+  const mark = columns >= NATURAL ? WORDMARK : '\n' + NARROW_MARK
+
+  // The blank row is left uncoloured. Bracketing nothing in a colour and a
+  // reset is two escapes that change nothing, on the one row nobody is meant to
+  // see.
+  const rows = mark.split('\n').map((row) => (colour && row !== '' ? YELLOW + row + PLAIN : row))
 
   return [...rows, `jukebox ${version}`].join('\n')
 }

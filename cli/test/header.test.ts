@@ -16,8 +16,19 @@ import { WORDMARK } from '../src/wordmark'
  * exactly one branch reachable from a suite.
  */
 
-/** The first row of the art: present when the wordmark was drawn, absent when the word was. */
-const ART = WORDMARK.split('\n')[0]!
+/**
+ * The first row of the art: present when the wordmark was drawn, absent when
+ * the word was.
+ *
+ * The first **non-empty** row, since #68 gave the mark a blank one to open
+ * with. Taking row zero would hand back `''`, which makes every `toContain`
+ * below assert nothing and makes the one `not.toContain` fail outright --
+ * every string contains the empty string.
+ */
+const ART = WORDMARK.split('\n').find((row) => row !== '')!
+
+/** How many rows of art there are, counted off the art rather than written down. */
+const ART_ROWS = WORDMARK.split('\n').filter((row) => row !== '').length
 
 /** What a truecolor escape naming the site's `--ink` looks like. */
 const YELLOW = '\x1b[38;2;255;212;0m'
@@ -42,6 +53,17 @@ describe('the wordmark at a terminal width', () => {
 
   it('draws the word on a very narrow terminal too', () => {
     expect(header(20, '0.1.0', false)).toContain(NARROW_MARK)
+  })
+
+  it('opens with a blank row at either width', () => {
+    // #68, and #66 is why it is wanted: the header is pinned to the top of the
+    // screen now, so without this the mark sits hard against the edge. Asserted
+    // at both widths because the art carries its own blank row out of the
+    // banner and the word is given one here -- two mechanisms, one result, and
+    // a narrow terminal that looked different from a wide one would be the bug.
+    for (const columns of [NATURAL, NATURAL - 1]) {
+      expect(header(columns, '0.1.0', false).split('\n')[0]).toBe('')
+    }
   })
 })
 
@@ -77,11 +99,19 @@ describe('colour', () => {
     // a terminal counts columns in printable characters, and art that measured
     // 67 uncoloured and something else coloured would wrap only for the people
     // who have colour.
-    const rows = header(NATURAL, '0.1.0', true)
-      .split('\n')
-      .slice(0, 5)
-      .map((row) => [...row.replaceAll(/\x1b\[[\d;]*m/g, '')].length)
+    const drawn = header(NATURAL, '0.1.0', true).split('\n')
+    const bare = (row: string): number => [...row.replaceAll(/\x1b\[[\d;]*m/g, '')].length
 
-    expect(rows).toEqual([NATURAL, NATURAL, NATURAL, NATURAL, NATURAL])
+    // The blank row first, then the art. Counted off `WORDMARK` rather than
+    // written out, so a sixth row of art would be measured rather than skipped.
+    expect(bare(drawn[0]!)).toBe(0)
+    expect(drawn.slice(1, 1 + ART_ROWS).map(bare)).toEqual(new Array(ART_ROWS).fill(NATURAL))
+  })
+
+  it('leaves the blank row genuinely empty', () => {
+    // Bracketing nothing in a colour and a reset is two escapes that change
+    // nothing on a row nobody is meant to see -- and it would stop the row
+    // being `''` for anything that measures it, this file included.
+    expect(header(NATURAL, '0.1.0', true).split('\n')[0]).toBe('')
   })
 })
