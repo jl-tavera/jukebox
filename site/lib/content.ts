@@ -5,21 +5,25 @@
  */
 
 /**
- * The wordmark, copied byte-for-byte from the banner at the top of
- * docs/design/DESIGN.md. Generated, never hand-typed: two of these lines
- * carry trailing spaces and hand-copying has already dropped them once.
+ * The wordmark. **Generated - do not edit the literal below by hand.**
+ *
+ * Written from the banner at the top of docs/design/DESIGN.md by
+ * `bun run --cwd cli generate:wordmark`, which #60 added and which SITE.md 03
+ * had described for some time before it existed. CI regenerates and diffs, so an
+ * edit made here is an edit CI will undo: change the document, run the
+ * generator, commit what it wrote. Two of these lines carry trailing spaces and
+ * hand-copying has already dropped them once, which is the whole reason nobody
+ * types this any more.
  *
  * Built entirely from Block Elements - full, half and quarter blocks
  * (U+2580-U+259F). Those glyphs fall outside a subsetted latin webfont, and
  * a per-glyph fallback with different metrics shears the art apart, which is
  * why the page uses the system monospace stack - see docs/design/SITE.md 03.
  *
- * The CLI carries the same five lines in `cli/src/wordmark.ts`, with a note
- * about terminal width where this one has a note about fonts. They are copies
- * rather than one import - #50 has the reasoning - and the two files' bytes
- * are compared in CI by `bun run --cwd cli check:wordmark`, so changing this
- * one alone fails. Change it here first, then copy it across whole. Both files
- * are pinned to LF, because the check counts columns.
+ * The CLI is written from the same banner into `cli/src/wordmark.ts`, with a
+ * note about terminal width where this one has a note about fonts - which is
+ * why the generator splices the literal rather than writing the file. Both are
+ * pinned to LF, and so is the document, because the generator counts columns.
  */
 export const WORDMARK = `     ███ ███   ███ ███   ███ ████████ ██████▄   ▄██████▄  ███▄ ▄███
      ███ ███   ███ ███  ▄██▀ ███      ███  ▐█▌ ███▀  ▀███  ▀█████▀ 

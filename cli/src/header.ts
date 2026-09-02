@@ -5,9 +5,10 @@ import { WORDMARK } from './wordmark'
  *
  * Separate from `wordmark.ts`, which says of itself that it is the art at its
  * natural width and "carries no escape sequences, so that the width stays
- * countable". `cli/scripts/check-wordmark.ts` reads that file's bytes and
- * compares them to the site's, so everything a terminal needs and a page does
- * not belongs on this side of the line.
+ * countable". That file is generated from the banner in `DESIGN.md` and its
+ * bytes are what CI diffs, so everything a terminal needs and a page does not
+ * belongs on this side of the line -- and nothing on that side may be typed by
+ * hand.
  *
  * Pure, and handed its three answers rather than asking for them. Width comes
  * off `Io`, which is why the narrow branch is reachable from a test that drives
@@ -23,12 +24,12 @@ import { WORDMARK } from './wordmark'
  * onto five more, and the letterforms come apart into noise rather than into a
  * smaller mark.
  *
- * The number is written twice on purpose: `check-wordmark.ts` carries its own
- * `COLUMNS = 67` and measures the art on disk against it. That check reads
- * bytes rather than importing anything -- its docblock explains why -- so a
- * shared constant would have to be imported by the one file that must not
- * import. Two copies of a number that has never moved, and a check that fails
- * loudly if it ever does.
+ * The number is written twice on purpose: `cli/scripts/generate-wordmark.ts`
+ * carries its own `COLUMNS = 67` and measures the banner against it before
+ * writing it anywhere. That script reads bytes rather than importing anything
+ * -- its docblock explains why -- so a shared constant would have to be
+ * imported by the one file that must not import. Two copies of a number that
+ * has never moved, and a generator that fails loudly if it ever does.
  */
 export const NATURAL = 67
 
