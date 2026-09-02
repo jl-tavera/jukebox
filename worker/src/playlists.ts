@@ -82,6 +82,45 @@ export const readStatusAndVersion = async (
 }
 
 /**
+ * What a snapshot needs beyond its Tracks, for a Version that has to be rebuilt
+ * because the cache no longer holds it.
+ *
+ * Three of the four can be `null`, and each `null` is a refusal rather than a
+ * gap to paper over.
+ *
+ * `skipped` is absent for a Playlist resolved before migration 0004 added the
+ * column. It is the one part of a snapshot nothing else in D1 could
+ * reconstruct, so without it this Version cannot be rebuilt honestly.
+ *
+ * `membershipVersion` is which Version the `playlist_tracks` rows reflect,
+ * which is not the same question as which Version the Playlist is serving.
+ * Absent when those rows reflect no Version anybody can name -- see migration
+ * 0004 for the two ways that happens.
+ */
+export interface ResolvedPlaylist {
+  version: number
+  title: string | null
+  skipped: number | null
+  membershipVersion: number | null
+}
+
+/** What the row says the Playlist was last resolved to, or `undefined` for none. */
+export const readResolved = async (
+  db: D1Database,
+  id: PlaylistId,
+): Promise<ResolvedPlaylist | undefined> => {
+  const row = await db
+    .prepare(
+      `SELECT version, title, skipped, membership_version AS membershipVersion
+         FROM playlists WHERE id = ?`,
+    )
+    .bind(id)
+    .first<ResolvedPlaylist>()
+
+  return row ?? undefined
+}
+
+/**
  * What a Resolution needs to know about a Playlist before it starts. The queue
  * message carries only an id, so this is where a Resolution learns which Source
  * to reach and which Version it is moving on from.
@@ -106,16 +145,21 @@ export const readTracked = async (
 }
 
 /**
- * Moves a Playlist to the Version a Resolution just wrote, and to the name it
- * just read.
+ * Moves a Playlist to the Version a Resolution just wrote, to the name it just
+ * read, and to the count of what it could not make Tracks of.
  *
  * One statement, because they are one row catching up to one Resolution. A
  * title written by a second statement could be the one a different attempt
  * read, and a title written by no statement at all would leave the column that
  * has had a name to hold since migration 0001 still holding nothing.
  *
- * Named rather than three positionals: `version` and `at` are both numbers,
- * and nothing but the argument's place would say which was which.
+ * `skipped` is here rather than anywhere else for a reason the other three do
+ * not have: it is the only part of a snapshot D1 could not otherwise
+ * reconstruct, so a Version recorded without it is a Version nothing can
+ * rebuild. Migration 0004 says the rest.
+ *
+ * Named rather than four positionals: `version`, `skipped` and `at` are all
+ * numbers, and nothing but the argument's place would say which was which.
  *
  * Called last, after the snapshot is written and head names it. A row saying
  * `ok` at a Version the cache cannot serve would be a Playlist the Tracks
@@ -125,14 +169,15 @@ export const readTracked = async (
 export const markResolved = async (
   db: D1Database,
   id: PlaylistId,
-  resolved: { version: number; title: string | null; at: number },
+  resolved: { version: number; title: string | null; skipped: number; at: number },
 ): Promise<void> => {
   await db
     .prepare(
-      `UPDATE playlists SET version = ?, title = ?, status = 'ok', last_refreshed_at = ?
-       WHERE id = ?`,
+      `UPDATE playlists
+          SET version = ?, title = ?, skipped = ?, status = 'ok', last_refreshed_at = ?
+        WHERE id = ?`,
     )
-    .bind(resolved.version, resolved.title, resolved.at, id)
+    .bind(resolved.version, resolved.title, resolved.skipped, resolved.at, id)
     .run()
 }
 

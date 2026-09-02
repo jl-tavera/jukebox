@@ -228,6 +228,34 @@ export const spotifyRefusing = (status: number): StandingIn => {
 }
 
 /**
+ * One page offering the captured entries at `chosen`, in the order given.
+ *
+ * The same construction as `pagesOf` below and for the same reason -- real
+ * captured entries, arranged in memory and never written to disk -- answering a
+ * different question. That one is for a playlist longer than any capture; this
+ * one is for a Source that says something *different* the second time it is
+ * read, which is what a Resolution after the first has to be right about:
+ * which entries a Playlist holds, and at which positions.
+ *
+ * Indices rather than ids, so a test reads as an arrangement of the same five
+ * entries rather than as a list of base62 that has to be checked against the
+ * capture to be understood.
+ */
+export const pageOffering = (...chosen: readonly number[]): ItemsResponse => ({
+  items: chosen.map((index): PlaylistEntry => {
+    const entry = onePage.items[index] as unknown as PlaylistEntry | undefined
+
+    // Loudly, for `recording`'s reason: a stand-in that quietly offers four
+    // entries where a test asked for five would report the mistake as whatever
+    // the assertion happened to be about.
+    if (entry === undefined) throw new Error(`no captured entry at ${index}`)
+
+    return structuredClone(entry)
+  }),
+  next: null,
+})
+
+/**
  * `entries` playlist entries, cut into pages the way Spotify cuts them.
  *
  * Constructed in memory and never written to disk. Every file in this directory
