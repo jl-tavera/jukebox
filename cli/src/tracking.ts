@@ -1,5 +1,6 @@
 import type { ErrorCode, PlaylistId, PlaylistTracks } from '@jukebox/schema'
 import { folderFor } from './folders'
+import { TRACK_COLUMN_NAMES, type TrackRow } from './migrations'
 import type { Mirror } from './mirror'
 
 /**
@@ -171,7 +172,7 @@ export const applySnapshot = (
   return mirror.transaction((): Applied => {
     const before = new Map(
       mirror
-        .query<{ track_id: string; title: string }, [PlaylistId]>(
+        .query<Pick<TrackRow, 'track_id' | 'title'>, [PlaylistId]>(
           'SELECT track_id, title FROM tracks WHERE playlist_id = ? AND removed_at IS NULL ORDER BY position',
         )
         .all(id)
@@ -186,11 +187,9 @@ export const applySnapshot = (
       id,
     ])
 
-    const upsert = mirror.prepare(
-      `INSERT INTO tracks (
-         playlist_id, track_id, title, artists, album, duration_ms, isrc,
-         cover_image_url, position, added_at, removed_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+    const upsert = mirror.prepare<void, [TrackRow]>(
+      `INSERT INTO tracks (${TRACK_COLUMN_NAMES.join(', ')})
+       VALUES (${TRACK_COLUMN_NAMES.map((column) => `$${column}`).join(', ')})
        ON CONFLICT (playlist_id, track_id) DO UPDATE SET
          title = excluded.title,
          artists = excluded.artists,
@@ -215,18 +214,29 @@ export const applySnapshot = (
       // `added_at` is only ever written by the insert half. A Track that left and
       // came back keeps the moment it first joined: its row is that Track's whole
       // history in this Playlist, and the primary key means there is one of them.
-      upsert.run(
-        id,
-        trackId,
-        track.title,
-        JSON.stringify(track.artists),
-        track.album,
-        track.durationMs,
-        track.isrc,
-        track.coverImageUrl,
-        track.position,
-        at,
-      )
+      //
+      // Named rather than positional, so the eleven values are matched to the
+      // columns by SQLite instead of by the order they are written in. Both
+      // halves are checked: TypeScript against `TrackRow` because this is a
+      // fresh object literal, and `strict: true` at run time, which throws on
+      // a parameter the statement asked for and did not get.
+      //
+      // `removed_at` was the literal NULL in the VALUES and is a bound null
+      // now. Same row; the update half below still says it in SQL, because
+      // there it is undoing a Removal rather than declaring one.
+      upsert.run({
+        playlist_id: id,
+        track_id: trackId,
+        title: track.title,
+        artists: JSON.stringify(track.artists),
+        album: track.album,
+        duration_ms: track.durationMs,
+        isrc: track.isrc,
+        cover_image_url: track.coverImageUrl,
+        position: track.position,
+        added_at: at,
+        removed_at: null,
+      })
     }
 
     recordResolved(mirror, id, snapshot, at)
