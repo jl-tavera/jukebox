@@ -1,3 +1,5 @@
+import type { PlaylistId } from '@jukebox/schema'
+
 /**
  * The Mirror's schema, one step at a time.
  *
@@ -153,3 +155,93 @@ export const MIGRATIONS: Migration[] = [
 
 /** The version a Mirror this binary created is at. */
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version
+
+/**
+ * A `tracks` row, once every step above has run.
+ *
+ * Here rather than in `tracking.ts` or `reading.ts` because neither of those
+ * authors it. `MirrorStatus` lives beside its writes because `tracking.ts` is the
+ * only thing that can invent one of those four strings; a column name is invented
+ * by the `CREATE TABLE` above and merely quoted by both halves, so declaring it in
+ * one of them would make the other import the shape of its own table from a peer.
+ *
+ * The forcing function is the other half of the reason. Whoever adds a column is
+ * editing this file, and a declaration in this file is one they cannot miss.
+ * `SCHEMA_VERSION` puts a fact about the shipped schema in this same place, but
+ * it is a weaker precedent than it looks: that one is computed from the steps
+ * and this one is written by hand, which is exactly the gap the check covers.
+ */
+export type TrackRow = {
+  playlist_id: PlaylistId
+  track_id: string
+  title: string
+  /** JSON array, always an array. `reading.ts` parses it. */
+  artists: string
+  album: string | null
+  duration_ms: number | null
+  isrc: string | null
+  cover_image_url: string | null
+  position: number
+  added_at: number
+  removed_at: number | null
+}
+
+/** `true` where the column may hold NULL, which is `TrackRow`'s own answer read back. */
+type NullableByColumn = { [C in keyof TrackRow]: null extends TrackRow[C] ? true : false }
+
+/**
+ * The same eleven columns the `CREATE TABLE` above declares, said a second time.
+ *
+ * **This is a second statement of one fact. It generates nothing and is generated
+ * from nothing, and what makes that safe is that the two are compared** -- by the
+ * `pragma_table_info` check in `mirror.test.ts`, against a Mirror the migrations
+ * actually built. Anybody reading this and reaching for the obvious tidy-up
+ * should stop there: the step above cannot be generated from this, because a step
+ * that has shipped is never edited and this declaration moves every time the
+ * table does.
+ *
+ * An object rather than a list of names, and the mapped type is the point. Every
+ * key of `TrackRow` must appear, exactly once, with the nullability `TrackRow`
+ * already gives it -- so a column added to the type and forgotten here will not
+ * compile. A `readonly string[]` with `satisfies` would only check the other
+ * direction, and the column nobody wired up is precisely the one that reads back
+ * `undefined`.
+ *
+ * Names and their order are most of the job. Nullability is here because it is
+ * the part nothing else is guaranteed to hold. SQLite resolves names when a
+ * statement is prepared, which is coverage rather than a typecheck; and `tsc`
+ * objects to a nullability lie only where the value bound into the column is
+ * itself nullable. That happens to cover all five today, because `tracking.ts`
+ * binds `album`, `isrc`, `duration_ms` and `cover_image_url` straight off the
+ * snapshot and `removed_at` as a literal null. It stops covering the first
+ * column the table lets hold NULL that this CLI always writes a value into --
+ * which is the one a read would go on promising until the row without it
+ * arrives.
+ *
+ * Affinity is not held here. TEXT declared where the table says INTEGER is the
+ * drift this does not see, and the check below should not be read for more
+ * than it asserts: the names, their order, and which of them may be NULL.
+ */
+export const TRACK_COLUMN_MAY_BE_NULL: NullableByColumn = {
+  playlist_id: false,
+  track_id: false,
+  title: false,
+  artists: false,
+  album: true,
+  duration_ms: true,
+  isrc: true,
+  cover_image_url: true,
+  position: false,
+  added_at: false,
+  removed_at: true,
+}
+
+/**
+ * The column names, in the table's own order.
+ *
+ * Insertion order of the object above, which is the order the `CREATE TABLE`
+ * declares and the order the check asserts -- so a projection built from this
+ * lines up with `pragma_table_info` without anybody sorting anything. The cast is
+ * what `Object.keys` always needs; the mapped type is what makes it true.
+ */
+export const TRACK_COLUMN_NAMES = Object.keys(TRACK_COLUMN_MAY_BE_NULL) as (keyof TrackRow)[]

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { Database } from 'bun:sqlite'
 import { afterAll, describe, expect, it } from 'bun:test'
 import { MIRROR_FILE } from '../src/mirror'
-import { MIGRATIONS, SCHEMA_VERSION } from '../src/migrations'
+import { MIGRATIONS, SCHEMA_VERSION, TRACK_COLUMN_MAY_BE_NULL } from '../src/migrations'
 import type { Locations } from '../src/paths'
 import { jukebox, mirrorOf, oneObject, removeHomes, temporaryHome, type Run } from './harness'
 import { servingItsOwnApi, snapshot, stopServing, track } from './server'
@@ -92,6 +92,34 @@ describe('the Mirror, on first use', () => {
     // nothing fills is the mistake the worker's own migrations named, and this is
     // the release with the least excuse to make it.
     expect(tables(run)).toEqual(['playlists', 'schema_version', 'tracks'])
+  })
+
+  it('holds exactly the Tracks columns the code is written against', async () => {
+    const run = await adding()
+
+    const table = mirrorOf(run, (mirror) =>
+      mirror
+        // `notnull` is quoted because SQLite has a NOTNULL operator and reads the
+        // bare word as one. `ORDER BY cid` is declaration order, asked for out
+        // loud rather than relied on.
+        .query<{ name: string; notnull: number }, []>(
+          `SELECT name, "notnull" FROM pragma_table_info('tracks') ORDER BY cid`,
+        )
+        .all()
+        .map((column) => [column.name, column.notnull === 0] as const),
+    )
+
+    // The link `TRACK_COLUMN_MAY_BE_NULL` would not otherwise have to the `CREATE TABLE`
+    // above it. Everything derived from that declaration -- the SELECT in
+    // `reading.ts`, the INSERT and its bound parameters in `tracking.ts` -- is
+    // held against the table itself by this one comparison.
+    //
+    // Names alone would prove little: SQLite checks those when a statement is
+    // prepared, and every one of those statements is prepared somewhere in this
+    // suite. Nullability is the half nothing checks -- a column that may be NULL
+    // read back through a type that says it may not is silent, and wrong only
+    // once the row that proves it exists.
+    expect(table).toEqual(Object.entries(TRACK_COLUMN_MAY_BE_NULL))
   })
 
   it('carries no column for anything nothing can produce', async () => {
