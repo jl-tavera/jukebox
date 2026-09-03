@@ -1,0 +1,32 @@
+{
+  // The tests need `bun:test`, and Bun's types cannot share a program with
+  // `lib.dom` -- both declare `DOMException`, `fetch` and a dozen other web
+  // globals, and the duplicates are errors rather than a nuisance.
+  //
+  // That conflict is why this file exists, and it is doing a second job worth
+  // more than the first. The session module is compiled here with no DOM lib at
+  // all, so a module reaching for `document` -- or for `navigator.clipboard`,
+  // which hangs off it -- fails to compile rather than failing review.
+  //
+  // **Timers are not covered, and nothing here can cover them.** #82 asks for
+  // no DOM, no timers and no clipboard; this catches two of the three. Bun
+  // declares `setTimeout` itself, as every runtime does, so there is no lib to
+  // withhold that would make one an error. That third is held by review and by
+  // the test asserting the session computes the same answer twice -- a module
+  // that had scheduled something would still have to show it here to matter.
+  //
+  // `schema/tsconfig.test.json` is the same shape for the same reason: compile
+  // the thing bare, because that is the only check that catches it reaching for
+  // an ambient global.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "lib": ["ES2022"]
+  },
+  // Both restated rather than inherited. `include` above is the whole app, and
+  // `exclude` above names `test` precisely so the DOM config never compiles a
+  // file importing `bun:test`; inheriting either here would leave this project
+  // with nothing to compile.
+  "include": ["test/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "bun test",
     "check:discovery": "bun run scripts/check-discovery.ts",
     "check:installers": "bun run scripts/check-installers.ts",
     "deploy": "bun run build && bun run check:discovery && bun run check:installers && wrangler deploy"
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@jukebox/schema": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
+    "@types/bun": "^1.4.0",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
