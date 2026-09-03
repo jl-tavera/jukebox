@@ -13,6 +13,13 @@ name: site
 # The art is not edited in `site/lib/content.ts` at all any more: an edit there
 # is one CI will undo. Change the document and run the generator.
 #
+# `cli/package.json` is named for the mirror of that reason. Since #82 the boot
+# on the landing page prints `jukebox <version>` read from that file, the way
+# `cli/src/version.ts` reads it -- so a release bump changes what this page
+# renders, and without naming the file here it would change it without ever
+# running these checks. One file rather than `cli/**`, so the rest of the CLI's
+# churn still stays out; the same shape cli.yml uses in the other direction.
+#
 # GitHub Actions does not expand YAML anchors, so the list is written twice.
 on:
   push:
@@ -20,6 +27,7 @@ on:
     paths:
       - 'site/**'
       - 'schema/**'
+      - 'cli/package.json'
       - '.github/workflows/site.yml'
       - 'package.json'
       - 'bun.lock'
@@ -27,6 +35,7 @@ on:
     paths:
       - 'site/**'
       - 'schema/**'
+      - 'cli/package.json'
       - '.github/workflows/site.yml'
       - 'package.json'
       - 'bun.lock'
@@ -40,6 +49,18 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - run: bun run --cwd site typecheck
+
+      # The session module, driven directly. #82 brought `bun test` here for it:
+      # the module is pure -- no DOM, no timers, no clipboard -- so it runs in
+      # milliseconds and needs no browser. `typecheck` above compiles it a
+      # second time with Bun's types and no DOM lib, which turns the DOM half of
+      # that into a compiler error; timers are not reachable that way, because
+      # Bun declares `setTimeout` itself. See site/tsconfig.test.json.
+      #
+      # What needs pixels is not here and must not drift here: five wordmark
+      # rows measuring the same width, focus against hover, touch targets and
+      # contrast are #83's Playwright harness.
+      - run: bun run --cwd site test
 
       # The first workflow here that builds, because what needs checking is the
       # build's output rather than its source. The discovery document is read
