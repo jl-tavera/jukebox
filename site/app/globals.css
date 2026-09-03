@@ -8,6 +8,11 @@
  * Two colours that swap places. Yellow is the ground, not an accent, so
  * there is no accent token to keep in step with anything. No literal hex
  * belongs anywhere but this block.
+ *
+ * The page is a terminal now (ADR-0010) and the palette is untouched by
+ * that, deliberately: the prompt library the CLI uses paints its rail
+ * cyan and its radio green, and the page reproduces the rail's shape
+ * and none of its colour. Nothing below adds a third colour.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -22,6 +27,29 @@
   --dim: #a89000;
 }
 
+/* ------------------------------------------------------------------ *
+ * The character grid.
+ *
+ * A terminal has two units and this page has the same two: one cell
+ * across, one line down. `--cell` is the only text size on the page --
+ * hierarchy comes from weight and colour, never from size, and the
+ * wordmark is the single exception because it is art rather than text.
+ *
+ * `--row` is a length rather than `1lh` so that a blank row can be given
+ * a height without depending on `lh` support, and because a `calc` of
+ * two properties declared three lines above says where it came from.
+ *
+ * SITE.md 07 records that a `--line` token was carried once and deleted
+ * for having no consumer. This one has two: `--row` below it, and the
+ * leading on `body`.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --cell: clamp(0.8125rem, 0.65rem + 0.5vw, 0.9375rem);
+  --line: 1.5;
+  --row: calc(var(--cell) * var(--line));
+}
+
 @theme inline {
   --color-ground: var(--ground);
   --color-ink: var(--ink);
@@ -29,9 +57,18 @@
 
   /* The visitor's own terminal font. A subsetted webfont risks dropping the
    * block-element glyphs the wordmark is built from, and a per-glyph fallback
-   * with different metrics shatters the art. */
+   * with different metrics shatters the art. #81 replaces this with Monaspace
+   * Neon, vendored and subset with the Block Elements whitelisted, and checked
+   * by reading the built export rather than the source. */
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo,
     Consolas, "DejaVu Sans Mono", monospace;
+
+  /* The human's voice against the machine's - the tagline and the lede, which
+   * a person wrote, against everything the binary printed. One stack today, so
+   * the split is carried by the `#` sigil alone; #81 vendors Monaspace Argon
+   * here, which shares Neon's metrics exactly, so the voice changes without the
+   * grid moving a column. This is the only line that changes when it does. */
+  --font-prose: var(--font-mono);
 }
 
 @layer base {
@@ -43,6 +80,10 @@
     background-color: var(--ground);
     color: var(--ink);
     font-family: var(--font-mono);
+    /* One size and one leading for the whole page, set once at the root. Every
+     * ad-hoc `text-[...]` the hero carried is gone rather than replaced. */
+    font-size: var(--cell);
+    line-height: var(--line);
   }
 
   /* Inverted, the way a terminal selection is. */
@@ -58,30 +99,51 @@
 }
 
 @layer components {
-  /* The donate modal. No `display` utilities belong on the element - the
-   * dialog's own open/closed display behaviour has to survive. Padding sits
-   * on the inner wrapper so a click landing on the dialog itself is
-   * unambiguously a backdrop click. */
-  .u-dialog {
-    margin: auto;
-    padding: 0;
-    width: min(31rem, calc(100vw - 2.5rem));
-    border: 1px solid var(--ink);
-    background-color: var(--ground);
-    color: var(--ink);
-    font-family: var(--font-mono);
+  /* The session. Full-bleed and left-aligned, because a terminal centres
+   * nothing and the wordmark belongs top-left.
+   *
+   * The only inset on the page, and it is one character wide - `1ch` in a
+   * monospace face is exactly one cell. Every other horizontal offset is a
+   * space inside a row, written by the session module, which is what makes
+   * "every horizontal offset is a whole character" true of the strings rather
+   * than of a stylesheet nobody re-reads. */
+  .u-session {
+    padding-block: var(--row);
+    padding-inline: 1ch;
   }
 
-  /* ::backdrop sits in the top layer and cannot be relied on to inherit the
-   * theme custom properties, so this is a literal that reads correctly over
-   * both the yellow and the black ground. */
-  .u-dialog::backdrop {
-    background-color: rgb(0 0 0 / 0.6);
+  /* One row of the session.
+   *
+   * `pre-wrap` is load-bearing twice over: it keeps the two spaces after every
+   * rail glyph, which HTML would otherwise collapse and which are the whole of
+   * the widget's alignment, and it wraps a long row at the viewport instead of
+   * scrolling it sideways. A wrapped row continues at column zero, which is
+   * what a narrow terminal does - there is deliberately no hanging indent,
+   * because that would be a horizontal offset living somewhere other than in
+   * the string.
+   *
+   * `min-height` is what gives a blank row its one line. A blank row is the
+   * page's only vertical spacing mechanism; there is no margin anywhere. */
+  .u-row {
+    min-height: var(--row);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .u-prose {
+    font-family: var(--font-prose);
   }
 
   /* The wordmark. Sized so 67 characters always fit the viewport: monospace
    * advance is ~0.6em, so the block is ~40.2em wide. The 25px cap lands it
-   * at ~1005px on a wide screen. */
+   * at ~1005px on a wide screen.
+   *
+   * Left exactly as it was. SITE.md 03 warns that changing the art means
+   * rechecking these numbers, #81 changes the typeface underneath them and #83
+   * measures all five rows in a real browser - so this is not the ticket to
+   * move a clamp in. The consequence, accepted knowingly: on a wide screen the
+   * art is wider than the text below it, which is what "the wordmark is the
+   * only exception, art at its own 67-column clamp" costs. */
   .u-art {
     display: block;
     white-space: pre;
@@ -97,26 +159,5 @@
      * colour fringes along every internal seam. Grayscale AA removes them. */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-}
-
-/* ------------------------------------------------------------------ *
- * The only motion on the page.
- * ------------------------------------------------------------------ */
-
-@keyframes blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .u-cursor {
-    animation: blink 1.06s steps(1) infinite;
   }
 }
