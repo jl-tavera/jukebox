@@ -16,6 +16,8 @@ It exists because a landing page accumulates decisions that live nowhere else �
 | **`docs/design/SITE.md`** | **The site: information architecture, design system, copy deck.** |
 | `docs/adr/` | Individual decisions, with context and consequences. **Supersedes this document on conflict.** |
 
+**This document still describes the page as it stands, and that page is being replaced.** The landing page becomes a live terminal, and ADR-0010 (`docs/adr/0010-the-landing-page-is-a-terminal.md`) records why — §01's brief, §02, §03's typeface and motion rules, §06's floor and §07's non-goals are all reversed by it. #92 rewrites those sections. Until it lands, read the ADR for the decision and this document for the page that is deployed.
+
 ### How to read the confidence markers
 
 Same three markers `DESIGN.md` uses, for the same reason — a reader who cannot tell a constraint from a guess will treat the guess as a requirement:
@@ -153,6 +155,8 @@ Consolas, "DejaVu Sans Mono", monospace
 
 No webfont. This is a decision with a reason, not a shortcut.
 
+*Reversed by ADR-0010, once #81 lands. The failure described below is still the failure; what changes is that the coverage this argument assumes will be checked rather than taken on the font stack's word.*
+
 The wordmark is built entirely from Block Elements — full, half and quarter blocks (`█ ▄ ▀ ▐ ▌`, U+2580–U+259F). `next/font` subsets Google fonts to `latin`; if those code points fall outside the subset, the browser substitutes them per-glyph from a fallback with different metrics and **the art shears apart** — and it does so silently, on someone else's machine. Every system monospace font ships the full Block Elements range, because terminals need it. Rendering in the visitor's own terminal font is therefore both the most literal reading of "terminal style" and the only way to guarantee the wordmark holds.
 
 It also removes a whole class of failure: no font fetch, no layout shift, no build-time network dependency.
@@ -244,7 +248,7 @@ The first is the one to actually measure rather than eyeball — a per-glyph fon
 
 - **No analytics, no third-party scripts.** Nothing on this page needs a request to a party that is not Cloudflare. This is the rule that chose static wallet addresses over a hosted payment processor (§02) — a donation widget would have been the first thing to break it.
 - **No SSR, no server components requiring a runtime, no route handlers.** *(Invariant.)*
-- **No webfont.** See §03. If one arrives, the wordmark must be excluded from it.
+- **No webfont.** See §03. If one arrives, the wordmark must be excluded from it. *(Reversed by ADR-0010, once #81 lands: one arrives, and the wordmark is not excluded from it.)*
 - **No CMS.** Four strings do not need a content layer.
 - **No dependency on the API.** The page renders identically when `api.jukebox.dev` is down, because it never calls it.
 - **No component library sprawl.** There is no `components.json` and no `cn()` helper, because there are no shadcn components — a config file and a class-merging utility kept for a hypothetical future are two files that do nothing today. `shadcn init` regenerates both in one command the first time a component is genuinely wanted. `README.md`'s stack table still names shadcn/ui, and that stays true as intent.
