@@ -59,26 +59,53 @@ export const refusingToStore = (cache: KVNamespace): KVNamespace =>
   allBut(cache, 'put', () => () => Promise.reject(new Error('the cache stopped accepting writes')))
 
 /**
- * A statement that will answer a question and change nothing.
+ * `allBut` for a prepared statement: forwards every member, except those
+ * `instead` answers for.
  *
- * `bind` is proxied too, or the refusal would be dropped by the call that
- * supplies the values.
+ * `bind` is proxied too rather than forwarded, or the change would be dropped
+ * by the call that supplies the values -- which is every real use of a
+ * statement. That is load-bearing rather than tidy, the way the re-binding
+ * above is.
+ *
+ * `instead` is handed the target as well as the name, so a stand-in that wraps
+ * a member can still reach the one it is wrapping. It answers `undefined` for
+ * the members it does not mean to change.
  */
-const refusingToRun = (statement: D1PreparedStatement): D1PreparedStatement =>
+const statementBut = (
+  statement: D1PreparedStatement,
+  instead: (target: D1PreparedStatement, property: string) => Member | undefined,
+  onBind?: (values: unknown[]) => void,
+): D1PreparedStatement =>
   new Proxy(statement, {
     get: (target, property) => {
       if (property === 'bind') {
-        return (...values: unknown[]) => refusingToRun(target.bind(...values))
+        return (...values: unknown[]) => {
+          onBind?.(values)
+          return statementBut(target.bind(...values), instead, onBind)
+        }
       }
 
-      if (property === 'run') {
-        return () => Promise.reject(new Error('the database stopped accepting updates'))
-      }
+      const replacement = instead(target, String(property))
+      if (replacement !== undefined) return replacement
 
       const member = Reflect.get(target, property)
       return typeof member === 'function' ? member.bind(target) : member
     },
   })
+
+/** What a stand-in answers in place of a statement's own member. */
+type Member = (...args: unknown[]) => unknown
+
+/** The four ways a prepared statement is run, each of them one query. */
+const RUN = new Set(['run', 'all', 'first', 'raw'])
+
+/** A statement that will answer a question and change nothing. */
+const refusingToRun = (statement: D1PreparedStatement): D1PreparedStatement =>
+  statementBut(statement, (_target, property) =>
+    property === 'run'
+      ? () => Promise.reject(new Error('the database stopped accepting updates'))
+      : undefined,
+  )
 
 /**
  * A database that answers reads and writes Tracks, and cannot move a Playlist
@@ -149,3 +176,93 @@ export const missingTheFirstRead = (cache: KVNamespace): KVNamespace =>
  */
 export const missingTheSecondRead = (cache: KVNamespace): KVNamespace =>
   missingTheRead(cache, 2)
+
+/** D1's cap on a single bound string, in bytes. */
+const LONGEST = 2_000_000
+
+/**
+ * A database that holds a Resolution to the two D1 limits it can reach, and
+ * that Miniflare enforces neither of.
+ *
+ * The first is the thousand queries a Worker invocation is given, which apply
+ * to "each individual statement contained within a batch statement" -- so a
+ * write costing one statement per Track costs one query per Track. That is the
+ * gap issue #26 names: a Playlist too long to record passed this suite at any
+ * size and failed against the real thing, as a message delivered, thrown, and
+ * delivered again until it dead-lettered.
+ *
+ * The second is the 2 MB a single bound string may carry, which is the limit
+ * `recordTracks` cuts its documents to fit. Held here because nothing else
+ * could: the cutter is the one piece of that write with no other witness, and
+ * without this its size could be raised to anything and every test would go on
+ * passing.
+ *
+ * Charged where a query is *run*, never where it is prepared. `recordTracks`
+ * prepares a handful of templates and reuses each one, so charging at `prepare`
+ * would bill an invocation for statements it never issues -- and would report
+ * the fixed cost of the module as though it scaled. `bind` hands back the
+ * charging statement for `refusingToRun`'s reason: a charge dropped by the call
+ * that supplies the values is no charge at all.
+ *
+ * `spent` receives one entry per query, so its length is what D1 would have
+ * counted. Method names and the size of a value, never a value -- what these
+ * tests ask is how much work a Resolution costs, not which rows it wrote.
+ */
+export const holdingD1sLimits = (
+  db: D1Database,
+  budget: number,
+  spent: string[],
+): D1Database => {
+  const charge = (query: string, queries: number): void => {
+    for (let n = 0; n < queries; n += 1) spent.push(query)
+
+    if (spent.length > budget) {
+      throw new Error(
+        `D1 gives an invocation ${budget} queries; this one has asked for ${spent.length}`,
+      )
+    }
+  }
+
+  // Bytes rather than characters, because that is what D1 counts and what a
+  // title outside ASCII would spend more of than it looks like it should.
+  const measure = (values: unknown[]): void => {
+    for (const value of values) {
+      if (typeof value !== 'string') continue
+
+      const bytes = new TextEncoder().encode(value).length
+      if (bytes > LONGEST) {
+        throw new Error(`D1 caps a bound string at ${LONGEST} bytes; this one was ${bytes}`)
+      }
+    }
+  }
+
+  const charging = (statement: D1PreparedStatement): D1PreparedStatement =>
+    statementBut(
+      statement,
+      (target, property) => {
+        if (!RUN.has(property)) return undefined
+
+        const member = Reflect.get(target, property) as Member
+        return (...args: unknown[]) => {
+          charge(property, 1)
+          return member.apply(target, args)
+        }
+      },
+      measure,
+    )
+
+  // Two members change, so this is two of them wrapped rather than one: the
+  // inner stands in for `prepare`, the outer for `batch`, and each forwards
+  // everything else to what it was given.
+  const preparing = allBut(
+    db,
+    'prepare',
+    (target) => (sql: string) => charging(target.prepare(sql)),
+  )
+
+  return allBut(preparing, 'batch', (target) => (statements: D1PreparedStatement[]) => {
+    // What D1 charges for a batch: not one, but one per statement in it.
+    charge('batch', statements.length)
+    return target.batch(statements)
+  })
+}
