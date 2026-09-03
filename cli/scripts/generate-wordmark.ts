@@ -89,11 +89,14 @@ const FENCE = '```'
  * above it travel together -- a surface that wanted the mark would otherwise
  * have to remember the gap. Two surfaces still decide for themselves, and
  * neither is the art: `header.ts` gives the narrow *word* a matching row, and
- * `page.tsx` drops this one because a browser would swallow it anyway. It is
- * exempt from the width below and cannot be
- * anything but empty: a row of 67 spaces would satisfy both rules while being
- * exactly the trailing whitespace every file here warns about, and the first
- * editor to save the document would silently take it away again.
+ * the site's session module promotes this one into a line of its own, which is
+ * what a terminal shows and what keeps the art it hands a `<pre>` from opening
+ * with a newline the browser would swallow.
+ *
+ * It is exempt from the width below and cannot be anything but empty: a row of
+ * 67 spaces would satisfy both rules while being exactly the trailing
+ * whitespace every file here warns about, and the first editor to save the
+ * document would silently take it away again.
  */
 const BLANK_ROWS = 1
 const ART_ROWS = 5
