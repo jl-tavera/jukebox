@@ -78,3 +78,14 @@ reads.
 
 `0003`'s closing comment is now wrong about who does this. It is applied history and has not been
 edited; migration `0004` records the reversal where a reader of the migrations will meet it.
+
+## Amendment, 2026-09-02: the ceiling this moved is no longer the binding one
+
+The Consequences above close by saying that reading before writing "moves issue #26's per-invocation
+query ceiling in the safe direction without raising it". That was true of this change and is no
+longer true of the code. Issue #26 has since been taken, and `recordTracks` no longer spends a query
+per Track at all: each of its writes binds the Tracks it concerns as one JSON document, so a
+Resolution costs the same handful of queries whatever the Playlist holds.
+
+The sentence stands unedited because it was right about what this ADR decided. What replaced the
+ceiling, and the ceiling that remains, are in ADR-0009.
