@@ -4,6 +4,7 @@ import {
   pageOffering,
   spotifyServing,
 } from '../src/sources/spotify/__fixtures__/network'
+import type { ItemsResponse } from '../src/sources/spotify/payloads'
 import { createPlaylist, insteadOfTheNetwork, resolvePlaylist } from './api'
 
 /**
@@ -48,9 +49,24 @@ export const tracked = async (sourceId: string): Promise<string> => {
  * `bindings` is how a caller stops it part way -- the same trick the rest of the
  * suite uses, at the same boundary. Nothing in `src/` knows it happened.
  */
-export const readOffering = async (
+export const readOffering = (
   id: string,
   entries: readonly number[],
+  { at, bindings }: { at: number; bindings?: Partial<Env> },
+): Promise<void> => readPages(id, [pageOffering(...entries)], { at, bindings })
+
+/**
+ * The same, for a Source whose answer is already cut into pages.
+ *
+ * `readOffering` above arranges the five captured entries, which is every
+ * question about *which* Tracks a Playlist holds. This is the one it cannot
+ * ask: a Playlist long enough that what a Resolution costs is the question, and
+ * that needs pages `pagesOf` and `pagesHolding` build rather than one page of
+ * captures.
+ */
+export const readPages = async (
+  id: string,
+  pages: readonly ItemsResponse[],
   { at, bindings = {} }: { at: number; bindings?: Partial<Env> },
 ): Promise<void> => {
   const clock = vi.spyOn(Date, 'now')
@@ -58,7 +74,7 @@ export const readOffering = async (
   try {
     clock.mockReturnValue(at * 1000)
 
-    await insteadOfTheNetwork(spotifyServing(pageOffering(...entries)).answer, () =>
+    await insteadOfTheNetwork(spotifyServing(...pages).answer, () =>
       resolvePlaylist(id, { ...CREDENTIALS, ...bindings }),
     )
   } finally {

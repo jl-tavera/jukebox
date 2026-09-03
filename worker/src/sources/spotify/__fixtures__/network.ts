@@ -268,24 +268,58 @@ export const pageOffering = (...chosen: readonly number[]): ItemsResponse => ({
  * Each entry is a real captured one with a distinct id, because a Track's id is
  * derived from the Source's and repeats would collapse into one stored row.
  */
-export const pagesOf = (entries: number, sourceId: string): ItemsResponse[] => {
+export const pagesOf = (entries: number, sourceId: string): ItemsResponse[] =>
+  cutIntoPages(
+    Array.from({ length: entries }, (_unused, number) => entryNumbered(number)),
+    sourceId,
+  )
+
+/**
+ * The same constructed entries, offered in the order `numbers` names them.
+ *
+ * `pagesOf` answers what a walk of a long playlist yields. This answers what a
+ * *second* read of one says, which is a different question and the one a
+ * Resolution after the first has to be right about: the same entries, moved.
+ * `pageOffering` above asks it of the five captured entries; a Playlist long
+ * enough to cost real queries needs it asked of thousands.
+ *
+ * Numbers rather than entries, for `pageOffering`'s reason -- a test reads as an
+ * arrangement rather than as a list of base62 nobody can check by eye.
+ */
+export const pagesHolding = (numbers: readonly number[], sourceId: string): ItemsResponse[] =>
+  cutIntoPages(numbers.map(entryNumbered), sourceId)
+
+/**
+ * The `number`th constructed entry: a captured one wearing an id of its own.
+ *
+ * Each is a real captured entry with a distinct id, because a Track's id is
+ * derived from the Source's and repeats would collapse into one stored row.
+ */
+const entryNumbered = (number: number): PlaylistEntry => {
   const donor = onePage.items[0] as unknown as PlaylistEntry
+  const entry = structuredClone(donor)
+
+  // 22 base62 characters, the length every Spotify id has and the length the
+  // adapter's own pattern insists on.
+  const id = `P${String(number).padStart(21, '0')}`
+
+  return { ...entry, item: { ...entry.item!, id, name: `Track ${number}` } }
+}
+
+/**
+ * `entries`, cut into pages the way Spotify cuts them, each naming the next.
+ *
+ * The addresses are built with `itemsAddress`, so a walk that follows `next`
+ * and one that addresses each page itself are offered the same playlist.
+ */
+const cutIntoPages = (entries: readonly PlaylistEntry[], sourceId: string): ItemsResponse[] => {
   const pages: ItemsResponse[] = []
 
-  for (let offset = 0; offset < entries; offset += PAGE_SIZE) {
-    const items = Array.from(
-      { length: Math.min(PAGE_SIZE, entries - offset) },
-      (_unused, index): PlaylistEntry => {
-        const entry = structuredClone(donor)
-        // 22 base62 characters, the length every Spotify id has and the length
-        // the adapter's own pattern insists on.
-        const id = `P${String(offset + index).padStart(21, '0')}`
-        return { ...entry, item: { ...entry.item!, id, name: `Track ${offset + index}` } }
-      },
-    )
-
+  for (let offset = 0; offset < entries.length; offset += PAGE_SIZE) {
+    const items = entries.slice(offset, offset + PAGE_SIZE)
     const after = offset + items.length
-    pages.push({ items, next: after < entries ? itemsAddress(sourceId, after) : null })
+
+    pages.push({ items, next: after < entries.length ? itemsAddress(sourceId, after) : null })
   }
 
   return pages
