@@ -9,9 +9,10 @@ import {
   prose,
   row,
   TYPED,
+  type Open,
   type Session,
 } from './lines'
-import { select } from './select'
+import { asking } from './select'
 
 /**
  * The finished session: what the page says, and what it needs done.
@@ -25,10 +26,9 @@ import { select } from './select'
  * static content so that everything else has something to stand on: #84 clears
  * it and replays it as typing, #85 puts a live prompt under it, #86 makes the
  * menu navigable. Each of those adds a transition; none of them replaces this.
- * There is deliberately no reducer here yet -- a state machine with one state
- * and no inputs would be a shape invented before anything asked for one, and
- * `cli/src/header.ts` is the precedent: a pure function of its answers, not a
- * machine.
+ * The reducer those transitions live in is `terminal.ts`, and it is still not
+ * here: this file computes what a served page says, once, and `cli/src/header.ts`
+ * is the precedent -- a pure function of its answers, not a machine.
  *
  * The order on screen is the order a person would have seen it happen. Two
  * comments a human wrote, the command they typed, and then the binary's own
@@ -42,6 +42,18 @@ import { select } from './select'
  * line is what keeps every existing import of them working from here.
  */
 export { COMMENT, PROMPT, TYPED } from './lines'
+
+/**
+ * The menu, as the state of a widget rather than as rows.
+ *
+ * The rows below are drawn from this, and it is handed over beside them so that
+ * `terminal.ts` knows the frame is live -- a menu the visitor can move and
+ * answer, rather than a picture of one. It is the page's only caller of the
+ * widget today; #91's install picker is the second, and opens its own.
+ *
+ * The cursor sits on the first entry, which is where the binary leaves it.
+ */
+const MENU: Open = { message: WHAT_NEXT, options: MENU_ENTRIES, cursor: 0 }
 
 export const finished = (version: string): Session => ({
   lines: [
@@ -70,9 +82,7 @@ export const finished = (version: string): Session => ({
     // newlines.
     blank(),
 
-    // Nothing chosen yet, so the cursor sits on the first entry, which is where
-    // the binary leaves it.
-    ...select(WHAT_NEXT, MENU_ENTRIES, 0),
+    ...asking(MENU),
   ],
 
   // Nothing here writes to a clipboard, moves focus or sets a timer, so there

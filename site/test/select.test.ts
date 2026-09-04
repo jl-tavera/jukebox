@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'bun:test'
 import { MENU_ENTRIES, WHAT_NEXT } from '../lib/content'
-import { text, type Line, type Span } from '../lib/session/lines'
-import { BAR, BAR_END, LEGEND, RADIO_ACTIVE, RADIO_INACTIVE, select, STEP } from '../lib/session/select'
+import { text, type Line, type Open, type Span } from '../lib/session/lines'
+import {
+  abandoned,
+  answered,
+  asking,
+  BAR,
+  BAR_END,
+  LEGEND,
+  moved,
+  named,
+  RADIO_ACTIVE,
+  RADIO_INACTIVE,
+  STEP,
+  STEP_DONE,
+  STEP_LEFT,
+} from '../lib/session/select'
 
 /**
  * The menu widget, which is the one thing on this page that is an imitation of
@@ -27,8 +41,11 @@ const rows = (lines: readonly Line[]): string[] => lines.map(text)
 const spans = (line: Line | undefined): readonly Span[] =>
   line !== undefined && line.kind === 'text' ? line.spans : []
 
+/** The menu, as `index.ts` opens it, at whichever row the cursor is standing on. */
+const menu = (cursor: number): Open => ({ message: WHAT_NEXT, options: MENU_ENTRIES, cursor })
+
 /** The frame as the visitor first meets it: nothing chosen, the cursor at the top. */
-const opened = (): Line[] => select(WHAT_NEXT, MENU_ENTRIES, 0)
+const opened = (): Line[] => asking(menu(0))
 
 describe('the frame the prompt library draws', () => {
   it("is built from the library's own glyphs", () => {
@@ -90,7 +107,7 @@ describe('the entries', () => {
     // rest. A page showing all five would be a page that had never watched the
     // widget it is copying.
     for (let cursor = 0; cursor < MENU_ENTRIES.length; cursor++) {
-      const drawn = rows(select(WHAT_NEXT, MENU_ENTRIES, cursor)).slice(2, 2 + MENU_ENTRIES.length)
+      const drawn = rows(asking(menu(cursor))).slice(2, 2 + MENU_ENTRIES.length)
 
       expect(drawn).toEqual(
         MENU_ENTRIES.map((entry, index) =>
@@ -128,5 +145,202 @@ describe('colour', () => {
 
     expect(railGlyphs.length).toBeGreaterThan(0)
     expect(railGlyphs.every((span) => span.tone === 'dim' && span.hidden === true)).toBe(true)
+  })
+})
+
+describe('moving the cursor', () => {
+  // `findCursor` in `@clack/core` wraps in both directions -- past the end it
+  // lands on the first row, before the start on the last -- and a menu of five
+  // entries where the fifth is the way out is exactly where that shows: a
+  // person reaching for `quit` presses up once, not four times.
+  it('wraps forwards, off the last entry onto the first', () => {
+    expect(moved(menu(MENU_ENTRIES.length - 1), 1).cursor).toBe(0)
+  })
+
+  it('wraps backwards, off the first entry onto the last', () => {
+    expect(moved(menu(0), -1).cursor).toBe(MENU_ENTRIES.length - 1)
+  })
+
+  it('walks the rows in between', () => {
+    expect(moved(menu(0), 1).cursor).toBe(1)
+    expect(moved(menu(2), -1).cursor).toBe(1)
+  })
+
+  it('changes nothing else about the question', () => {
+    const open = menu(0)
+    const next = moved(open, 1)
+
+    expect(next.message).toBe(open.message)
+    expect(next.options).toBe(open.options)
+  })
+})
+
+describe('the frame a question leaves behind', () => {
+  // What the library redraws once a `select` is answered, read off its own
+  // submit branch: the step's mark changes, the rail keeps one row carrying the
+  // chosen label alone, and the options, the radios, the hint, the legend and
+  // the corner all go. Everything below the frame is what the command printed,
+  // so a legend still offering to navigate would be offering to move something
+  // that is over.
+  it('is the mark, the question and the row that was chosen', () => {
+    expect(rows(answered(menu(1)))).toEqual([
+      BAR,
+      `${STEP_DONE}  ${WHAT_NEXT}`,
+      `${BAR}  ${MENU_ENTRIES[1]!.label}`,
+    ])
+  })
+
+  it('carries no legend, no corner and no hint', () => {
+    const drawn = rows(answered(menu(0)))
+
+    expect(drawn.some((line) => line.includes(LEGEND))).toBe(false)
+    expect(drawn.some((line) => line.includes(BAR_END))).toBe(false)
+    expect(drawn.some((line) => line.includes(MENU_ENTRIES[0]!.hint))).toBe(false)
+  })
+
+  it('inverts nothing, because nothing is waiting to be answered', () => {
+    // The inversion is this page's cursor and the cursor has left. A frame that
+    // kept it would be a widget that looks live and is not.
+    const inverted = answered(menu(0))
+      .flatMap((line) => spans(line))
+      .filter((span) => span.tone === 'inverted')
+
+    expect(inverted).toEqual([])
+  })
+
+  it('draws the chosen label dim, the way the library does', () => {
+    const label = answered(menu(0))
+      .flatMap((line) => spans(line))
+      .find((span) => span.text === MENU_ENTRIES[0]!.label)
+
+    expect(label).toEqual({ text: MENU_ENTRIES[0]!.label, tone: 'dim' })
+  })
+})
+
+describe('the frame a question that was left leaves behind', () => {
+  // The library's cancel, which is what Ctrl-C draws at the real menu. On the
+  // page it is what a visitor typing something else does: the question was
+  // never answered, and `cli/src/menu.ts` treats a cancel and `quit` as the
+  // same way out, so the two frames record the same ending differently.
+  it('is the mark, the question, the row that was left, and a bare rail', () => {
+    expect(rows(abandoned(menu(2)))).toEqual([
+      BAR,
+      `${STEP_LEFT}  ${WHAT_NEXT}`,
+      `${BAR}  ${MENU_ENTRIES[2]!.label}`,
+      BAR,
+    ])
+  })
+
+  it('strikes the row through, which is shape rather than colour', () => {
+    // The library paints this mark red and strikes the value out. The red goes,
+    // for the reason every other colour on this page goes; the strikethrough
+    // stays, because without it an abandoned frame and an answered one differ
+    // by one glyph -- and a strikethrough survives `NO_COLOR` and a terminal
+    // with no palette, which is the whole test colour fails.
+    const label = abandoned(menu(0))
+      .flatMap((line) => spans(line))
+      .find((span) => span.text === MENU_ENTRIES[0]!.label)
+
+    expect(label).toEqual({ text: MENU_ENTRIES[0]!.label, tone: 'dim', struck: true })
+  })
+
+  it('carries no legend, no corner, no radio and no hint', () => {
+    const drawn = rows(abandoned(menu(0)))
+
+    for (const gone of [LEGEND, BAR_END, RADIO_ACTIVE, RADIO_INACTIVE, MENU_ENTRIES[0]!.hint]) {
+      expect(drawn.some((line) => line.includes(gone))).toBe(false)
+    }
+  })
+
+  it('inverts nothing, because nothing is waiting to be answered', () => {
+    const inverted = abandoned(menu(0))
+      .flatMap((line) => spans(line))
+      .filter((span) => span.tone === 'inverted')
+
+    expect(inverted).toEqual([])
+  })
+})
+
+describe('naming a row', () => {
+  // What makes a typed word an answer. The menu shows five words and a visitor
+  // who reads them and types one means the row, not a command that happens to
+  // share its spelling -- which is also the only way `quit` can mean anything
+  // at a prompt where it is not a command.
+  it('finds the row a word names', () => {
+    expect(named(menu(0), 'config')).toBe(3)
+    expect(named(menu(0), 'quit')).toBe(4)
+  })
+
+  it('answers nothing for a word no row carries', () => {
+    expect(named(menu(0), 'donate')).toBeUndefined()
+  })
+
+  it('matches the label rather than what the row runs', () => {
+    // #91's rows read `macos` and run something considerably longer. The word
+    // on screen is the one a visitor can type, so it is the one that matches.
+    const picker = {
+      message: 'Which system?',
+      options: [{ label: 'macos', hint: 'and linux', runs: 'install macos' }],
+      cursor: 0,
+    }
+
+    expect(named(picker, 'macos')).toBe(0)
+    expect(named(picker, 'install macos')).toBeUndefined()
+  })
+})
+
+describe('a second caller', () => {
+  /**
+   * #91 opens this widget for the install command, and the ticket's word for
+   * what it may do to it is *unmodified*. So this is the picker's shape --
+   * another question, three rows, labels that are not what the rows run --
+   * driven through every function the menu uses, with nothing added for it.
+   *
+   * The strings are this file's own and deliberately not #91's: the point is
+   * that the widget knows nothing about who is asking, and quoting the real
+   * picker would make this test something to update when that ticket lands.
+   */
+  const picker = (cursor: number): Open => ({
+    message: 'Which system?',
+    options: [
+      { label: 'macos', hint: 'the curl line', runs: 'install macos' },
+      { label: 'linux', hint: 'the curl line', runs: 'install linux' },
+      { label: 'windows', hint: 'the powershell line', runs: 'install windows' },
+    ],
+    cursor,
+  })
+
+  it('gets the same frame, hint on the active row and legend in the footer', () => {
+    const drawn = rows(asking(picker(1)))
+
+    expect(drawn).toEqual([
+      BAR,
+      `${STEP}  Which system?`,
+      `${BAR}  ${RADIO_INACTIVE} macos`,
+      `${BAR}  ${RADIO_ACTIVE} linux (the curl line)`,
+      `${BAR}  ${RADIO_INACTIVE} windows`,
+      `${BAR}  ${LEGEND}`,
+      BAR_END,
+    ])
+  })
+
+  it('gets the same two endings', () => {
+    expect(rows(answered(picker(2)))).toEqual([
+      BAR,
+      `${STEP_DONE}  Which system?`,
+      `${BAR}  windows`,
+    ])
+
+    expect(rows(abandoned(picker(0)))).toEqual([
+      BAR,
+      `${STEP_LEFT}  Which system?`,
+      `${BAR}  macos`,
+      BAR,
+    ])
+  })
+
+  it('wraps its own three rows', () => {
+    expect(moved(picker(2), 1).cursor).toBe(0)
+    expect(moved(picker(0), -1).cursor).toBe(2)
   })
 })
