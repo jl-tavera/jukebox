@@ -74,8 +74,23 @@ export type Tone = 'inverted' | 'ink' | 'prose' | 'dim'
  * everywhere those three letters appear, including inside a sentence about it.
  * Saying which spans are landable is a decision, and decisions belong to the
  * module rather than to a `String.prototype.includes` in the renderer.
+ *
+ * `copies` is the third such field and #91 is what asked for it. It is a
+ * control like `runs` and deliberately not the same one: **a copy control must
+ * not re-run the command that printed it.** #91's whole point about the row it
+ * leaves in the scrollback is that the command can be copied again *without
+ * re-running anything*, and `runs` re-enters a line at the prompt by
+ * definition -- so a `copy` word carrying `runs` would print the block a second
+ * time every time somebody used it. Two fields, because they are two gestures.
  */
-export type Span = { text: string; tone: Tone; hidden?: true; struck?: true; runs?: string }
+export type Span = {
+  text: string
+  tone: Tone
+  hidden?: true
+  struck?: true
+  runs?: string
+  copies?: Intent
+}
 
 /**
  * One row of the session.
@@ -122,8 +137,14 @@ export type Line =
  *
  * One member, because one is what is needed to keep the array widenable: a
  * `readonly never[]` cannot gain a member without editing the type every later
- * ticket depends on. The finished session declares none of these; #88 and #91
- * are the first to emit one.
+ * ticket depends on. The finished session still declares none of these -- it
+ * hands the visitor a command and does not touch their clipboard to do it --
+ * and #91 is the first ticket to emit one, from `install` and from every copy
+ * control the page draws.
+ *
+ * `what` is the value named for somebody who cannot see the row it came from:
+ * `terminal.ts` announces `Copied ${what}.` when a control is used, so it is a
+ * noun phrase rather than a label.
  */
 export type Intent = { kind: 'copy'; value: string; what: string }
 
@@ -221,14 +242,14 @@ export const struck = (text: string): Span => ({ text, tone: 'dim', struck: true
  * #86 is protecting, so the select is driven from the prompt instead -- arrows,
  * Enter, or typing an entry's name.
  *
- * `runs` defaults to the text because the common case is a command name that
- * reads and runs as itself, and every caller today takes that default. The
- * second argument was written for #91's picker and no longer has it: the rows
- * of a select are not words, since #86, and a row that reads one thing and runs
- * another is now `Option.runs` a screen up. It is left rather than removed
- * because it is #85's and #88's copy controls are its likely first caller -- a
- * word reading `copy` that runs something else is exactly its shape. If that
- * ticket lands without using it, delete it there.
+ * **It runs what it reads, and there is no second argument any more.** One was
+ * carried here from #85 for a word reading one thing and running another, first
+ * against #91's picker -- which since #86 has rows rather than words, and
+ * `Option.runs` a screen up -- and then against #91's copy control, on the
+ * grounds that a word reading `copy` was exactly its shape. That control landed
+ * and did not use it: copying is not running, and `copies` below is its own
+ * field for the reason `Span` gives. So it is deleted, which is what its own
+ * note asked for.
  *
  * Always `ink`, and not by accident. ADR-0010's floor asks `--dim` to clear
  * 4.5:1 over the hover wash, and in the light theme `--dim` has no headroom to
@@ -236,7 +257,24 @@ export const struck = (text: string): Span => ({ text, tone: 'dim', struck: true
  * ever the page's own colour. A dim landable word is the day that row of the
  * floor becomes a real constraint rather than a satisfied one.
  */
-export const word = (text: string, runs: string = text): Span => ({ text, tone: 'ink', runs })
+export const word = (text: string): Span => ({ text, tone: 'ink', runs: text })
+
+/**
+ * The one control the page has that is not a command.
+ *
+ * Drawn as a word, because everything interactive here is: the same class, the
+ * same invisible tap target, the same inversion under focus. What it carries is
+ * the whole value rather than what the row shows of it -- `SITE.md` 06 requires
+ * that of a donation address and #91 requires it of an install command, and in
+ * both cases the row on screen has something in front of it a shell would
+ * choke on.
+ *
+ * The text is fixed. A page with `copy` on one row and `copy address` on
+ * another would be two vocabularies for one gesture.
+ */
+export const COPY = 'copy'
+
+export const copy = (intent: Intent): Span => ({ text: COPY, tone: 'ink', copies: intent })
 
 /**
  * One line as the terminal would have printed it.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import {
   blank,
+  copy,
   decoration,
   dim,
   ink,
@@ -9,6 +10,7 @@ import {
   spoken,
   text,
   word,
+  type Intent,
   type Line,
 } from '../lib/session/lines'
 
@@ -22,16 +24,13 @@ import {
  */
 
 describe('word', () => {
-  it('runs what it says, unless told otherwise', () => {
-    // The common case is a command name that both reads and runs as itself, so
-    // saying it twice is what the default is for. #91's picker is the case that
-    // needs the second argument: a row reading `macos` runs something longer.
+  it('runs what it says, and takes no second opinion about it', () => {
+    // It carried an argument for a word reading one thing and running another,
+    // reserved first for #91's picker -- which since #86 has rows rather than
+    // words -- and then for #91's copy control, which turned out not to run
+    // anything at all. Both consumers came and neither used it, so it is gone,
+    // and this is what says so.
     expect(word('help')).toEqual({ text: 'help', tone: 'ink', runs: 'help' })
-    expect(word('macos', 'install macos')).toEqual({
-      text: 'macos',
-      tone: 'ink',
-      runs: 'install macos',
-    })
   })
 
   it('is ink, because the hover wash is mixed for ink and nothing else', () => {
@@ -40,6 +39,31 @@ describe('word', () => {
     // construction rather than by measurement: the only thing the wash ever
     // paints is a word, and a word is always the page's own colour.
     expect(word('help').tone).toBe('ink')
+  })
+})
+
+describe('copy', () => {
+  const intent: Intent = { kind: 'copy', value: 'the whole thing', what: 'a value' }
+
+  it('carries the value rather than running anything', () => {
+    // The distinction the two fields exist for. A control that ran a command
+    // would reprint whatever printed it, and #91 asks a scrollback row to be
+    // copyable again *without re-running anything*.
+    const control = copy(intent)
+
+    expect(control.copies).toBe(intent)
+    expect(control.runs).toBeUndefined()
+  })
+
+  it('reads as one word, whatever it is copying', () => {
+    // `copy` on one row and `copy address` on another would be two
+    // vocabularies for one gesture.
+    expect(copy(intent).text).toBe('copy')
+    expect(copy({ kind: 'copy', value: 'x', what: 'something else' }).text).toBe('copy')
+  })
+
+  it('is said out loud, because it is a control rather than a rail glyph', () => {
+    expect(spoken(row(copy(intent)))).toBe('copy')
   })
 })
 
