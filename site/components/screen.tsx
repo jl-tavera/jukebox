@@ -1,4 +1,4 @@
-import type { Line, Session, Tone } from '@/lib/session/lines'
+import type { Line, Session, Span, Tone } from '@/lib/session/lines'
 
 /**
  * The one thing that writes.
@@ -43,6 +43,22 @@ const TONE: Record<Tone, string | undefined> = {
   ink: undefined,
   prose: 'u-prose',
   dim: 'text-dim',
+}
+
+/**
+ * A span's tone, and the one thing that is not a tone.
+ *
+ * `struck` is orthogonal to the ladder -- #86's abandoned frame strikes a value
+ * that is dim underneath -- so it composes with the tone rather than replacing
+ * it. Empty comes back as `undefined` rather than as an empty string, so an
+ * ordinary `ink` span still renders with no class attribute at all.
+ */
+const styled = (span: Span): string | undefined => {
+  const classes = [TONE[span.tone], span.struck === true ? 'line-through' : undefined].filter(
+    (name) => name !== undefined,
+  )
+
+  return classes.length === 0 ? undefined : classes.join(' ')
 }
 
 /**
@@ -97,7 +113,7 @@ const Row = ({ line, onRun }: { line: Line; onRun?: (command: string) => void })
         span.runs !== undefined && onRun !== undefined ? (
           <Landable key={index} text={span.text} runs={span.runs} onRun={onRun} />
         ) : (
-          <span key={index} className={TONE[span.tone]} aria-hidden={span.hidden}>
+          <span key={index} className={styled(span)} aria-hidden={span.hidden}>
             {span.text}
           </span>
         ),
