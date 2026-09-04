@@ -50,25 +50,83 @@
   --row: calc(var(--cell) * var(--line));
 }
 
+/* ------------------------------------------------------------------ *
+ * The two faces, vendored - ADR-0010.
+ *
+ * Neon is the machine's voice and Argon is the human's. The split is
+ * carried by the typeface rather than by the prompt glyph alone,
+ * because with one face for both a `jukebox.dev` line and a `$` line
+ * differ at the left margin and nowhere else. Monaspace builds the
+ * two at identical metrics, so the voice changes without the
+ * character grid moving a column.
+ *
+ * Served from this origin. A font CDN would be this page's first
+ * third-party request, which SITE.md 07 forbids outright - and at
+ * ~15KB a face, the request saved would not have paid for the DNS
+ * lookup anyway.
+ *
+ * Subset by `bun run --cwd site fonts:build`, which whitelists the
+ * whole Block Elements range explicitly, and checked by `check:fonts`
+ * reading the built export rather than the source. A default latin
+ * subset drops every glyph the wordmark is made of.
+ *
+ * One variable file per face. The weight range below is Monaspace's
+ * own and it opens at 200 rather than 400, upstream, in the fonts
+ * these were cut from; the browser instances 400 for body text and
+ * 700 for the bold rung of the ladder.
+ *
+ * `block` rather than `swap`, which is the one arguable line here.
+ * Swapping paints the wordmark in a fallback with different metrics
+ * first - precisely the shear this whole arrangement exists to
+ * prevent, arriving on purpose for a few hundred milliseconds.
+ * `layout.tsx` preloads both, so the block period is a frame or two.
+ * ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: "Monaspace Neon";
+  src: url("/fonts/monaspace-neon.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Monaspace Argon";
+  src: url("/fonts/monaspace-argon.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: block;
+}
+
+/* What both faces fall back to, written once because both fall back to the
+ * same thing and a stack that drifted between them would put the two voices on
+ * two different grids -- the one property this whole arrangement is buying.
+ *
+ * Here rather than in `@theme inline` below, which would mint a `font-fallback`
+ * utility nothing uses, and SITE.md 07 deletes a token with no consumer. This
+ * one has two, immediately below. */
+:root {
+  --font-fallback: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo,
+    Consolas, "DejaVu Sans Mono", monospace;
+}
+
 @theme inline {
   --color-ground: var(--ground);
   --color-ink: var(--ink);
   --color-dim: var(--dim);
 
-  /* The visitor's own terminal font. A subsetted webfont risks dropping the
-   * block-element glyphs the wordmark is built from, and a per-glyph fallback
-   * with different metrics shatters the art. #81 replaces this with Monaspace
-   * Neon, vendored and subset with the Block Elements whitelisted, and checked
-   * by reading the built export rather than the source. */
-  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo,
-    Consolas, "DejaVu Sans Mono", monospace;
+  /* The machine's voice: the wordmark, the commands, the output, the menu and
+   * the rail it is drawn on.
+   *
+   * The system stack stays behind it, and is not vestigial. A face that fails
+   * to load degrades to exactly the page that shipped before this one, which
+   * was correct for its own reasons - every system monospace carries the full
+   * Block Elements range, because terminals need it. */
+  --font-mono: "Monaspace Neon", var(--font-fallback);
 
   /* The human's voice against the machine's - the tagline and the lede, which
-   * a person wrote, against everything the binary printed. One stack today, so
-   * the split is carried by the `#` sigil alone; #81 vendors Monaspace Argon
-   * here, which shares Neon's metrics exactly, so the voice changes without the
-   * grid moving a column. This is the only line that changes when it does. */
-  --font-prose: var(--font-mono);
+   * a person wrote, against everything the binary printed. Argon shares Neon's
+   * metrics exactly, so the voice changes without the grid moving a column,
+   * and the `#` sigil stops being the only thing carrying the split. */
+  --font-prose: "Monaspace Argon", var(--font-fallback);
 }
 
 @layer base {

@@ -19,9 +19,16 @@ import type { Option } from './session/select'
  * types this any more.
  *
  * Built entirely from Block Elements - full, half and quarter blocks
- * (U+2580-U+259F). Those glyphs fall outside a subsetted latin webfont, and
- * a per-glyph fallback with different metrics shears the art apart, which is
- * why the page uses the system monospace stack - see docs/design/SITE.md 03.
+ * (U+2580-U+259F). Those glyphs fall outside a subsetted latin webfont, and a
+ * per-glyph fallback with different metrics shears the art apart. That is still
+ * true and is still the hazard; what changed with #81 is that the page no longer
+ * avoids it by shipping no webfont. `site/scripts/build-fonts.ts` whitelists the
+ * whole Block Elements range explicitly, and `check:fonts` reads the range back
+ * out of the built export to prove the subset kept it - see ADR-0010.
+ *
+ * Two of the glyphs below appear exactly once each: U+258C and U+2590, the
+ * counter of the O. They are the reason that check reads a range rather than
+ * the five glyphs this art happens to use.
  *
  * The CLI is written from the same banner into `cli/src/wordmark.ts`, with a
  * note about terminal width where this one has a note about fonts - which is
