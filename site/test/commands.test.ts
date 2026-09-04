@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { CLI_COMMANDS, HOST } from '../lib/content'
-import { ARROW, COMMANDS, PROMPTS, run } from '../lib/session/commands'
+import { CLI_COMMANDS, HOST, type CliCommand } from '../lib/content'
+import { ARROW, COMMANDS, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
 import { spoken, text, type Line } from '../lib/session/lines'
 
 /**
@@ -8,9 +8,20 @@ import { spoken, text, type Line } from '../lib/session/lines'
  *
  * ADR-0010 makes the voice a rule rather than a flourish -- the binary's
  * vocabulary and the site's are never dressed as each other -- so the echo is
- * asserted through `PROMPTS` rather than against a retyped string. The one
- * exception is the not-found copy, which #85 pins by hand and which is
- * explained where it is asserted.
+ * asserted through `PROMPTS` rather than against a retyped string. Two strings
+ * are pinned by hand instead -- the not-found copy, which #85 pinned, and the
+ * leftovers sentence #87 added -- and both are pinned for the same reason,
+ * given where each is asserted: they are sentences the *page* wrote, so the
+ * literal is the acceptance criterion and importing the module's own constant
+ * would assert nothing.
+ *
+ * **Since #87 nothing a binary command says is written down here.** Its
+ * descriptions, usage lines and arguments are generated into `lib/content.ts`
+ * from `cli/src/commands/`, and `test/header.test.ts` states the rule this file
+ * now inherits: a copy typed into a test would be a third one that no diff
+ * checks. So the expectations below are computed from the import, and what they
+ * pin is the *shape* the page puts around it -- which column, which order,
+ * which blank line -- rather than the words, which CI diffs against the binary.
  */
 
 const rows = (lines: readonly Line[]): string[] => lines.map(text)
@@ -20,6 +31,19 @@ const landable = (lines: readonly Line[]): string[] =>
   lines
     .flatMap((line) => (line.kind === 'text' ? line.spans : []))
     .flatMap((span) => (span.runs === undefined ? [] : [span.runs]))
+
+const documented = (name: string): CliCommand => CLI_COMMANDS.find((one) => one.name === name)!
+
+/**
+ * The leftovers sentence as it is printed, backticks and all.
+ *
+ * The second of the two hand-pinned strings the header names, and pinned for
+ * the not-found copy's reason: the page wrote this sentence, so the literal is
+ * the criterion. `NO_ARGUMENTS` is the spoken form and is asserted against
+ * separately -- deriving one from the other would only restate how `noArguments`
+ * puts the backticks in.
+ */
+const LEFTOVERS = 'Only `help` takes an argument here.'
 
 describe('the prompts', () => {
   it('draws its arrow as the code point, not as a pasted glyph', () => {
@@ -56,6 +80,12 @@ describe('the echo', () => {
   it('keeps what was typed, arguments and all', () => {
     expect(text(run('add foo').echo)).toBe(`${PROMPTS.binary}add foo`)
   })
+
+  it('writes `help add` at the page prompt, because `help` is the page\'s word', () => {
+    // The command being described is the binary's; the verb being run is not.
+    // The echo answers for what was run.
+    expect(text(run('help add').echo)).toBe(`${PROMPTS.site}help add`)
+  })
 })
 
 describe('help', () => {
@@ -86,18 +116,30 @@ describe('help', () => {
     const drawn = rows(run('help').body)
 
     expect(drawn.some((line) => line.includes('\t'))).toBe(false)
-    expect(drawn).toContain('  add      Track a playlist.')
-    expect(drawn).toContain('  version  Report the version of Jukebox you are running.')
+    expect(drawn).toContain(`  add      ${documented('add').summary}`)
+    expect(drawn).toContain(`  version  ${documented('version').summary}`)
+  })
+
+  it('lists the binary in the binary\'s own order', () => {
+    // Alphabetical, because `cli/src/root.ts` declares the tree that way and
+    // `cli/test/spawned.test.ts` pins it as what `--help --json` reports. The
+    // page's list is the binary's list; #87 is where it stopped being a second
+    // ordering somebody chose here.
+    const listed = rows(run('help').body)
+      .filter((line) => line.startsWith('  '))
+      .map((line) => line.trim().split(/\s{2,}/)[0])
+
+    expect(listed.slice(0, CLI_COMMANDS.length)).toEqual(CLI_COMMANDS.map((one) => one.name))
   })
 
   it('keeps the name and its summary apart when read out', () => {
     // The column is built from spaces, and spaces are content here rather than
-    // decoration: hide them and a screen reader is handed `addTrack a
-    // playlist.` Whitespace is what keeps the two readable as two, and an
-    // assistive technology collapses the run on its own.
+    // decoration: hide them and a screen reader is handed `addStart tracking a
+    // public playlist…` Whitespace is what keeps the two readable as two, and
+    // an assistive technology collapses the run on its own.
     const row = run('help').body.find((line) => text(line).startsWith('  add'))!
 
-    expect(spoken(row)).toMatch(/^\s+add\s+Track a playlist\.$/)
+    expect(spoken(row)).toBe(`  add      ${documented('add').summary}`)
   })
 })
 
@@ -132,17 +174,146 @@ describe('a word the page does not know', () => {
 })
 
 describe('a binary command', () => {
-  it('describes itself and does not pretend to run', () => {
-    // ADR-0010: the page explains, it never simulates. A summary is a
-    // description of the command, which is what a help line is.
-    expect(rows(run('add').body)).toEqual(['Track a playlist.'])
+  it('prints its generated description and does not pretend to run', () => {
+    // ADR-0010: the page explains, it never simulates. What it prints is the
+    // command's own help, which is a description of the command.
+    expect(rows(run('add').body)[0]).toBe(documented('add').summary)
+  })
+
+  it('prints the binary\'s own usage line under a heading', () => {
+    // The spelling and the sentence come from the generated list; only the
+    // shape around them is written here. Typing the description out would be
+    // the third copy this file's header refuses.
+    const url = documented('add').args[0]!
+
+    expect(rows(run('add').body)).toEqual([
+      documented('add').summary,
+      '',
+      'usage',
+      `  ${documented('add').usage}`,
+      '',
+      'arguments',
+      `  ${url.name}   ${url.description}`,
+    ])
+  })
+
+  it('prints every argument the binary declares, for every command', () => {
+    // The acceptance criterion, over all seven rather than over a sample:
+    // curating the set is what would let the page's help disagree with the
+    // binary's.
+    for (const command of CLI_COMMANDS) {
+      const drawn = rows(run(command.name).body)
+
+      expect(drawn[0]).toBe(command.summary)
+      expect(drawn).toContain(`  ${command.usage}`)
+
+      for (const argument of command.args) {
+        expect(drawn.some((line) => line.startsWith(`  ${argument.name}`))).toBe(true)
+        expect(drawn.some((line) => line.endsWith(argument.description))).toBe(true)
+      }
+    }
+  })
+
+  it('lays its arguments out on the CLI\'s own metrics', () => {
+    // Two spaces of indent and three of gutter, which is `cli/src/phrasing.ts`'s
+    // `columns` and what #79 asks a table on this page to reuse. `config` is
+    // the one command with two arguments of different widths, so it is the only
+    // place the padding can be seen at all.
+    const drawn = rows(run('config').body)
+    const [key, value] = documented('config').args
+
+    // The padding is spelled out and the copy is not, which is the split that
+    // makes this test mean something: five spaces after the shorter spelling
+    // and three after the longer is the whole assertion, and a description
+    // typed here would be a copy no diff checks.
+    expect(drawn).toContain(`  ${key!.name}     ${key!.description}`)
+    expect(drawn).toContain(`  ${value!.name}   ${value!.description}`)
+  })
+
+  it('prints no arguments block for a command that takes none', () => {
+    expect(rows(run('list').body)).toEqual([
+      documented('list').summary,
+      '',
+      'usage',
+      `  ${documented('list').usage}`,
+    ])
+  })
+
+  it('never doubles a blank line, and never ends on one', () => {
+    // `lines.ts`: every vertical gap is zero or one line, and the CLI never
+    // double-spaces. Over all seven, because the block is assembled per command.
+    for (const command of CLI_COMMANDS) {
+      const drawn = rows(run(command.name).body)
+
+      expect(drawn.at(-1)).not.toBe('')
+      expect(drawn.some((line, at) => line === '' && drawn[at + 1] === '')).toBe(false)
+    }
+  })
+
+  it('carries no trailing whitespace on any row', () => {
+    // `phrasing.columns` trims each line for the reason that applies here too:
+    // it is what an editor would strip and a `toBe` would then disagree about.
+    for (const command of CLI_COMMANDS) {
+      for (const line of rows(run(command.name).body)) {
+        expect(line).toBe(line.trimEnd())
+      }
+    }
   })
 
   it('says so when it is handed an argument it cannot use', () => {
-    expect(rows(run('add foo').body)).toEqual([
-      'Track a playlist.',
-      'This page takes no arguments.',
+    expect(rows(run('add foo').body).at(-1)).toBe(LEFTOVERS)
+  })
+
+  it("puts a row of air between the quotation and the page's own sentence", () => {
+    // The block above it is the binary's screen and this is the site speaking.
+    // One row, never two -- the CLI does not double-space and neither does this.
+    const drawn = rows(run('add foo').body)
+
+    expect(drawn.at(-2)).toBe('')
+    expect(drawn.at(-3)).not.toBe('')
+  })
+
+  it('reads that line out without the backticks', () => {
+    expect(spoken(run('add foo').body.at(-1)!)).toBe(NO_ARGUMENTS)
+  })
+})
+
+describe('help, given a command', () => {
+  it('prints exactly what typing the command prints', () => {
+    // Two ways to the same screen rather than two screens. `word(text, runs)`
+    // was written with its second argument reserved for this, and #87 is the
+    // ticket that gives a second word a meaning.
+    for (const command of CLI_COMMANDS) {
+      expect(rows(run(`help ${command.name}`).body)).toEqual(rows(run(command.name).body))
+    }
+  })
+
+  it('describes the page\'s own verbs rather than running them', () => {
+    // `help X` describes X; it does not do what X does. The distinction is
+    // invisible across the binary's seven, which describe themselves when typed
+    // because they never run -- and `clear` is where it shows: typing it empties
+    // the scrollback, and asking about it must not.
+    const clear = COMMANDS.find((one) => one.name === 'clear')!
+    const printed = run('help clear')
+
+    expect(rows(printed.body)).toEqual([clear.summary])
+    expect(printed.clears).toBeUndefined()
+  })
+
+  it('answers a word it does not know the way a shell does', () => {
+    // The argument is named, not the verb: `help` resolved fine and the word
+    // after it did not, so that is the word a shell would report.
+    expect(rows(run('help nonsense').body)).toEqual([
+      'jukebox.dev: command not found: nonsense',
+      'Try `help`.',
     ])
+  })
+
+  it('takes one command and says so when handed more', () => {
+    const drawn = rows(run('help add sync').body)
+
+    expect(drawn[0]).toBe(documented('add').summary)
+    expect(drawn.at(-1)).toBe(LEFTOVERS)
   })
 })
 
@@ -161,10 +332,21 @@ describe('clear', () => {
 })
 
 describe('the copy rules', () => {
-  it('writes every summary as a sentence', () => {
-    // #85's last criterion, as a test rather than a review note.
-    for (const command of COMMANDS) {
+  it('writes the page\'s own summaries as sentences', () => {
+    // #85's last criterion, kept for the half of the list the page still
+    // writes.
+    for (const command of COMMANDS.filter((one) => one.voice === 'site')) {
       expect(command.summary).toMatch(/^[A-Z].*\.$/)
+    }
+  })
+
+  it('leaves the binary\'s summaries in the binary\'s register', () => {
+    // Sentence case and no terminal full stop, which is how a `meta.description`
+    // is written under `cli/src/commands/`. Adding one here would be the page
+    // editing a quotation, which is the whole thing #87 removed.
+    for (const command of CLI_COMMANDS) {
+      expect(command.summary).toMatch(/^[A-Z]/)
+      expect(command.summary).not.toMatch(/\.$/)
     }
   })
 

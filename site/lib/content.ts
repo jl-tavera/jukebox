@@ -242,15 +242,19 @@ export function truncateAddress(address: string): string {
 export const CLI_VERSION: string = cli.version
 
 /**
- * What the menu asks, and the five entries it offers.
+ * What the menu asks, and the five entries it offers. **Generated - do not edit
+ * the question or the entries below by hand.**
  *
- * **A second copy, and CI cannot yet see the two disagree.** The originals are
- * `ENTRIES` and the `select` message in `cli/src/menu.ts`, and #87 is the
- * ticket that generates this from the CLI's own command definitions the way
- * `WORDMARK` above is already generated -- write, commit, and diff in CI. Until
- * it lands, an edited hint in the CLI leaves this stale silently, and that is a
- * known cost of building the floor before the generator rather than a shape
- * anybody should build on.
+ * Written from `WHAT_NEXT` and `ENTRIES` in `cli/src/menu.ts` by
+ * `bun run --cwd cli generate:help`, which #87 added and which the confession
+ * this paragraph replaces spent three tickets promising. CI regenerates and
+ * diffs, so an edit made here is an edit CI will undo: change the menu, run the
+ * generator, commit what it wrote.
+ *
+ * This list is a *quotation of the binary's screen*, which is the whole of what
+ * it is for. Its strings are the CLI's literals in the CLI's own register, so a
+ * reworded hint over there moves this inside one commit rather than whenever
+ * somebody next happens to read both files.
  *
  * The order is the CLI's own and is not alphabetical: the two entries that
  * reach the network, the two that read only local state, then the way out.
@@ -266,7 +270,8 @@ export const CLI_VERSION: string = cli.version
  * is that command, and the page runs it exactly as it would have run a typed
  * one -- which is what stops an entry printing something no prompt would.
  * `quit` carries none, because the way out launches nothing; that is what
- * closes the menu and lands the visitor at the prompt.
+ * closes the menu and lands the visitor at the prompt. The generator derives it
+ * from the entry's own value, and says so where it does.
  *
  * Four of them repeat their label today, and the repetition is the honest
  * shape rather than a redundancy to fold away: a row's word and the command it
@@ -283,60 +288,118 @@ export const MENU_ENTRIES: readonly Option[] = [
   { label: 'quit', hint: 'Leave the menu' },
 ]
 
+export interface CliArgument {
+  /**
+   * As the binary's own usage line spells it: `<URL>` for one that is required,
+   * `[KEY]` for one that is not.
+   *
+   * citty spells these and the generator carries them across without a rule of
+   * its own. The page shows the same spelling here as in `usage`, rather than
+   * citty's bare `URL` in its arguments table plus a `(Required)` beside the
+   * description -- the brackets already say which it is, and saying it twice in
+   * two notations is worse than saying it once.
+   */
+  name: string
+  /** What the argument is, from the definition under `cli/src/commands/`. */
+  description: string
+}
+
 export interface CliCommand {
   /** What is typed. The binary's own name for it, lower case. */
   name: string
-  /** One line for the page's `help`. Sentence case, ending in a full stop. */
+  /**
+   * The command's own description, and what the page's `help` puts beside its
+   * name.
+   *
+   * **The binary's register rather than the page's**: sentence case and no
+   * terminal full stop, because that is how `meta.description` is written under
+   * `cli/src/commands/`. It was the page's own sentence until #87, with a full
+   * stop on the end, and this is the field that handed the words back.
+   */
   summary: string
+  /** The usage line as the binary prints it, `[OPTIONS]` and all. */
+  usage: string
+  args: readonly CliArgument[]
 }
 
 /**
- * The binary's seven commands, as the page describes them.
+ * The binary's seven commands, in the binary's own words. **Generated - do not
+ * edit the entries below by hand.**
  *
- * **A second copy, and CI cannot yet see the two disagree** -- the same
- * confession `MENU_ENTRIES` above carries, for the same reason and with the
- * same expiry. The originals are the `meta.description` on each command under
- * `cli/src/commands/`, reachable as a list from the `commands` array
- * `cli/src/main.ts` already builds for its own `--help`. #87 generates this
- * from there and diffs it in CI, in the CLI's workflow rather than the site's.
+ * Written from the `meta` and `args` of each command under `cli/src/commands/`
+ * by `bun run --cwd cli generate:help`, the way `WORDMARK` above is written
+ * from `DESIGN.md`. CI regenerates and diffs, so an edit made here is an edit
+ * CI will undo: change the command, run the generator, commit what it wrote.
  *
  * **These are not `MENU_ENTRIES`' hints and must not be folded into them**,
- * however alike four of them look. That list is a *quotation of the binary's
- * screen*: its strings are `cli/src/menu.ts`'s literals in the CLI's own
- * register, and if the CLI reworded a hint tomorrow that list would have to
- * follow to stay a faithful quotation. This list is the page's own wording --
- * sentence case, terminal full stop -- and it would not have to move.
- * Collapsing them saves five strings and costs the distinction that makes the
- * quotation mean anything.
+ * however alike four of them look. Both lists are quotations now, and they
+ * quote two different screens: that one is what the menu draws, out of
+ * `cli/src/menu.ts`, and this is what `--help` prints, out of each command's
+ * own definition. `add` is three words there and twelve here, because the two
+ * screens have different amounts of room and the CLI wrote for both. A merge
+ * would have to throw one of them away.
  *
- * **Written by the page, printed in the binary's voice, and that is the one
- * place ADR-0010's rule bends.** A summary answers at the `$ jukebox …` prompt
- * and is set in the machine's face, so for as long as these sentences are ours
- * the page is speaking where the binary should. The alternative was to print
- * them as `prose`, which trades the bend for a worse one: the same string would
- * change typeface between here and the `help` column, and would change back
- * when #87 lands. #87 is what actually resolves it -- these become the
- * command's own generated help, at which point the words are the binary's and
- * the voice is correct. Recorded rather than glossed, because a reader
- * comparing this against the ADR deserves to find the discrepancy already
- * known.
+ * **The bend this used to record is closed.** These sentences were the page's
+ * own, printed at the `$ jukebox …` prompt and set in the machine's face --
+ * the page speaking where the binary should, which was written down here rather
+ * than glossed, against the day #87 landed. The words are the binary's now, so
+ * the voice is right and there is nothing left to concede.
  *
- * Order is the menu's for the five it carries, then the two reached through
- * `list`, then `version`. Not alphabetical, and not the tree's own order
- * either: `cli/src/root.ts` lists them alphabetically because an object literal
- * has to be in some order, which is not the same as choosing one. #87 settles
- * this when it generates.
- *
- * Every summary here prints as-is today. #87 replaces it with the command's
- * real generated help; what the page does with the string does not change, only
- * how long it is.
+ * Order is `root.subCommands`' own, which is alphabetical, and which
+ * `cli/test/spawned.test.ts` pins as the list `--help --json` reports. The
+ * page's commands are the binary's commands in the binary's order; the question
+ * this docblock used to leave open has no second answer now.
  */
 export const CLI_COMMANDS: readonly CliCommand[] = [
-  { name: 'add', summary: 'Track a playlist.' },
-  { name: 'sync', summary: 'Ask every playlist what changed.' },
-  { name: 'list', summary: 'Every playlist you track.' },
-  { name: 'config', summary: 'Every setting, where it came from, and change one.' },
-  { name: 'show', summary: 'One playlist, and the tracks recorded for it.' },
-  { name: 'remove', summary: 'Stop tracking a playlist on this machine.' },
-  { name: 'version', summary: 'Report the version of Jukebox you are running.' },
+  {
+    name: 'add',
+    summary: 'Start tracking a public playlist and keep a record of what is in it',
+    usage: 'jukebox add [OPTIONS] <URL>',
+    args: [
+      { name: '<URL>', description: 'The playlist address, copied from your browser' },
+    ],
+  },
+  {
+    name: 'config',
+    summary: 'Show every setting and where it came from, or set one',
+    usage: 'jukebox config [OPTIONS] [KEY] [VALUE]',
+    args: [
+      { name: '[KEY]', description: 'The setting to change. Leave it out to show every setting' },
+      { name: '[VALUE]', description: 'What to change it to' },
+    ],
+  },
+  {
+    name: 'list',
+    summary: 'Show every playlist you track, with its status and what it holds',
+    usage: 'jukebox list',
+    args: [],
+  },
+  {
+    name: 'remove',
+    summary: 'Stop tracking a playlist on this machine and delete its local record',
+    usage: 'jukebox remove [OPTIONS] <PLAYLIST>',
+    args: [
+      { name: '<PLAYLIST>', description: 'Its id, as `jukebox list` prints it, or the address you added it with' },
+    ],
+  },
+  {
+    name: 'show',
+    summary: 'Show one playlist and the tracks recorded for it',
+    usage: 'jukebox show [OPTIONS] <PLAYLIST>',
+    args: [
+      { name: '<PLAYLIST>', description: 'Its id, as `jukebox list` prints it, or the address you added it with' },
+    ],
+  },
+  {
+    name: 'sync',
+    summary: 'Ask about every playlist you track and report what changed',
+    usage: 'jukebox sync',
+    args: [],
+  },
+  {
+    name: 'version',
+    summary: 'Report the version of Jukebox you are running',
+    usage: 'jukebox version',
+    args: [],
+  },
 ]

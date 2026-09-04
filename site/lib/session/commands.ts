@@ -1,4 +1,4 @@
-import { CLI_COMMANDS, HOST } from '../content'
+import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
 import {
   blank,
   decoration,
@@ -37,6 +37,25 @@ export type Command = {
   readonly name: string
   readonly summary: string
   readonly voice: Voice
+  /**
+   * The binary's own usage line and arguments, for the commands that have one.
+   *
+   * Absent on the page's own verbs, and absent rather than empty: `help` has no
+   * usage line the binary would print, and an empty string here would be a
+   * quotation of nothing. `helped` below reads the absence and prints the
+   * summary on its own instead.
+   */
+  readonly usage?: string
+  readonly args?: readonly CliArgument[]
+  /**
+   * Whether the word after this one means something.
+   *
+   * `help` alone today, and it is what `terminal.ts` reads to decide whether
+   * completing this name should leave a trailing space under the caret. #91's
+   * `install` is the next one, and this is a field rather than a literal
+   * `'help'` over there so that it can set its own.
+   */
+  readonly takesArgument?: true
 }
 
 /**
@@ -66,7 +85,7 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
  * putting a site verb there would be the site speaking in the binary's voice.
  */
 const VERBS: readonly Command[] = [
-  { name: 'help', summary: 'List everything you can type.', voice: 'site' },
+  { name: 'help', summary: 'List everything you can type.', voice: 'site', takesArgument: true },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -74,8 +93,8 @@ const VERBS: readonly Command[] = [
  * Everything typeable, which is what `help` is required to list.
  *
  * The binary half is `CLI_COMMANDS` rather than a list written here, so there
- * is one place a command's description lives on this side and #87 has one file
- * to generate. The `voice` is added here rather than stored there because it is
+ * is one place a command's description lives on this side and #87 had one file
+ * to generate into. The `voice` is added here rather than stored there because it is
  * a fact about this page's vocabulary split, and `content.ts` should not have
  * to know that the split exists.
  */
@@ -122,8 +141,19 @@ export type Printed = {
 /** Said when `clear` has left nothing behind to say. */
 export const EMPTIED = 'The scrollback is empty.'
 
-/** Said when a word was recognised and the rest of the line could not be used. */
-export const NO_ARGUMENTS = 'This page takes no arguments.'
+/**
+ * Said when a word was recognised and the rest of the line could not be used.
+ *
+ * The spoken form, which is what a screen reader is handed. `noArguments` below
+ * puts `help` between backticks the way `notFound` does, so the printed row
+ * reads ``Only `help` takes an argument here.`` and this is what is heard.
+ *
+ * It named the page until #87 -- "this page takes no arguments" -- and that
+ * stopped being true the moment `help add` did something. Naming the one word
+ * that does take one is also the more useful sentence: somebody who has just
+ * put an argument somewhere it does not go is being shown where one goes.
+ */
+export const NO_ARGUMENTS = 'Only help takes an argument here.'
 
 const echoed = (voice: Voice, typed: string): Line =>
   row(decoration(PROMPTS[voice]), ink(typed))
@@ -148,8 +178,8 @@ const COLUMN = Math.max(...COMMANDS.map((command) => command.name.length)) + 2
  * technology collapses the run on its own.
  *
  * Summaries are `dim` because that is what a second column is, and because
- * `select.ts` already draws the menu's hints that way -- so when #87 swaps
- * these for the CLI's generated help the page does not change typeface.
+ * `select.ts` already draws the menu's hints that way -- so when #87 swapped
+ * these for the CLI's generated help the page did not change typeface.
  */
 const section = (heading: string, commands: readonly Command[]): Line[] => [
   row(prose(heading)),
@@ -170,6 +200,84 @@ const listing = (): Line[] => [
 ]
 
 /**
+ * Two spaces of indent and three of gutter, which is `cli/src/phrasing.ts`'s
+ * `columns` -- the metrics #79 asks a table on this page to reuse rather than
+ * invent. The listing above keeps its own narrower column, which #85 set.
+ */
+const INDENT = '  '
+const GUTTER = '   '
+
+/**
+ * The binary's own help for one command.
+ *
+ * **The structure is citty's and the typography is not.** A description, a usage
+ * line, then the arguments, because that is the screen being quoted -- but citty
+ * sets its headings bold, underlined and shouting, and this page has one text
+ * size and a five-step ladder with no size change anywhere in it. #86 made the
+ * same trade for the menu's rail and gave the reason: the shape is what
+ * identifies the widget, and the library's decoration is the library's rather
+ * than this project's. So the headings are lower case and `dim`, which is this
+ * page's register for a label, and what sits under them is `ink`.
+ *
+ * A verb of the page's own has no `usage`, and gets its summary alone. That is
+ * not a missing case: `help` and `clear` are not commands the binary would
+ * print a usage line for, and inventing one would be the page quoting a screen
+ * that does not exist.
+ *
+ * The padding is `dim` rather than `decoration` for `section`'s reason: a
+ * hidden column of spaces hands a screen reader two columns run into one.
+ */
+const helped = (command: Command): Line[] => {
+  const body: Line[] = [row(ink(command.summary))]
+
+  if (command.usage === undefined) return body
+
+  body.push(blank(), row(dim('usage')), row(dim(INDENT), ink(command.usage)))
+
+  const args = command.args ?? []
+  if (args.length === 0) return body
+
+  const width = Math.max(...args.map((argument) => argument.name.length))
+
+  body.push(
+    blank(),
+    row(dim('arguments')),
+    ...args.map((argument) =>
+      row(
+        dim(INDENT),
+        ink(argument.name),
+        dim(' '.repeat(width - argument.name.length) + GUTTER),
+        dim(argument.description),
+      ),
+    ),
+  )
+
+  return body
+}
+
+/**
+ * The leftovers of a line, said rather than dropped.
+ *
+ * `notFound`'s shape and for its reason: the backticks are decoration so the
+ * printed row carries them and the spoken one does not, and the `help` between
+ * them is a word the cursor can land on.
+ */
+const noArguments = (): Line[] => [
+  // A row of air above it, because what is above it is a quotation of the
+  // binary's screen and this is the page talking. The faces already differ;
+  // running a prose sentence straight onto the last row of an arguments table
+  // reads as though it were one more argument.
+  blank(),
+  row(
+    prose('Only '),
+    decoration('`'),
+    word('help'),
+    decoration('`'),
+    prose(' takes an argument here.'),
+  ),
+]
+
+/**
  * What a shell says, said the way a shell says it.
  *
  * Flat, with no joke and no scolding. The backticks are decoration so that the
@@ -186,11 +294,19 @@ const notFound = (typed: string): Line[] => [
 /**
  * One entered line, answered.
  *
- * Lookup is on the first word, so `add foo` finds `add`. Nothing on this page
- * takes an argument yet, and the leftovers earn a plain line rather than
- * silence: discarding part of what somebody typed without saying so is the one
- * habit this project's copy consistently refuses. #87 and #91 are the tickets
- * that give arguments a meaning, and that line goes when they do.
+ * Lookup is on the first word, so `add foo` finds `add`. The leftovers earn a
+ * line rather than silence: discarding part of what somebody typed without
+ * saying so is the one habit this project's copy consistently refuses.
+ *
+ * **`help` is the one word here a second word means something after**, and #87
+ * is where that started. Everything else on this page still answers about
+ * itself and nothing else, which is what keeps `add https://…` from looking
+ * like a page that might be about to add something.
+ *
+ * `help X` **describes** X; it does not do what X does. Across the binary's
+ * seven the distinction is invisible, because those describe themselves when
+ * typed -- they never run here. `clear` is where it shows: typing it empties
+ * the scrollback and asking about it prints a sentence.
  */
 export const run = (buffer: string): Printed => {
   const typed = buffer.trim()
@@ -210,8 +326,19 @@ export const run = (buffer: string): Printed => {
   // leftovers of `clear foo` included -- the screen going blank is the answer.
   if (command.name === 'clear') return { echo, body: [], clears: true, announcement: EMPTIED }
 
-  const extra = rest.length > 0 ? [row(prose(NO_ARGUMENTS))] : []
-  const body = command.name === 'help' ? listing() : [row(ink(command.summary))]
+  if (command.name === 'help') {
+    const [about, ...spare] = rest
 
-  return { echo, body: [...body, ...extra] }
+    if (about === undefined) return { echo, body: listing() }
+
+    // The argument, not the verb. `help` resolved and the word after it did
+    // not, so that is the word a shell would name -- and naming `help` here
+    // would report the one thing that worked.
+    const asked = find(about)
+    if (asked === undefined) return { echo, body: notFound(about) }
+
+    return { echo, body: [...helped(asked), ...(spare.length > 0 ? noArguments() : [])] }
+  }
+
+  return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }
 }

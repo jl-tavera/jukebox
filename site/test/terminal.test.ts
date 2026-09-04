@@ -4,7 +4,7 @@ import { replay } from '../lib/session/boot'
 import { COMMANDS, EMPTIED, PROMPTS, run } from '../lib/session/commands'
 import { versionLine } from '../lib/session/header'
 import { finished } from '../lib/session'
-import { text, type Line, type Open, type Session } from '../lib/session/lines'
+import { spoken, text, type Line, type Open, type Session } from '../lib/session/lines'
 import {
   asking,
   BAR,
@@ -93,18 +93,24 @@ describe('booting', () => {
 
 describe('entering a command', () => {
   it('echoes it and prints underneath', () => {
+    // *What* it prints is `commands.ts`'s and is asserted there. What this seam
+    // owns is where the two go: the echo above, the body below, however many
+    // rows the body turns out to be -- since #87 a binary command answers with a
+    // whole generated help block rather than with one line.
+    const body = rows(run('add').body)
     const drawn = rows(running(start(), 'add').session.lines)
 
-    expect(drawn.at(-2)).toBe(`${PROMPTS.binary}add`)
-    expect(drawn.at(-1)).toBe('Track a playlist.')
+    expect(drawn.at(-body.length - 1)).toBe(`${PROMPTS.binary}add`)
+    expect(drawn.slice(-body.length)).toEqual(body)
   })
 
   it('leaves one blank row between what came before and the echo', () => {
     // The CLI never double-spaces, and neither does this. One row of air
     // between a command and the last one, which is what a terminal shows.
+    const body = rows(run('add').body)
     const drawn = rows(running(start(), 'add').session.lines)
 
-    expect(drawn.at(-3)).toBe('')
+    expect(drawn.at(-body.length - 2)).toBe('')
   })
 
   it('empties the prompt', () => {
@@ -144,9 +150,17 @@ describe('completion', () => {
     expect(after(typing(start(), 'co'), { kind: 'completed' }).buffer).toBe('config')
   })
 
-  it('adds no trailing space, because nothing takes an argument yet', () => {
-    // #87 and #91 add one when there is something to type after it.
+  it('adds no trailing space after a command that takes none', () => {
+    // A phantom space under the caret with nothing to type into it. Every
+    // command but `help` is this case today; #91's `install` is the next that
+    // will not be.
     expect(after(typing(start(), 'v'), { kind: 'completed' }).buffer).toBe('version')
+  })
+
+  it('adds one after a command that does take an argument', () => {
+    // `help` is the one, and #87 is what gave it one. The space is the whole
+    // difference between completing a word and being ready for the next.
+    expect(after(typing(start(), 'hel'), { kind: 'completed' }).buffer).toBe('help ')
   })
 
   it('does nothing on a prefix two commands answer to', () => {
@@ -170,8 +184,34 @@ describe('completion', () => {
     expect(after(terminal, { kind: 'completed' })).toBe(terminal)
   })
 
-  it('does nothing once a line has a second word', () => {
+  it('does nothing in a second word after a command that takes none', () => {
+    // `add` answers about itself here and is never handed an argument, so there
+    // is nothing this could be completing towards.
     const terminal = typing(start(), 'add fo')
+    expect(after(terminal, { kind: 'completed' })).toBe(terminal)
+  })
+
+  it('finishes a command name in the second word, after `help`', () => {
+    expect(after(typing(start(), 'help co'), { kind: 'completed' }).buffer).toBe('help config')
+  })
+
+  it('does nothing on a bare `help `, where everything matches', () => {
+    // The empty-prompt rule one word along: every command answers to an empty
+    // prefix, so none of them is the only one.
+    const terminal = typing(start(), 'help ')
+    expect(after(terminal, { kind: 'completed' })).toBe(terminal)
+  })
+
+  it('does nothing on a second word two commands answer to', () => {
+    const terminal = typing(start(), 'help c')
+    expect(after(terminal, { kind: 'completed' })).toBe(terminal)
+  })
+
+  it('leaves a third word alone', () => {
+    // `help` takes one command, and `run` says so when it is handed more. A
+    // completion here would be filling in a word that is about to be reported
+    // as unusable.
+    const terminal = typing(start(), 'help add sy')
     expect(after(terminal, { kind: 'completed' })).toBe(terminal)
   })
 })
@@ -236,7 +276,8 @@ describe('what is announced', () => {
     // them.
     const terminal = running(start(), 'add')
 
-    expect(terminal.announcement).toBe('Track a playlist.')
+    expect(terminal.announcement).toContain(spoken(run('add').body[0]!))
+    expect(terminal.announcement).not.toContain(PROMPTS.binary)
   })
 
   it('counts every print, so the same answer twice is announced twice', () => {
@@ -532,9 +573,10 @@ describe('answering the menu', () => {
     // command prints, echo and all, so nothing learned here is wrong at a real
     // prompt.
     const drawn = rows(confirming(start()).session.lines)
+    const body = rows(run(MENU_ENTRIES[0]!.runs!).body)
 
-    expect(drawn.at(-2)).toBe(`${PROMPTS.binary}${MENU_ENTRIES[0]!.label}`)
-    expect(drawn.at(-1)).toBe('Track a playlist.')
+    expect(drawn.at(-body.length - 1)).toBe(`${PROMPTS.binary}${MENU_ENTRIES[0]!.label}`)
+    expect(drawn.slice(-body.length)).toEqual(body)
   })
 
   it('records what it launched, the way a clicked word does', () => {
@@ -545,7 +587,9 @@ describe('answering the menu', () => {
     const drawn = rows(confirming(after(start(), { kind: 'later' })).session.lines)
 
     expect(drawn).toContain(`${BAR}  ${MENU_ENTRIES[1]!.label}`)
-    expect(drawn.at(-1)).toBe('Ask every playlist what changed.')
+    expect(drawn.slice(-1 * rows(run(MENU_ENTRIES[1]!.runs!).body).length)).toEqual(
+      rows(run(MENU_ENTRIES[1]!.runs!).body),
+    )
   })
 })
 
