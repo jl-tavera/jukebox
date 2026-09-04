@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { CLI_COMMANDS, HOST, type CliCommand } from '../lib/content'
-import { ARROW, COMMANDS, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
+import { ARROW, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
+import { commandFor, copying, PICKER } from '../lib/session/install'
 import { spoken, text, type Line } from '../lib/session/lines'
 
 /**
@@ -43,7 +44,19 @@ const documented = (name: string): CliCommand => CLI_COMMANDS.find((one) => one.
  * separately -- deriving one from the other would only restate how `noArguments`
  * puts the backticks in.
  */
-const LEFTOVERS = 'Only `help` takes an argument here.'
+const LEFTOVERS = 'Only `help` and `install` take an argument here.'
+
+/**
+ * The two sentences #91 adds, pinned by hand for the header's reason.
+ *
+ * Both are the page's own words rather than a quotation of anything, so the
+ * literal is the criterion: `COPIED` is the confirmation the ticket asks a
+ * chosen system for, and `unknown` is what a word the picker does not offer
+ * gets instead of silence.
+ */
+const COPIED = 'Copied. Paste it into a terminal.'
+
+const unknown = (word: string): string => `${HOST}: no install command for ${word}`
 
 describe('the prompts', () => {
   it('draws its arrow as the code point, not as a pasted glyph', () => {
@@ -99,12 +112,13 @@ describe('help', () => {
     )
   })
 
-  it('covers all seven of the binary and both of the page', () => {
+  it('covers all seven of the binary and all three of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(7)
     expect(
       COMMANDS.filter((command) => command.voice === 'site').map((command) => command.name),
     ).toEqual([
       'help',
+      'install',
       'clear',
     ])
   })
@@ -264,6 +278,15 @@ describe('a binary command', () => {
     expect(rows(run('add foo').body).at(-1)).toBe(LEFTOVERS)
   })
 
+  it('names every word that does take one', () => {
+    // The sentence used to name `help` alone and stopped being true the moment
+    // #91 gave `install` an argument. It is derived now, so the next verb to
+    // take one arrives in it rather than in a bug report.
+    for (const command of COMMANDS.filter((one) => one.takesArgument === true)) {
+      expect(LEFTOVERS).toContain(`\`${command.name}\``)
+    }
+  })
+
   it("puts a row of air between the quotation and the page's own sentence", () => {
     // The block above it is the binary's screen and this is the site speaking.
     // One row, never two -- the CLI does not double-space and neither does this.
@@ -314,6 +337,73 @@ describe('help, given a command', () => {
 
     expect(drawn[0]).toBe(documented('add').summary)
     expect(drawn.at(-1)).toBe(LEFTOVERS)
+  })
+})
+
+describe('install', () => {
+  it('opens the picker and prints nothing of its own', () => {
+    // The rows of the frame belong to `terminal.ts`, because that is also what
+    // has to mark the question live. Two descriptions of one widget can
+    // disagree; one cannot.
+    const printed = run('install')
+
+    expect(printed.body).toEqual([])
+    expect(printed.opens).toBe(PICKER)
+  })
+
+  it('hands over the whole command for the system it was given', () => {
+    const printed = run('install windows')
+
+    expect(rows(printed.body)).toEqual([
+      '# windows',
+      `> ${commandFor('windows').command}   copy`,
+      COPIED,
+    ])
+    expect(printed.opens).toBeUndefined()
+  })
+
+  it('copies it there and then, because naming a system is asking for it', () => {
+    // The ticket asks a chosen row to copy immediately, and `terminal.ts` runs
+    // a chosen row through the line a visitor could have typed -- so the two
+    // are one gesture and this is where it is declared.
+    const printed = run('install macos')
+
+    expect(printed.intents).toEqual([copying('macos')])
+    expect(printed.intents?.[0]?.value).toBe(commandFor('macos').command)
+  })
+
+  it('gives macos and linux the same line, and says whose it is above it', () => {
+    expect(rows(run('install linux').body)).toEqual(rows(run('install macos').body))
+    expect(rows(run('install macos').body)[0]).toBe('# macos · linux')
+  })
+
+  it('asks again when the word is not a system it knows', () => {
+    // Naming the word rather than the verb, which is what a shell does and what
+    // `help nonsense` already does one describe up. The picker follows, because
+    // the useful answer to "not that one" is the list of the ones there are.
+    const printed = run('install bsd')
+
+    expect(rows(printed.body)).toEqual([unknown('bsd')])
+    expect(printed.opens).toBe(PICKER)
+  })
+
+  it('puts nothing on a clipboard for a word it did not understand', () => {
+    expect(run('install bsd').intents).toBeUndefined()
+  })
+
+  it('takes one system and says so when handed more', () => {
+    expect(rows(run('install macos sync').body).at(-1)).toBe(LEFTOVERS)
+  })
+
+  it('describes itself when asked, rather than doing what it does', () => {
+    // `help X` describes X. Across the binary's seven the distinction is
+    // invisible, because those describe themselves when typed. Here it is the
+    // difference between a sentence and a clipboard write.
+    const printed = run('help install')
+
+    expect(rows(printed.body)).toEqual([find('install')!.summary])
+    expect(printed.opens).toBeUndefined()
+    expect(printed.intents).toBeUndefined()
   })
 })
 
