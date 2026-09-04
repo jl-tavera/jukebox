@@ -1,6 +1,9 @@
+import { CLI_VERSION } from '../content'
 import { replay, type Frame } from './boot'
 import { COMMANDS, find, run } from './commands'
-import { blank, spoken, type Line, type Open, type Session } from './lines'
+import { finished } from './index'
+import { guessed } from './install'
+import { blank, spoken, type Intent, type Line, type Open, type Session } from './lines'
 import { abandoned, active, answered, asking, height, moved, named } from './select'
 
 /**
@@ -107,6 +110,8 @@ export type Input =
   | { readonly kind: 'earlier' }
   | { readonly kind: 'later' }
   | { readonly kind: 'chosen'; readonly command: string }
+  | { readonly kind: 'copied'; readonly intent: Intent }
+  | { readonly kind: 'detected'; readonly agent: string }
   | Replaying
 
 /**
@@ -123,7 +128,10 @@ type Replaying =
   | { readonly kind: 'advanced' }
   | { readonly kind: 'skipped' }
 
-type Keyed = Exclude<Input, { kind: 'typed' } | { kind: 'chosen' } | Replaying>['kind']
+type Keyed = Exclude<
+  Input,
+  { kind: 'typed' } | { kind: 'chosen' } | { kind: 'copied' } | { kind: 'detected' } | Replaying
+>['kind']
 
 /**
  * Which keystroke means which input.
@@ -338,6 +346,11 @@ const entered = (terminal: Terminal): Terminal => {
 
   const printed = run(walked.buffer)
 
+  // The frame a command asked for, drawn here rather than by `run` -- this is
+  // also what marks the question live, and one description of a widget cannot
+  // disagree with itself where two could.
+  const opened = printed.opens === undefined ? [] : asking(printed.opens)
+
   // One blank row of air above the echo, and none when there is nothing above
   // it to be separated from -- which is the state `clear` leaves behind. The
   // CLI never double-spaces and neither does this.
@@ -359,24 +372,30 @@ const entered = (terminal: Terminal): Terminal => {
     // this stays true by statement rather than by inheritance.
     boot: undefined,
 
-    // `intents` is carried through rather than replaced. #85 declares none --
-    // `help` and `clear` write no clipboard and set no timer -- so the question
-    // of when a performed intent leaves the array stays unopened, and #88 is
-    // the ticket that has to answer it.
+    // **`intents` is replaced rather than carried, and #91 is what settled
+    // that.** An intent lives for exactly the transition that declared it. The
+    // alternative -- accumulating them -- would have every later keystroke
+    // hand the component a clipboard write it had already performed, so the
+    // question "when does a performed intent leave the array" would have to be
+    // answered by whoever performs them. Here it never arises.
     session: {
-      lines: printed.clears === true ? [] : capped(appended),
-      intents: walked.session.intents,
+      lines: printed.clears === true ? [] : capped([...appended, ...opened]),
+      intents: printed.intents ?? [],
 
-      // No `open`. Either there was no question, or the frame above just closed
-      // the one there was -- and `clear` empties the rows a live one would have
-      // been drawn in, so there is no arrangement of these that leaves a widget
-      // the reducer still believes it can move.
+      // The question this line just opened, or none. Either there was no
+      // question and none was asked for, or the frame above closed the one
+      // there was -- and `clear` empties the rows a live one would have been
+      // drawn in, so nothing here can leave a widget the reducer believes it
+      // can move and the visitor cannot see.
+      open: printed.opens,
     },
     buffer: '',
     history,
     recall: history.length,
     draft: '',
-    announcement: printed.announcement ?? said(printed.body),
+    // The frame is included, because a question that opened and was not read
+    // out is a page waiting on an answer nobody was told it wanted.
+    announcement: printed.announcement ?? said([...printed.body, ...opened]),
     printed: walked.printed + 1,
   }
 }
@@ -445,6 +464,65 @@ const completed = (terminal: Terminal): Terminal => {
   const filled = asked.first && only.takesArgument === true ? `${only.name} ` : only.name
 
   return { ...terminal, buffer: asked.before + filled }
+}
+
+/**
+ * A value put on the clipboard again, and nothing else.
+ *
+ * **Nothing is printed, which is the whole of what the control is for.** #91
+ * asks that the command left in the scrollback can be copied again *without
+ * re-running anything* -- so this is not `chosen` with a different payload, and
+ * `Span.copies` is not `Span.runs`. Running the command would reprint the block
+ * the control is standing in, every time somebody used it.
+ *
+ * That leaves nothing on screen to say it happened, so the announcement is the
+ * only record and `printed` is bumped to make a live region read it again --
+ * copying the same value twice is two events and produces the same sentence.
+ */
+const copied = (terminal: Terminal, intent: Intent): Terminal => ({
+  ...terminal,
+  session: { ...terminal.session, intents: [intent] },
+  announcement: `Copied ${intent.what}.`,
+  printed: terminal.printed + 1,
+})
+
+/**
+ * The visitor's own system, once the page is somewhere that has one.
+ *
+ * **It rebuilds rather than editing the rows, and that is the point**: there is
+ * one description of what this page looks like for a given system, and this
+ * produces it. The session a visitor ends up with is byte for byte the session
+ * that system would have been served, which is a property a test can state --
+ * where a splice into the middle of the scrollback would only be a procedure
+ * somebody has to keep correct.
+ *
+ * **It reaches down to `index.ts` for that, and the direction is right.** The
+ * rule this repo states three times is that a *leaf* must not reach back
+ * through the module that composes it -- why `COMMENT`, `Open` and `System` all
+ * sit below the things that assemble them. This file is not a leaf. It is the
+ * top of the module and says so: it *wraps* the finished session rather than
+ * replacing it, exactly as it already reaches down to `boot.ts` to take one
+ * apart. Nothing imports this file but the component.
+ *
+ * The version comes from the same constant `app/page.tsx` builds the served
+ * session from, which is the only production caller of either -- so this cannot
+ * disagree with what was served, because there is one number rather than two.
+ * Carrying it on the state instead would put a second copy of it in play to
+ * protect against a divergence nothing can cause.
+ *
+ * Two ways to change nothing, and both hand back the terminal they were given.
+ * A guess that failed leaves whatever the page was served with, because a
+ * fallback here would be this module choosing for a visitor it knows nothing
+ * about. And a page somebody has already used is left alone: the component
+ * dispatches this once, from a mount effect, so in practice nothing has
+ * happened yet -- the guard is what makes that a property of the reducer rather
+ * than an ordering the component has to keep.
+ */
+const detected = (terminal: Terminal, agent: string): Terminal => {
+  const system = guessed(agent)
+  if (system === undefined || terminal.printed > 0) return terminal
+
+  return { ...terminal, session: finished(CLI_VERSION, system) }
 }
 
 const earlier = (terminal: Terminal): Terminal => {
@@ -561,6 +639,10 @@ export const after = (terminal: Terminal, input: Input): Terminal => {
       return selecting(settled, 1) ?? later(settled)
     case 'chosen':
       return after(after(settled, { kind: 'typed', value: input.command }), { kind: 'entered' })
+    case 'copied':
+      return copied(settled, input.intent)
+    case 'detected':
+      return detected(settled, input.agent)
 
     // Rewinds, rather than resuming, so a second dispatch is a boot rather than
     // two -- which is what React's StrictMode does to a mount effect in `dev`.
