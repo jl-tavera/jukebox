@@ -1,0 +1,35 @@
+{
+  // The fourth program, and it exists because it needs exactly the combination
+  // the second one was created to forbid.
+  //
+  // `tsconfig.test.json` compiles the session module bare -- `types: ["bun"]`,
+  // `lib: ["ES2022"]`, no DOM at all -- precisely so a module reaching for
+  // `document` fails to compile. That is the point of it and it is not weakened
+  // here. This directory is the other half of the same split: seam two asserts
+  // what the *component* does with what the module computed, so it needs a DOM,
+  // a renderer and React's `act`. Putting these files in that program would put
+  // `lib.dom` back into the one config whose whole value is not having it.
+  //
+  // `tsconfig.e2e.json` is the precedent for adding a program rather than
+  // widening one, and it also records the conflict this file has to answer:
+  // Bun's types and `lib.dom` both declare `fetch`, `DOMException` and a dozen
+  // other web globals. That was a hard error once. With `skipLibCheck` on --
+  // inherited from the base config -- and `@types/bun` 1.4, the duplicates no
+  // longer collide, so this program can have both and the tests can be `bun
+  // test` like every other suite in the repo rather than a bespoke runner.
+  //
+  // So: DOM, because a component is being rendered into one; `bun`, because the
+  // assertions are `bun:test`; and `jsx`, inherited, because the thing under
+  // test is a component.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun", "node", "react", "react-dom"],
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  // Restated rather than inherited, for the reason the other two give: `include`
+  // in the base config is the whole app and `exclude` there now names this
+  // directory, so inheriting either would leave this program with nothing to
+  // compile.
+  "include": ["wiring/**/*.ts", "wiring/**/*.tsx"],
+  "exclude": ["node_modules"]
+}

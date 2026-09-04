@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.e2e.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.wiring.json && tsc --noEmit -p tsconfig.e2e.json",
     "test": "bun test ./test",
+    "test:wiring": "bun test ./wiring",
     "test:e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
     "fonts:build": "bun run scripts/build-fonts.ts",
@@ -26,9 +27,11 @@
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "^1.4.0",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "jsdom": "^30.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "wrangler": "^4.127.1"
