@@ -24,3 +24,25 @@
 /install.ps1
   Cache-Control: no-cache
   Content-Type: text/plain; charset=utf-8
+
+# The two webfonts, and the rule inverts here. Everything above is `no-cache`
+# because it is a thing a human edits to reach people immediately -- a kill
+# switch, or a script somebody is about to pipe into a shell. A font changes
+# only when the subset is regenerated and committed, which is roughly never, and
+# caching it is what stops `font-display: block` costing a blank first frame on
+# every repeat visit.
+#
+# A week rather than the year an `immutable` asset would get, because these
+# filenames carry no content hash. `/fonts/monaspace-neon.woff2` is written
+# literally in globals.css and layout.tsx, so a regenerated subset ships under
+# the same URL and there is nothing to bust the cache with. `immutable` would be
+# promising something this arrangement cannot keep: widen the whitelist to fix a
+# missing glyph and a returning visitor would keep the sheared copy until the
+# entry expired.
+#
+# A week is the staleness anyone can actually be handed, and the request it
+# still saves is every repeat visit inside one. Content-hashed names are the
+# real fix and would earn the year back; they are more moving parts than this
+# needs while the fonts change once a release at most.
+/fonts/*
+  Cache-Control: public, max-age=604800

@@ -173,6 +173,8 @@ Rendered in a `<pre>` with `role="img"` and `aria-label="Jukebox"`. The blank ro
 
 Sizing: the art is 67 characters wide. `font-size: clamp(5px, 2vw, 25px)` keeps it inside the viewport at every width — measured at 279px wide on a 375 viewport, 572px at 768, and 931px from 1250 up. `line-height: 1` so the half-blocks meet cleanly between rows.
 
+*Those three widths were measured under the system monospace stack and are stale as of #81: Monaspace's advance is wider, so the art grew by roughly 6% at every width. The clamp still holds it inside the viewport and did not have to move. #83 re-measures all three in a real browser at 375, 768 and 1440 and is the ticket that should replace these numbers — deliberately not #81, which could only derive two of the three from the clamp rather than measure them.*
+
 `letter-spacing: -0.03em` is not a styling choice. Adjacent block glyphs each rasterise in their own cell, and at fractional cell widths the boundaries leave sub-pixel gaps that let the ground bleed through the letterforms as vertical hairlines — clearly visible on the solid strokes this art is built from. A hair of negative tracking overlaps the cells and closes them. It is applied uniformly, so every row still measures identically and the integrity check below still means what it says.
 
 **Changing the art means rechecking these numbers.** They are derived from its character width, and the previous wordmark was 58 wide — the clamp tuned for it overflowed a phone the moment a 67-wide one replaced it.

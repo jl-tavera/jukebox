@@ -19,9 +19,11 @@
  * with its first consumer.
  *
  * `prose` is the human's voice against the machine's -- the tagline and the
- * lede, which a person wrote. Today both faces resolve to the same stack; #81
- * vendors Monaspace Argon behind `prose` and Neon behind the rest, and this is
- * the only place that has to know.
+ * lede, which a person wrote. It resolves to Monaspace Argon and every other
+ * tone to Monaspace Neon, both vendored and subset. The two are built at
+ * identical metrics, so the voice changes without the character grid moving a
+ * column -- which is why this can be a tone at all rather than a layout
+ * decision, and why this stays the only place that has to know.
  */
 export type Tone = 'inverted' | 'ink' | 'prose' | 'dim'
 
