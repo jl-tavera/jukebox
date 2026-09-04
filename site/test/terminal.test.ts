@@ -5,9 +5,11 @@ import { COMMANDS, EMPTIED, PROMPTS, run } from '../lib/session/commands'
 import { versionLine } from '../lib/session/header'
 import { finished } from '../lib/session'
 import { spoken, text, type Line, type Open, type Session } from '../lib/session/lines'
+import { commandFor, copying, PICKER } from '../lib/session/install'
 import {
   asking,
   BAR,
+  BAR_END,
   LEGEND,
   RADIO_ACTIVE,
   STEP,
@@ -721,6 +723,115 @@ describe('clearing a screen with a question on it', () => {
     const cleared = running(start(), 'clear')
 
     expect(after(cleared, { kind: 'later' })).toBe(cleared)
+  })
+})
+
+describe('the install picker', () => {
+  /** Every value the session is currently asking to have copied. */
+  const asked = (terminal: Terminal): readonly string[] =>
+    terminal.session.intents.map((intent) => intent.value)
+
+  /** Every control on screen, by what it would put on a clipboard. */
+  const controls = (terminal: Terminal): string[] =>
+    terminal.session.lines
+      .flatMap((line) => (line.kind === 'text' ? line.spans : []))
+      .flatMap((span) => (span.copies === undefined ? [] : [span.copies.value]))
+
+  it('opens the widget #86 built, without modifying it', () => {
+    const opened = running(free(), 'install')
+
+    expect(rows(opened.session.lines).at(-1)).toBe(BAR_END)
+    expect(opened.session.open).toBe(PICKER)
+    expect(onCursor(opened)).toBe(
+      `${BAR}  ${RADIO_ACTIVE} ${PICKER.options[0]!.label} (${PICKER.options[0]!.hint})`,
+    )
+  })
+
+  it('copies the row the cursor was standing on', () => {
+    expect(asked(entering(running(free(), 'install')))).toEqual([copying('macos').value])
+  })
+
+  it('copies the row the arrows walked to', () => {
+    const moved = after(running(free(), 'install'), { kind: 'later' })
+
+    expect(asked(entering(moved))).toEqual([copying('linux').value])
+  })
+
+  it('copies a row named at the prompt, because that is the same answer', () => {
+    expect(asked(running(running(free(), 'install'), 'windows'))).toEqual([
+      copying('windows').value,
+    ])
+  })
+
+  it('runs the same line whether it was chosen or typed', () => {
+    const chosen = entering(running(free(), 'install'))
+    const typed = running(free(), `install ${PICKER.options[0]!.label}`)
+
+    expect(rows(chosen.session.lines).slice(-3)).toEqual(rows(typed.session.lines).slice(-3))
+  })
+
+  it('leaves the command in the scrollback, with a control that copies it again', () => {
+    // The criterion, phrased as what stays on screen: the row is still there
+    // afterwards and still carries the whole command.
+    const copied = running(free(), 'install macos')
+
+    expect(controls(copied)).toContain(commandFor('macos').command)
+  })
+
+  it('stops asking for it once the transition that asked is over', () => {
+    // What `Session.intents` means, settled here because #91 is the first
+    // ticket to put anything in it: an intent lives for exactly the transition
+    // that declared it. Carried instead, every later keystroke would re-copy.
+    expect(asked(running(running(free(), 'install macos'), 'help'))).toEqual([])
+  })
+})
+
+describe('a control, used again', () => {
+  it('declares the value and prints nothing', () => {
+    // *Copied again without re-running anything*, which is why a copy control
+    // is not a `runs` span: running the command would reprint the block it is
+    // standing in.
+    const copied = running(free(), 'install macos')
+    const again = after(copied, { kind: 'copied', intent: copying('macos') })
+
+    expect(again.session.lines).toBe(copied.session.lines)
+    expect(again.session.intents).toEqual([copying('macos')])
+  })
+
+  it('says what it put there, because nothing on screen changed to say it', () => {
+    const again = after(start(), { kind: 'copied', intent: copying('macos') })
+
+    expect(again.announcement).toBe('Copied the install command.')
+    expect(again.printed).toBe(start().printed + 1)
+  })
+})
+
+describe('the guess at the visitor\'s system', () => {
+  const WINDOWS =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+  it('is exactly the session that system would have been served', () => {
+    // The whole property, and the reason this is a rebuild rather than a splice
+    // into the rows: there is one description of what a page looks like for a
+    // given system, and detection produces it rather than editing towards it.
+    expect(after(start(), { kind: 'detected', agent: WINDOWS }).session).toEqual(
+      finished(CLI_VERSION, 'windows'),
+    )
+  })
+
+  it('changes nothing at all when it cannot tell', () => {
+    const page = start()
+
+    expect(after(page, { kind: 'detected', agent: 'curl/8.4.0' })).toBe(page)
+  })
+
+  it('keeps its hands off a page somebody has already used', () => {
+    // It arrives from a mount effect, so in practice nothing has happened yet.
+    // The guard is what makes that a property rather than an ordering somebody
+    // has to keep -- a late guess must not throw away a scrollback.
+    const used = running(start(), 'help')
+
+    expect(after(used, { kind: 'detected', agent: WINDOWS })).toBe(used)
   })
 })
 
