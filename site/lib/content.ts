@@ -74,6 +74,26 @@ export const WORDMARK = `
  */
 const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
 
+/**
+ * The name the page speaks under. **Not the address it is served from.**
+ *
+ * Those are two different facts and this file now holds both, one directly
+ * above the other, so the distinction is worth stating plainly rather than
+ * leaving to be worked out. `SITE` is where the bytes come from and is what an
+ * install command has to name, because a visitor pastes it into a shell.
+ * `HOST` is who is talking: it prefixes the page's own prompt and opens the
+ * sentence a shell writes when it does not recognise a word.
+ *
+ * They disagree today and are meant to. `cli/src/discovery.ts` and
+ * `docs/design/SITE.md` 08 both record why -- `jukebox.dev` is registered to
+ * somebody else, and until that is settled the site lives on workers.dev.
+ * Reading §08 and "fixing" this to match `SITE` would put a fifty-character
+ * workers.dev address in front of every prompt on the page, and would break the
+ * copy #85 pins by hand. When the domain is settled, `SITE` changes and this
+ * does not.
+ */
+export const HOST = 'jukebox.dev'
+
 export interface InstallCommand {
   /** The platforms this line is for, lower-case like the rest of the page. */
   platforms: string
@@ -249,4 +269,62 @@ export const MENU_ENTRIES: readonly Option[] = [
   { label: 'list', hint: 'Every playlist you track' },
   { label: 'config', hint: 'Every setting, where it came from, and change one' },
   { label: 'quit', hint: 'Leave the menu' },
+]
+
+export interface CliCommand {
+  /** What is typed. The binary's own name for it, lower case. */
+  name: string
+  /** One line for the page's `help`. Sentence case, ending in a full stop. */
+  summary: string
+}
+
+/**
+ * The binary's seven commands, as the page describes them.
+ *
+ * **A second copy, and CI cannot yet see the two disagree** -- the same
+ * confession `MENU_ENTRIES` above carries, for the same reason and with the
+ * same expiry. The originals are the `meta.description` on each command under
+ * `cli/src/commands/`, reachable as a list from the `commands` array
+ * `cli/src/main.ts` already builds for its own `--help`. #87 generates this
+ * from there and diffs it in CI, in the CLI's workflow rather than the site's.
+ *
+ * **These are not `MENU_ENTRIES`' hints and must not be folded into them**,
+ * however alike four of them look. That list is a *quotation of the binary's
+ * screen*: its strings are `cli/src/menu.ts`'s literals in the CLI's own
+ * register, and if the CLI reworded a hint tomorrow that list would have to
+ * follow to stay a faithful quotation. This list is the page's own wording --
+ * sentence case, terminal full stop -- and it would not have to move.
+ * Collapsing them saves five strings and costs the distinction that makes the
+ * quotation mean anything.
+ *
+ * **Written by the page, printed in the binary's voice, and that is the one
+ * place ADR-0010's rule bends.** A summary answers at the `$ jukebox …` prompt
+ * and is set in the machine's face, so for as long as these sentences are ours
+ * the page is speaking where the binary should. The alternative was to print
+ * them as `prose`, which trades the bend for a worse one: the same string would
+ * change typeface between here and the `help` column, and would change back
+ * when #87 lands. #87 is what actually resolves it -- these become the
+ * command's own generated help, at which point the words are the binary's and
+ * the voice is correct. Recorded rather than glossed, because a reader
+ * comparing this against the ADR deserves to find the discrepancy already
+ * known.
+ *
+ * Order is the menu's for the five it carries, then the two reached through
+ * `list`, then `version`. Not alphabetical, and not the tree's own order
+ * either: `cli/src/root.ts` lists them alphabetically because an object literal
+ * has to be in some order, which is not the same as choosing one. #87 settles
+ * this when it generates.
+ *
+ * Every summary here prints as-is today. #87 replaces it with the command's
+ * real generated help; what the page does with the string does not change, only
+ * how long it is.
+ */
+export const CLI_COMMANDS: readonly CliCommand[] = [
+  { name: 'add', summary: 'Track a playlist.' },
+  { name: 'sync', summary: 'Ask every playlist what changed.' },
+  { name: 'list', summary: 'Every playlist you track.' },
+  { name: 'config', summary: 'Every setting, where it came from, and change one.' },
+  { name: 'show', summary: 'One playlist, and the tracks recorded for it.' },
+  { name: 'remove', summary: 'Stop tracking a playlist on this machine.' },
+  { name: 'version', summary: 'Report the version of Jukebox you are running.' },
 ]
