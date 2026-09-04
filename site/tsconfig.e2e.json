@@ -1,0 +1,38 @@
+{
+  // The third program, and it exists because neither of the other two can hold
+  // a Playwright spec.
+  //
+  // `tsconfig.test.json` compiles the session module bare -- `types: ["bun"]`,
+  // `lib: ["ES2022"]`, no DOM at all -- precisely so that a module reaching for
+  // `document` fails to compile. A Playwright spec is the opposite kind of
+  // file: the body of every `page.evaluate` is written against `document` and
+  // `window`, because it runs in the browser. Putting one there would either
+  // fail to compile or force the DOM lib back into the program whose whole
+  // point is not having it.
+  //
+  // The app's own `tsconfig.json` is the other candidate and is wrong for a
+  // quieter reason. Its `include` is `**/*.ts`, so it would have swallowed this
+  // directory without being asked -- which is why `e2e` and
+  // `playwright.config.ts` are named in its `exclude` alongside `test`. Left
+  // there, `@playwright/test`'s types would share a program with `app/` and
+  // `lib/`, and a page component could import a test fixture with nothing
+  // objecting.
+  //
+  // So: DOM, because the code runs in a browser; `node`, because the config and
+  // the specs read paths off `import.meta.url`; and no `bun`, because Bun's
+  // types cannot share a program with `lib.dom` -- both declare `fetch` and a
+  // dozen other web globals, and the duplicates are errors rather than a
+  // nuisance. That last conflict is the same one `tsconfig.test.json` opens by
+  // explaining, arriving from the other side.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  // Restated rather than inherited, for the reason `tsconfig.test.json` gives:
+  // `include` above is the whole app and `exclude` above now names this
+  // directory, so inheriting either would leave this project with nothing to
+  // compile.
+  "include": ["e2e/**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules"]
+}
