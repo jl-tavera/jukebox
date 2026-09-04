@@ -26,3 +26,19 @@ site/public/install.ps1 text eol=lf
 docs/design/DESIGN.md text eol=lf
 site/lib/content.ts text eol=lf
 cli/src/wordmark.ts text eol=lf
+
+# The two subset webfonts, and the licence that has to travel with them.
+#
+# Git would infer the fonts are binary and would probably be right, but every
+# other line in this file says what it means rather than leaving it to a
+# heuristic, and these are the first committed binaries in the repo -- the
+# compiled binaries under cli/dist are ignored, not tracked. A .woff2 that
+# something decided was text and normalised the line endings of is a font that
+# no longer parses, and the error it produces names none of that.
+#
+# The licence is pinned to LF for the reason the wordmark's sources are: it is
+# fetched byte-for-byte from upstream and checksummed against a digest written
+# into scripts/build-fonts.ts, and a checkout that rewrote its endings would
+# fail that check on a machine rather than in a diff.
+site/public/fonts/*.woff2 binary
+site/public/fonts/OFL.txt text eol=lf
