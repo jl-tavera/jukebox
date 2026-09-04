@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'bun:test'
 import { CLI_VERSION } from '../lib/content'
-import { COMMANDS, EMPTIED, PROMPTS } from '../lib/session/commands'
+import { replay } from '../lib/session/boot'
+import { COMMANDS, EMPTIED, PROMPTS, run } from '../lib/session/commands'
+import { versionLine } from '../lib/session/header'
 import { finished } from '../lib/session'
-import { text, type Line } from '../lib/session/lines'
-import { after, booted, KEYS, SCROLLBACK, type Terminal } from '../lib/session/terminal'
+import { text, type Line, type Session } from '../lib/session/lines'
+import { after, booted, KEYS, pause, SCROLLBACK, type Terminal } from '../lib/session/terminal'
 
 /**
  * The live prompt, driven directly.
@@ -303,5 +305,123 @@ describe('the keymap', () => {
 describe('purity', () => {
   it('answers the same twice', () => {
     expect(running(start(), 'help')).toEqual(running(start(), 'help'))
+  })
+})
+
+/** A terminal with the boot replay running, standing on its first frame. */
+const replaying = (): Terminal => after(start(), { kind: 'replayed' })
+
+describe('the boot replay', () => {
+  const advancing = (terminal: Terminal): Terminal => after(terminal, { kind: 'advanced' })
+
+  /** The replay, run to its end the way the component's timer would. */
+  const throughout = (terminal: Terminal): Terminal => {
+    let running = terminal
+    while (pause(running) !== undefined) running = advancing(running)
+    return running
+  }
+
+  it('does not start on its own', () => {
+    // The reducer opens on the session the page was served with, and #84 is an
+    // enhancement over that rather than a replacement for it. A visitor whose
+    // JavaScript never ran, or who asked for reduced motion, gets exactly this
+    // state -- so nothing here may begin without being told to.
+    expect(pause(start())).toBeUndefined()
+    expect(start().session).toEqual(finished(CLI_VERSION))
+  })
+
+  it('rewinds to the first frame when it is told to', () => {
+    const terminal = replaying()
+
+    expect(terminal.session.lines).toEqual(replay(finished(CLI_VERSION))[0]!.lines)
+    expect(pause(terminal)).toBe(replay(finished(CLI_VERSION))[0]!.hold)
+  })
+
+  it('reaches the session the page was served with, and stops there', () => {
+    const terminal = throughout(replaying())
+
+    expect(terminal.session).toEqual(finished(CLI_VERSION))
+    expect(pause(terminal)).toBeUndefined()
+  })
+
+  it('starts again from the beginning if it is told to twice', () => {
+    // React runs an effect twice under StrictMode, so `dev` dispatches this
+    // twice on one mount. Rewinding is what makes that a boot rather than two.
+    expect(after(replaying(), { kind: 'replayed' }).session.lines).toEqual(
+      replaying().session.lines,
+    )
+  })
+
+  it('asks for nothing to be done, all the way through', () => {
+    // The timing is a number in the frame rather than an intent, because a
+    // timer is the one effect that has to be cancelled and an intent carries no
+    // handle to cancel. So this array stays #88's to fill.
+    expect(replaying().session.intents).toEqual([])
+    expect(throughout(replaying()).session.intents).toEqual([])
+  })
+})
+
+describe('reaching the end of the boot early', () => {
+  const served = (): Session => finished(CLI_VERSION)
+
+  it('is what a skip does, in one step', () => {
+    const terminal = after(replaying(), { kind: 'skipped' })
+
+    expect(terminal.session).toEqual(served())
+    expect(pause(terminal)).toBeUndefined()
+  })
+
+  it('is what every other input does too, on its way to doing its own job', () => {
+    // **The whole of "any keypress skips", said once.** A listener in the
+    // component could say it for a keystroke, and could not say it for a word
+    // that was clicked -- which would otherwise print into a partial session
+    // that the next frame overwrites. Collapsing here makes the hazard
+    // unreachable rather than handled.
+    for (const input of [
+      { kind: 'typed', value: 'he' },
+      { kind: 'completed' },
+      { kind: 'earlier' },
+      { kind: 'later' },
+      { kind: 'entered' },
+    ] as const) {
+      const terminal = after(replaying(), input)
+
+      expect(pause(terminal), `${input.kind} left the boot running`).toBeUndefined()
+      expect(rows(terminal.session.lines), `${input.kind} lost the session`).toContain(
+        versionLine(CLI_VERSION),
+      )
+    }
+  })
+
+  it('is what a clicked word does, before the word runs', () => {
+    const terminal = after(replaying(), { kind: 'chosen', command: 'help' })
+    const drawn = rows(terminal.session.lines)
+
+    // The boot arrived whole, and the command printed underneath it rather than
+    // into the middle of a mark that was still being drawn.
+    expect(drawn).toContain(versionLine(CLI_VERSION))
+    expect(drawn.at(-1)).toBe(text(run('help').body.at(-1)!))
+  })
+
+  it('leaves a terminal that was never replaying exactly as it was', () => {
+    // The invariant `terminal.ts` states of itself -- every branch that changes
+    // nothing returns the terminal it was handed -- now has to survive a
+    // collapse that runs ahead of every input. With no boot in flight it must
+    // hand back the same object, or eight `toBe` assertions above go red at once
+    // and the shape of "does nothing" is gone.
+    const terminal = start()
+
+    for (const input of [
+      { kind: 'completed' },
+      { kind: 'earlier' },
+      { kind: 'later' },
+      { kind: 'entered' },
+      { kind: 'skipped' },
+      { kind: 'advanced' },
+    ] as const) {
+      expect(after(terminal, input), `${input.kind} rebuilt a terminal it did not change`).toBe(
+        terminal,
+      )
+    }
   })
 })
