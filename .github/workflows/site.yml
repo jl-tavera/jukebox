@@ -13,6 +13,14 @@ name: site
 # The art is not edited in `site/lib/content.ts` at all any more: an edit there
 # is one CI will undo. Change the document and run the generator.
 #
+# Since #87 that file carries a second generated block and the same warning
+# covers it. The menu's entries and the binary's seven commands are written from
+# `cli/src/menu.ts` and `cli/src/commands/` by `generate:help`, and cli.yml
+# diffs that too -- so the descriptions this page prints as a command's own help
+# are the binary's words rather than the page's about it. `cli/**` is already in
+# that workflow's filter, so a reworded description runs the check without
+# anything being named here. Change the command and run the generator.
+#
 # `cli/package.json` is named for the mirror of that reason. Since #82 the boot
 # on the landing page prints `jukebox <version>` read from that file, the way
 # `cli/src/version.ts` reads it -- so a release bump changes what this page

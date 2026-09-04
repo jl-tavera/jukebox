@@ -62,3 +62,22 @@ jobs:
         run: |
           bun run --cwd cli generate:wordmark
           git diff --exit-code -- cli/src/wordmark.ts site/lib/content.ts
+
+      # The binary's own help, regenerated from the `meta` and `args` of each
+      # command under cli/src/commands/ and from the menu in cli/src/menu.ts,
+      # and diffed. The step above's shape, here for the step above's reasons:
+      # the source is in this workspace, and site.yml already carries a note
+      # pointing at this file rather than repeating either check.
+      #
+      # **Nothing is added to the path filter and nothing needs to be.** Every
+      # description this reads is under `cli/**`, and site/lib/content.ts was
+      # already named there for the wordmark -- so editing a description and not
+      # regenerating fails here, which is the whole of what #87 asked for.
+      #
+      # Both steps write into site/lib/content.ts and neither can undo the
+      # other: they splice different declarations, and each reads the file as it
+      # finds it. Running in either order leaves the same bytes.
+      - name: The committed help matches the CLI's commands
+        run: |
+          bun run --cwd cli generate:help
+          git diff --exit-code -- site/lib/content.ts

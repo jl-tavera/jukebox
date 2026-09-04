@@ -17,6 +17,13 @@ site/public/install.ps1 text eol=lf
 # does, because it is measured in columns and a carriage return is a byte on the
 # end of every row that nobody can see.
 #
+# site/lib/content.ts is now written by a second generator as well --
+# scripts/generate-help.ts, added by #87 for the menu's entries and the binary's
+# command descriptions. It needs the pin for the reason at the top of this file
+# rather than for the reason below: those strings are not measured in columns,
+# but they are regenerated and diffed, so an unpinned checkout would report
+# drift on every Windows machine that ran the check.
+#
 # The document is pinned since #60, where it stopped being prose that named
 # itself as the source and became the file two others are generated from. The
 # generator drops carriage returns on the way in as well, which is not the same
