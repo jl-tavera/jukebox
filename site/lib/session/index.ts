@@ -88,4 +88,8 @@ export const finished = (version: string): Session => ({
   // Nothing here writes to a clipboard, moves focus or sets a timer, so there
   // is nothing to hand the renderer. #88 and #91 are the first to declare one.
   intents: [],
+
+  // The boot ends on a question, so the session the page is served with is one
+  // that is still waiting for an answer.
+  open: MENU,
 })
