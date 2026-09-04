@@ -112,6 +112,16 @@ const REQUIRED: readonly Requirement[] = [
   { what: 'the mark on a step that was cancelled', from: 0x25a0 },
   { what: 'the mark on a step that failed validation', from: 0x25b2 },
 
+  // #85 is this code point's first consumer, which is what earns it an entry.
+  // `build-fonts.ts` has shipped it all along -- its Geometric Shapes range
+  // covers 25A0-25FF and its own note already calls this one "the prompt arrow"
+  // -- but nothing required it, so narrowing that range would have dropped the
+  // mark in front of every line the visitor types, silently, on somebody else's
+  // machine. It is the distinction the note below draws, arriving from the
+  // other side: a glyph the page draws today, rather than one waiting for a
+  // state or one nothing would ever draw.
+  { what: "the arrow on the page's own prompt", from: 0x25b8 },
+
   { what: 'the up arrow in the menu legend', from: 0x2191 },
   { what: 'the down arrow in the menu legend', from: 0x2193 },
   { what: 'the bullet separating the menu legend', from: 0x2022 },
