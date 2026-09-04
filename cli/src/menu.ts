@@ -73,6 +73,20 @@ type Entry = 'add' | 'sync' | 'list' | 'config' | 'quit'
 type Reaching = Extract<Entry, 'add' | 'sync'>
 
 /**
+ * What the top level asks, and the last of this file's four questions to be
+ * given a name.
+ *
+ * The other three were exported so that a test pins the words rather than a
+ * paraphrase of them. This one is exported for that and for one more reason:
+ * since #87 the landing page quotes this menu, and `site/lib/content.ts` is
+ * generated from `ENTRIES` and from here. A question left as a literal at the
+ * `select` below would have been the one string on that screen the generator
+ * could not reach, which is how a page comes to ask something the binary
+ * stopped asking.
+ */
+export const WHAT_NEXT = 'What next?'
+
+/**
  * The entries, in the order #50 sets: the two that reach the network, the two
  * that read only local state, then the way out.
  *
@@ -270,7 +284,7 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
   try {
     for (;;) {
       const chosen = await select<Entry>({
-        message: 'What next?',
+        message: WHAT_NEXT,
         options: ENTRIES,
         ...asking,
       })
