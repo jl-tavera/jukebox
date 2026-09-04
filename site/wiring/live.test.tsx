@@ -6,7 +6,8 @@ import { run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
 import { versionLine } from '@/lib/session/header'
-import { mounted, prefers, pressed, type Mounted } from './dom'
+import { commandFor } from '@/lib/session/install'
+import { forget, mounted, prefers, pressed, pretending, written, type Mounted } from './dom'
 
 /**
  * Seam two: what the component does with what the module computed.
@@ -369,5 +370,103 @@ describe('the keys a page nobody has clicked on answers', () => {
     } finally {
       prefers('reduce')
     }
+  })
+})
+
+describe('the clipboard, which only this seam can watch', () => {
+  /** The controls on screen, which are words like any other. */
+  const controls = (page: Mounted): HTMLElement[] =>
+    page.all('.u-word').filter((element) => element.textContent === 'copy')
+
+  it('gets nothing from a page that has only been loaded', async () => {
+    // The offer at the boot is an offer. A page that wrote to a clipboard
+    // nobody reached for would be doing something no visitor asked for, and
+    // this is the case that would fail if the intent ever moved into
+    // `finished`.
+    forget()
+    const page = await live()
+
+    expect(written()).toEqual([])
+
+    await page.unmount()
+  })
+
+  it('gets the whole command when a system is chosen', async () => {
+    // `SITE.md` 06's rule, and #91's sixth criterion: capture the argument
+    // rather than trusting the row. The row has a shell sigil in front of the
+    // command and a control after it, and neither belongs in a terminal.
+    forget()
+    const page = await live()
+
+    await page.type('install macos')
+    await page.press('Enter')
+
+    expect(written()).toEqual([commandFor('macos').command])
+
+    await page.unmount()
+  })
+
+  it('gets it again from the control', async () => {
+    // That a click on the control reaches the reducer at all, which is this
+    // seam's half of the criterion. That nothing is reprinted when it does is
+    // behaviour, and `test/terminal.test.ts` holds it with an identity check on
+    // the rows -- restating it here would be a second place to change it.
+    forget()
+    const page = await live()
+
+    await page.type('install macos')
+    await page.press('Enter')
+
+    await page.click(controls(page).at(-1)!)
+
+    expect(written()).toEqual([commandFor('macos').command, commandFor('macos').command])
+
+    await page.unmount()
+  })
+
+  it('draws a control the keyboard can reach, and names it for a screen reader', async () => {
+    // A bare `copy` is ambiguous the moment there are two of them, and #88 puts
+    // four more on the page. The visible word is inside the accessible name, so
+    // the two do not disagree.
+    forget()
+    const page = await live()
+
+    const control = controls(page).at(-1)!
+
+    expect(control.tagName).toBe('BUTTON')
+    expect(control.getAttribute('aria-label')).toBe('copy the install command')
+
+    await page.unmount()
+  })
+})
+
+describe('the guess at the visitor\'s system', () => {
+  const WINDOWS =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+  it('reads the agent off the browser and swaps the line for it', async () => {
+    // The one thing this seam owns about the detection: that `navigator` is
+    // where the answer comes from. Which system a string means is
+    // `test/install.test.ts`, and what the session then looks like is
+    // `test/terminal.test.ts`.
+    pretending(WINDOWS)
+
+    try {
+      const page = await live()
+
+      expect(page.one('main').textContent).toContain(commandFor('windows').command)
+
+      await page.unmount()
+    } finally {
+      pretending('')
+    }
+  })
+
+  it('leaves the served line alone when the browser says nothing useful', async () => {
+    const page = await live()
+
+    expect(page.one('main').textContent).toContain(commandFor('macos').command)
+
+    await page.unmount()
   })
 })
