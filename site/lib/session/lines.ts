@@ -96,12 +96,22 @@ export type Line =
 /**
  * Something the page must do that this module may not.
  *
- * Writing to a clipboard, moving focus and scheduling a timer are not
- * expressible as a pure function of state, so they leave here as a declaration
- * and the component performs them. ADR-0010 asks for this in order to make
- * `SITE.md` 06's existing rule satisfiable without a browser -- *verify by
- * capturing the argument to `clipboard.writeText`, not by eye* -- and capturing
- * an intent is how a test does that with no clipboard in the room.
+ * Writing to a clipboard and moving focus are not expressible as a pure
+ * function of state, so they leave here as a declaration and the component
+ * performs them. ADR-0010 asks for this in order to make `SITE.md` 06's
+ * existing rule satisfiable without a browser -- *verify by capturing the
+ * argument to `clipboard.writeText`, not by eye* -- and capturing an intent is
+ * how a test does that with no clipboard in the room.
+ *
+ * **Scheduling a timer was named here too, and #84 -- the first ticket to
+ * schedule one -- did not use this mechanism.** The sentence is corrected
+ * rather than left standing, because a rule whose own first consumer went
+ * around it is worse than no rule. A timer is the one such effect that has to
+ * be *cancelled*, on a skip and on an unmount, and an intent carries no handle
+ * to cancel by -- so the state a component needs in order to do the cancelling
+ * has to exist either way, and an intent would be ceremony on top of it.
+ * `boot.ts` puts the duration in the frame instead, and this type stays what it
+ * is: effects that are fired and forgotten.
  *
  * One member, because one is what is needed to keep the array widenable: a
  * `readonly never[]` cannot gain a member without editing the type every later
