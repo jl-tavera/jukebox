@@ -43,6 +43,7 @@
   "exclude": [
     "node_modules",
     "test",
+    "wiring",
     "e2e",
     "playwright.config.ts"
   ]

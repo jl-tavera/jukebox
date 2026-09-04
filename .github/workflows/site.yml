@@ -62,6 +62,24 @@ jobs:
       # contrast are #83's Playwright harness.
       - run: bun run --cwd site test
 
+      # Seam two, which #85 brought here: what the component does with what the
+      # module computed. It is a separate step rather than more files under
+      # `test/` because it needs a DOM, and `site/tsconfig.test.json` exists to
+      # deny the module one -- so the two cannot share a program, and
+      # `tsconfig.wiring.json` is the fourth the typecheck above now compiles.
+      #
+      # It is deliberately thin, and what must not drift into it is behaviour.
+      # Whether Tab completes or `help` lists everything typeable is answered by
+      # the step above with no browser in the room; what lives here is the half
+      # that only exists once a component does -- a keystroke that has to be
+      # cancelled, a caret that has to land at the end, focus that must not be
+      # lost when the element under it is deleted.
+      #
+      # This is the workspace's first test-only runtime dependency (`jsdom`).
+      # Everything else here runs on what `setup-bun` provides, and that is
+      # still true of every step but this one and the browser below.
+      - run: bun run --cwd site test:wiring
+
       # The first workflow here that builds, because what needs checking is the
       # build's output rather than its source. The discovery document is read
       # back from `out/` and not `public/`, so a build that quietly stopped
