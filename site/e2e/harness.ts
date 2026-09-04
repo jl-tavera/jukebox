@@ -174,6 +174,9 @@ export const faceLoaded = (page: Page, family: string): Promise<boolean> =>
  */
 export const TARGET = 44
 
+/** The scrollback. The only `<main>` the page has, and what #84 replays. */
+export const SESSION = 'main.u-session'
+
 /** The live prompt's field. The only `<input>` the page has. */
 export const FIELD = 'input.u-input'
 

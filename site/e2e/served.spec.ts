@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { CLI_VERSION, MENU_ENTRIES } from '../lib/content'
-import { served } from './harness'
+import { served, SESSION } from './harness'
 
 /**
  * The floor, held from the outside.
@@ -28,7 +28,7 @@ test.describe('the page, with no JavaScript at all', () => {
   test('still carries the session it was served with', async ({ page }) => {
     await served(page)
 
-    const session = (await page.locator('main.u-session').textContent()) ?? ''
+    const session = (await page.locator(SESSION).textContent()) ?? ''
 
     // The version line, which is the boot proving it ran.
     expect(session).toContain(`jukebox ${CLI_VERSION}`)
