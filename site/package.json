@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.e2e.json",
+    "test": "bun test ./test",
+    "test:e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium",
     "fonts:build": "bun run scripts/build-fonts.ts",
     "check:discovery": "bun run scripts/check-discovery.ts",
     "check:installers": "bun run scripts/check-installers.ts",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@jukebox/schema": "workspace:*",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "^1.4.0",
     "@types/node": "^26.4.0",
