@@ -62,15 +62,10 @@ export const WORDMARK = `
  * the discovery document the CLI reads -- and an address that disagrees with
  * itself across a landing page is the kind of thing nobody notices until
  * somebody pastes the wrong half.
- */
-/**
- * The install command, which the page does not currently say.
  *
- * #82's session hands over no command; #91 is the consumer, and rebuilds this
- * behind an OS picker that copies on selection and detects the visitor's system
- * at boot. Kept for the reason the donation rows below are -- `README.md` owns
- * this string, and `SITE.md` 08 lists every place the address is written down,
- * this file first among them.
+ * The two commands below went unread by the page for three tickets, against
+ * the day #91 landed. It has: the boot offers the visitor's own line with a
+ * copy control, and `install` opens a picker over all three systems.
  */
 const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
 
@@ -94,9 +89,38 @@ const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
  */
 export const HOST = 'jukebox.dev'
 
+/**
+ * The three systems the page can hand a command to.
+ *
+ * Here rather than in `lib/session/install.ts`, where the picker that offers
+ * them is built, because `InstallCommand` below has to name it and a leaf
+ * reaching back through the module that reads it is the dependency pointing the
+ * wrong way -- the reason `Open` and `Option` sit in `session/lines.ts` rather
+ * than in `session/select.ts`. It is copy-deck vocabulary either way: these are
+ * three words the page prints.
+ */
+export type System = 'macos' | 'linux' | 'windows'
+
 export interface InstallCommand {
-  /** The platforms this line is for, lower-case like the rest of the page. */
-  platforms: string
+  /**
+   * Every system this one line installs on, in the order the picker offers
+   * them.
+   *
+   * **Three systems and two commands, and the asymmetry is the honest shape.**
+   * The curl line installs on macOS and on Linux, so a visitor choosing either
+   * is handed the same string -- but they are still choosing between three
+   * things, because "which of these am I" is the question a person can answer
+   * and "which of these two shells do I have" is not.
+   *
+   * It is also what the label is derived from, so a system cannot be offered by
+   * the picker and left out of the row that names who the command is for.
+   */
+  systems: readonly System[]
+  /**
+   * What the active row of the picker says about this line, in the register
+   * `MENU_ENTRIES`' hints use: sentence case, no full stop.
+   */
+  hint: string
   /**
    * The shell's own prompt glyph, decorative and aria-hidden. Carried per
    * command rather than fixed at the markup, because a `$` in front of a
@@ -111,18 +135,45 @@ export interface InstallCommand {
  * Both of them, and the order is deliberate.
  *
  * The POSIX line is first because it is the one `README.md` leads with and the
- * one every other document in this repo quotes. The PowerShell line is here at
- * all -- rather than a footnote or a docs page -- because Windows is this
- * project's primary environment, and a page that hands over only the `curl` line
- * excludes the visitor most likely to be reading it. Both installers ship
- * together for that reason; publishing only one would undo it.
+ * one every other document in this repo quotes -- and since #91 that order is
+ * load-bearing twice over: it is the order the picker's rows come out in, and
+ * `macos` being first is what a page served to nobody in particular offers.
+ * The PowerShell line is here at all -- rather than a footnote or a docs page --
+ * because Windows is this project's primary environment, and a page that hands
+ * over only the `curl` line excludes the visitor most likely to be reading it.
+ * Both installers ship together for that reason; publishing only one would undo
+ * it.
  *
  * README.md owns this copy. Change it there first.
  */
 export const INSTALL_COMMANDS: readonly InstallCommand[] = [
-  { platforms: 'macos · linux', prompt: '$', command: `curl -fsSL ${SITE}/install.sh | sh` },
-  { platforms: 'windows', prompt: '>', command: `irm ${SITE}/install.ps1 | iex` },
+  {
+    systems: ['macos', 'linux'],
+    hint: 'The curl line',
+    prompt: '$',
+    command: `curl -fsSL ${SITE}/install.sh | sh`,
+  },
+  {
+    systems: ['windows'],
+    hint: 'The PowerShell line',
+    prompt: '>',
+    command: `irm ${SITE}/install.ps1 | iex`,
+  },
 ]
+
+/**
+ * Who a command is for, as the row above it says it.
+ *
+ * Derived rather than stored, which is what `systems` above bought: the label
+ * and the rows the picker offers cannot disagree, because there is nothing for
+ * them to disagree about. It produces `macos · linux` and `windows`, which is
+ * what `docs/design/SITE.md` 04 lists as this page's platform labels.
+ *
+ * Here rather than beside the picker that draws it, because 04 owns the copy
+ * deck and this is a string the page prints. `truncateAddress` below is the
+ * same shape for the same reason.
+ */
+export const platforms = (command: InstallCommand): string => command.systems.join(' · ')
 
 export const hero = {
   /** README.md L3, verbatim. */
