@@ -9,6 +9,29 @@
  */
 
 /**
+ * The sigils, which are vocabulary rather than composition.
+ *
+ * They live here, at the leaf, because two modules need them and neither should
+ * have to reach through the other to get them: `index.ts` writes the line the
+ * page shows being typed, and `commands.ts` builds the binary's prompt out of
+ * the same two pieces. Kept in `index.ts` -- where #82 first wrote them -- they
+ * would have made the command registry import the module that composes the
+ * finished session, which is the dependency pointing the wrong way.
+ *
+ * `index.ts` re-exports all three, so nothing that already imported them from
+ * there had to change.
+ */
+
+/** The sigil that says a human wrote this. */
+export const COMMENT = '#'
+
+/** The shell's own, on the line the visitor is shown being typed. */
+export const PROMPT = '$'
+
+/** What is typed at it. A bare invocation, which is what opens the menu. */
+export const TYPED = 'jukebox'
+
+/**
  * The five-step ladder #79 fixes, minus the steps nothing has asked for yet.
  *
  * Hierarchy on this page comes from weight and colour, never from size -- there
@@ -34,8 +57,18 @@ export type Tone = 'inverted' | 'ink' | 'prose' | 'dim'
  * prompt. It is what a terminal draws and not what it says, so a screen reader
  * is better off without it. It is a rendering hint and nothing more: `text`
  * below joins hidden spans with the rest, because the terminal prints them.
+ *
+ * `runs` is the odd one out and is worth admitting rather than glossing: every
+ * other field here describes drawing, and this one describes what happens when
+ * a person lands on the word and presses Enter. #85 added it, and the
+ * alternative it was chosen over is why it earns the exception -- the component
+ * could have matched a span's text against the command registry instead, which
+ * needs no new field and is worse, because it would make `add` a control
+ * everywhere those three letters appear, including inside a sentence about it.
+ * Saying which spans are landable is a decision, and decisions belong to the
+ * module rather than to a `String.prototype.includes` in the renderer.
  */
-export type Span = { text: string; tone: Tone; hidden?: true }
+export type Span = { text: string; tone: Tone; hidden?: true; runs?: string }
 
 /**
  * One row of the session.
@@ -109,6 +142,27 @@ export const inverted = (text: string): Span => ({ text, tone: 'inverted' })
 export const decoration = (text: string): Span => ({ text, tone: 'dim', hidden: true })
 
 /**
+ * A word the cursor can land on, and what it runs when it does.
+ *
+ * The page has no buttons, so this is what a control looks like here: a bare
+ * word that inverts under focus and washes under hover, with a tap target
+ * around it that nobody can see. #85 draws the first ones -- the command names
+ * in `help` -- and #86's menu rows, #88's copy controls and #89's chips are all
+ * the same word wearing the same class.
+ *
+ * `runs` defaults to the text because the common case is a command name that
+ * reads and runs as itself. #91's picker is the case the second argument
+ * exists for: a row reading `macos` runs something longer than that.
+ *
+ * Always `ink`, and not by accident. ADR-0010's floor asks `--dim` to clear
+ * 4.5:1 over the hover wash, and in the light theme `--dim` has no headroom to
+ * do it with -- so the wash is only ever laid under a word, and a word is only
+ * ever the page's own colour. A dim landable word is the day that row of the
+ * floor becomes a real constraint rather than a satisfied one.
+ */
+export const word = (text: string, runs: string = text): Span => ({ text, tone: 'ink', runs })
+
+/**
  * One line as the terminal would have printed it.
  *
  * Hidden spans included: they are hidden from assistive technology, not absent
@@ -119,4 +173,29 @@ export const text = (line: Line): string => {
   if (line.kind === 'blank') return ''
   if (line.kind === 'art') return line.text
   return line.spans.map((span) => span.text).join('')
+}
+
+/**
+ * One line as a screen reader is given it.
+ *
+ * The counterpart to `text` above, and the pair is the whole of the difference
+ * `hidden` makes: the terminal prints the rail, the sigils and the backticks
+ * around a command, and none of it is content. A reader hearing "backtick help
+ * backtick" is hearing punctuation the page put there for somebody else.
+ *
+ * The wordmark answers with its label rather than its glyphs, which is what
+ * `screen.tsx` already renders it as -- `role="img"` with the same string. Read
+ * out, the art is several hundred Block Elements.
+ *
+ * #85 uses this to build what the live region announces. It is not what the
+ * scrollback renders: the rows carry their own text and their own `aria-hidden`
+ * spans, and this exists so the announcement can be one string.
+ */
+export const spoken = (line: Line): string => {
+  if (line.kind === 'blank') return ''
+  if (line.kind === 'art') return line.label
+  return line.spans
+    .filter((span) => span.hidden !== true)
+    .map((span) => span.text)
+    .join('')
 }

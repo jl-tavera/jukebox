@@ -1,6 +1,16 @@
 import { hero, MENU_ENTRIES, WHAT_NEXT } from '../content'
 import { header } from './header'
-import { blank, decoration, ink, prose, row, type Session } from './lines'
+import {
+  blank,
+  COMMENT,
+  decoration,
+  ink,
+  PROMPT,
+  prose,
+  row,
+  TYPED,
+  type Session,
+} from './lines'
 import { select } from './select'
 
 /**
@@ -25,14 +35,13 @@ import { select } from './select'
  * output -- which is quoted rather than described, everywhere it can be.
  */
 
-/** The sigil that says a human wrote this. */
-export const COMMENT = '#'
-
-/** The shell's own, on the line the visitor is shown being typed. */
-export const PROMPT = '$'
-
-/** What is typed at it. A bare invocation, which is what opens the menu. */
-export const TYPED = 'jukebox'
+/**
+ * Re-exported rather than declared, since #85. They moved down to `lines.ts` so
+ * that `commands.ts` could build the binary's prompt from them without
+ * importing this module -- a leaf reaching back through its own composer. This
+ * line is what keeps every existing import of them working from here.
+ */
+export { COMMENT, PROMPT, TYPED } from './lines'
 
 export const finished = (version: string): Session => ({
   lines: [
