@@ -140,3 +140,24 @@ export const artFontSize = (page: Page, selector = ART): Promise<string> =>
 
     return getComputedStyle(pre).fontSize
   }, selector)
+
+/**
+ * Whether a family is loaded and available to draw with.
+ *
+ * This is the honest form of a question that was first asked in pixels and
+ * should not have been. A pinned row width does catch a face being swapped for
+ * another -- but it also catches Chromium laying text out differently on Linux
+ * than on Windows, which it does: the same page, the same font, the same size,
+ * and 33.5px between them at 1440, because the two platforms apply
+ * `letter-spacing` to the run differently. A number that moves for a reason
+ * unrelated to what it is watching is a number that gets its tolerance widened
+ * until it watches nothing.
+ *
+ * It is also the weaker question of the two even where it works. Monospace
+ * faces cluster around a 0.6em advance -- Monaspace, Liberation Mono and DejaVu
+ * Sans Mono are within a percent of each other -- so a width can be right to
+ * the pixel while a different font draws it. Asking the font set directly
+ * discriminates what arithmetic on advances cannot.
+ */
+export const faceLoaded = (page: Page, family: string): Promise<boolean> =>
+  page.evaluate((name) => document.fonts.check(`16px "${name}"`), family)
