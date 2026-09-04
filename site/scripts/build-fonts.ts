@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -76,6 +76,16 @@ const RAW = `https://raw.githubusercontent.com/githubnext/monaspace/${RELEASE}`
 const FONTS = fileURLToPath(new URL('../public/fonts/', import.meta.url))
 
 /**
+ * Where the broken copy goes, and the reason it is not under `public/`.
+ *
+ * Nothing here is served. `next build` copies `public/` into the export
+ * verbatim, so a deliberately incomplete face living there would ship -- and
+ * `check:fonts` would then have a second `out/fonts/*.woff2` to explain.
+ * Playwright reads this off disk and fulfils a request with it.
+ */
+const FIXTURES = fileURLToPath(new URL('../e2e/fixtures/', import.meta.url))
+
+/**
  * What survives subsetting.
  *
  * A range and a reason rather than one bare argument string, because the reason
@@ -101,6 +111,29 @@ type Face = {
   readonly sha256: string
   /** What this writes into `public/fonts/`. */
   readonly writes: string
+  /**
+   * A deliberately incomplete copy, written into `e2e/fixtures/` rather than
+   * into `public/`.
+   *
+   * **This one is meant to be broken, and #83 is why it exists.** The Playwright
+   * harness measures five rows of the wordmark and fails them if they are not
+   * the same width -- but an assertion that has never been seen to fail is a
+   * claim rather than a check. So a spec serves this face in place of the real
+   * one and asserts that the rows *do* shear, which is what makes the guard
+   * next to it mean something.
+   *
+   * Latin only. Keeping the space and dropping every Block Element is exactly
+   * the subsetting mistake the whole arrangement guards against: the page then
+   * takes its spaces from this file and its blocks from the fallback stack, at a
+   * different advance, and rows carrying different numbers of each stop
+   * agreeing. Serving *no* face would not reproduce it -- every glyph would fall
+   * back together and the rows would stay equal -- so the simulation has to be a
+   * partial font rather than a missing one.
+   *
+   * It never reaches `public/`, so it is never published. Playwright reads it
+   * off disk and fulfils the request with it.
+   */
+  readonly fixture?: { readonly unicodes: string; readonly writes: string }
 }
 
 const FACES: readonly Face[] = [
@@ -108,6 +141,7 @@ const FACES: readonly Face[] = [
     upstream: 'Monaspace Neon/Monaspace Neon Var.ttf',
     sha256: 'e3cc8bf1c4a0384309d584c0dce9291166535066c538e60e2d5ac444b76fec4c',
     writes: 'monaspace-neon.woff2',
+    fixture: { unicodes: '20-7E', writes: 'neon-without-block-elements.woff2' },
   },
   {
     upstream: 'Monaspace Argon/Monaspace Argon Var.ttf',
@@ -196,6 +230,32 @@ const fontTools = (...args: string[]): void => {
   }
 }
 
+/**
+ * One subset, from an instanced face to a `.woff2`.
+ *
+ * `+calt` keeps Monaspace's texture healing, which is contextual substitution
+ * at unchanged advance widths -- it cannot move the grid. Discretionary
+ * ligatures stay off: this page quotes shell commands, and an arrow arriving
+ * where somebody typed `->` would be the page rewriting what the binary
+ * printed.
+ *
+ * Both the faces that ship and the harness's deliberately incomplete one go
+ * through here, and that is worth more than the duplication it saves. The
+ * fixture has to differ from what ships in its code point range and in nothing
+ * else -- same source, same instancing, same flags -- or a test measuring
+ * against it would be reacting to a subsetting option rather than to a missing
+ * glyph.
+ */
+const subset = (from: string, unicodes: string, to: string): void =>
+  fontTools(
+    'pyftsubset',
+    from,
+    `--unicodes=${unicodes}`,
+    '--layout-features=+calt',
+    '--flavor=woff2',
+    `--output-file=${to}`,
+  )
+
 const work = mkdtempSync(join(tmpdir(), 'jukebox-fonts-'))
 const wrote: string[] = []
 
@@ -213,21 +273,23 @@ try {
     // here are outlines the subsetter would otherwise carry through every step.
     fontTools('fonttools', 'varLib.instancer', '-o', pinned, source, 'wdth=drop', 'slnt=drop')
 
-    // `+calt` keeps Monaspace's texture healing, which is contextual
-    // substitution at unchanged advance widths -- it cannot move the grid.
-    // Discretionary ligatures stay off: this page quotes shell commands, and an
-    // arrow arriving where somebody typed `->` would be the page rewriting what
-    // the binary printed.
-    fontTools(
-      'pyftsubset',
-      pinned,
-      `--unicodes=${ranges}`,
-      '--layout-features=+calt',
-      '--flavor=woff2',
-      `--output-file=${out}`,
-    )
+    subset(pinned, ranges, out)
 
     wrote.push(`  public/fonts/${face.writes}  ${statSync(out).size} bytes`)
+
+    // Cut from the same instanced source as the face above, which is what makes
+    // it a useful lie: identical metrics for every glyph it does carry, so the
+    // only thing the harness can be reacting to is the glyphs it does not.
+    if (face.fixture !== undefined) {
+      const broken = join(FIXTURES, face.fixture.writes)
+
+      mkdirSync(FIXTURES, { recursive: true })
+      subset(pinned, face.fixture.unicodes, broken)
+
+      wrote.push(
+        `  e2e/fixtures/${face.fixture.writes}  ${statSync(broken).size} bytes (deliberately incomplete)`,
+      )
+    }
   }
 
   const licence = join(FONTS, LICENCE.writes)
