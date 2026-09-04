@@ -1,4 +1,4 @@
-import type { Line, Session, Span, Tone } from '@/lib/session/lines'
+import type { Intent, Line, Session, Span, Tone } from '@/lib/session/lines'
 
 /**
  * The one thing that writes.
@@ -69,6 +69,9 @@ const styled = (span: Span): string | undefined => {
  * it renders as the plain span it would have been, so this file still produces
  * the same markup with no interactivity in the room. That is the property that
  * keeps a session renderable outside a browser, and `wiring/` asserts it.
+ *
+ * `copies` and `onCopy` are the same arrangement for #91's copy control, one
+ * component down.
  */
 const Landable = ({
   text,
@@ -89,7 +92,50 @@ const Landable = ({
   </button>
 )
 
-const Row = ({ line, onRun }: { line: Line; onRun?: (command: string) => void }) => {
+/**
+ * The other control, and the reason there are two.
+ *
+ * A `Landable` runs a command; this puts a value on a clipboard and does
+ * nothing else. #91 asks that a command left in the scrollback can be copied
+ * again *without re-running anything*, so a control that dispatched a command
+ * would reprint the block it is standing in every time somebody used it.
+ *
+ * It is the same word wearing the same class, because the page has no buttons:
+ * bare text, an invisible tap target, and the block cursor as the only pointer.
+ *
+ * **The label is what a screen reader hears instead of `copy` on its own.** One
+ * such word is unambiguous and four are not -- #88 puts a control on every
+ * donation row -- and the visible word is inside the accessible name rather
+ * than replaced by it, so the two cannot disagree.
+ */
+const Copier = ({
+  text,
+  intent,
+  onCopy,
+}: {
+  text: string
+  intent: Intent
+  onCopy: (intent: Intent) => void
+}) => (
+  <button
+    type="button"
+    className="u-word"
+    aria-label={`${text} ${intent.what}`}
+    onClick={() => onCopy(intent)}
+  >
+    {text}
+  </button>
+)
+
+const Row = ({
+  line,
+  onRun,
+  onCopy,
+}: {
+  line: Line
+  onRun?: (command: string) => void
+  onCopy?: (intent: Intent) => void
+}) => {
   // A blank row is a row, not a margin: it has the height of one line and
   // nothing in it, which is what a terminal shows and what keeps every gap on
   // this page countable.
@@ -109,15 +155,21 @@ const Row = ({ line, onRun }: { line: Line; onRun?: (command: string) => void })
 
   return (
     <div className="u-row">
-      {line.spans.map((span, index) =>
-        span.runs !== undefined && onRun !== undefined ? (
-          <Landable key={index} text={span.text} runs={span.runs} onRun={onRun} />
-        ) : (
+      {line.spans.map((span, index) => {
+        if (span.runs !== undefined && onRun !== undefined) {
+          return <Landable key={index} text={span.text} runs={span.runs} onRun={onRun} />
+        }
+
+        if (span.copies !== undefined && onCopy !== undefined) {
+          return <Copier key={index} text={span.text} intent={span.copies} onCopy={onCopy} />
+        }
+
+        return (
           <span key={index} className={styled(span)} aria-hidden={span.hidden}>
             {span.text}
           </span>
-        ),
-      )}
+        )
+      })}
     </div>
   )
 }
@@ -125,13 +177,15 @@ const Row = ({ line, onRun }: { line: Line; onRun?: (command: string) => void })
 export const Screen = ({
   session,
   onRun,
+  onCopy,
 }: {
   session: Session
   onRun?: (command: string) => void
+  onCopy?: (intent: Intent) => void
 }) => (
   <main className="u-session">
     {session.lines.map((line, index) => (
-      <Row key={index} line={line} onRun={onRun} />
+      <Row key={index} line={line} onRun={onRun} onCopy={onCopy} />
     ))}
   </main>
 )

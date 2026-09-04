@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useReducer, useRef } from 'rea
 import { Screen } from '@/components/screen'
 import { REDUCED_MOTION } from '@/lib/session/boot'
 import { PROMPTS } from '@/lib/session/commands'
-import type { Session } from '@/lib/session/lines'
+import type { Intent, Session } from '@/lib/session/lines'
 import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
 
 /**
@@ -42,7 +42,18 @@ export const Live = ({ initial }: { initial: Session }) => {
   const asking = terminal.session.open !== undefined
 
   /**
-   * The boot, started once the page is really on a screen.
+   * Who is reading, and then the boot -- in that order, from one effect.
+   *
+   * **The order is load-bearing and the single effect is what holds it.**
+   * `after` collapses a replay in flight ahead of every input but its own
+   * timer's, so a guess arriving from a second effect declared below this one
+   * would land mid-replay and skip the boot outright. Dispatched here, the
+   * detection settles first and the replay then deconstructs the session the
+   * visitor is actually going to keep.
+   *
+   * The agent is read here and judged in `install.ts`, which is `REDUCED_MOTION`
+   * one line down wearing different clothes: the module owns the question, the
+   * component asks the browser. Neither answer is a decision this file makes.
    *
    * **A layout effect rather than an ordinary one, and it buys exactly one
    * frame.** The static export ships the finished session, so the browser has
@@ -71,10 +82,39 @@ export const Live = ({ initial }: { initial: Session }) => {
    * rather than a solved problem.
    */
   useLayoutEffect(() => {
+    dispatch({ kind: 'detected', agent: navigator.userAgent })
+
     if (window.matchMedia?.(REDUCED_MOTION).matches ?? true) return
 
     dispatch({ kind: 'replayed' })
   }, [])
+
+  /**
+   * Everything the session asked to have done off the page.
+   *
+   * One kind today, and the array is what `lines.ts` hands over rather than
+   * something this file goes looking for -- *effects that are fired and
+   * forgotten*, which is what keeps the module able to declare a clipboard
+   * write without being able to perform one, and what makes `SITE.md` 06's rule
+   * about capturing the argument satisfiable with no browser in the room.
+   *
+   * Keyed on the array rather than on the session, and that is exactly right
+   * because `terminal.ts` replaces it on the transition that declares an intent
+   * and on no other: a boot frame hands the same array through, so a replay
+   * does not re-copy, and copying the same value twice is two arrays and two
+   * writes.
+   *
+   * **A refused write is swallowed, and that is a cost rather than a fix.** A
+   * clipboard needs a secure context and can be denied outright, and there is
+   * nothing useful this file can do about it -- an unhandled rejection in the
+   * console helps nobody. What makes it survivable is that the command is on
+   * screen with a control beside it, which is what the scrollback row is for.
+   */
+  useEffect(() => {
+    for (const intent of terminal.session.intents) {
+      void navigator.clipboard?.writeText(intent.value).catch(() => {})
+    }
+  }, [terminal.session.intents])
 
   /**
    * One frame, held for as long as it asked to be.
@@ -192,9 +232,22 @@ export const Live = ({ initial }: { initial: Session }) => {
     input.current?.focus()
   }, [])
 
+  /**
+   * A control was used.
+   *
+   * The same shape as `onRun` and deliberately not the same path: this prints
+   * nothing, so focus has nowhere to fall, and what it returns to is the prompt
+   * it came from. The write itself is the effect above -- this only declares
+   * it, exactly as a command would.
+   */
+  const onCopy = useCallback((intent: Intent) => {
+    dispatch({ kind: 'copied', intent })
+    input.current?.focus()
+  }, [])
+
   return (
     <>
-      <Screen session={terminal.session} onRun={onRun} />
+      <Screen session={terminal.session} onRun={onRun} onCopy={onCopy} />
 
       <div className="u-prompt">
         <span aria-hidden="true">{PROMPTS.site}</span>
