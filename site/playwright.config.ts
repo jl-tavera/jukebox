@@ -35,6 +35,31 @@ import { WIDTHS } from './e2e/harness'
  *
  * `wrangler.jsonc` already declares `assets.directory: "./out"` and no `main`,
  * so this is production's own asset path, `public/_headers` included.
+ *
+ * **Every spec here asks for reduced motion, and `boot.spec.ts` is the one that
+ * asks for the other thing.** Playwright's own default is `no-preference`, so
+ * without the line below #84's replay would be running underneath every
+ * measurement in this directory -- `wordmark.spec.ts` counts five rows of art,
+ * and mid-replay there are fewer, so it would fail on the boot's timing rather
+ * than on the advance width it exists to watch. `open()` cannot simply wait the
+ * replay out, either: before hydration the served HTML already looks finished,
+ * so any "wait until complete" check can resolve before the boot has started.
+ * Asking for the finished page the way a visitor with reduced motion does is
+ * deterministic, and it is the honest thing to say about specs that are
+ * measuring a page at rest.
+ *
+ * It goes through `contextOptions` because `reducedMotion` is not one of the
+ * options this version of Playwright promotes to the top level -- `colorScheme`
+ * is and it is not, so the escape hatch is the only spelling that typechecks.
+ * A project's `use` merges with this one rather than replacing it, and
+ * `devices['Desktop Chrome']` sets no context options, so nothing below undoes
+ * it.
+ *
+ * **What that costs, named rather than discovered later:** after this, the only
+ * case in the whole harness that proves the page ever hydrates is
+ * `prompt.spec.ts`'s "typing a command prints what the module said it would",
+ * plus `boot.spec.ts`. Delete both and a page whose JavaScript never ran would
+ * pass everything here.
  */
 
 const PORT = 8788
@@ -59,6 +84,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'retain-on-failure',
+    contextOptions: { reducedMotion: 'reduce' },
   },
 
   // A `.only` left in a spec passes locally and silently narrows CI to one
