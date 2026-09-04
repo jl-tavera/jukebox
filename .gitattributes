@@ -42,3 +42,10 @@ cli/src/wordmark.ts text eol=lf
 # fail that check on a machine rather than in a diff.
 site/public/fonts/*.woff2 binary
 site/public/fonts/OFL.txt text eol=lf
+
+# The face #83's harness serves in place of the real one, for the same reason as
+# the two above. It is cut from the same source and carries printable ASCII and
+# no Block Element at all, which is the subsetting mistake the whole arrangement
+# exists to catch -- so a checkout that normalised its line endings would break
+# the one test whose job is failing on purpose.
+site/e2e/fixtures/*.woff2 binary
