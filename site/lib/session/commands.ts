@@ -1,4 +1,5 @@
 import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
+import { copying, INSTALL, isSystem, offering, PICKER } from './install'
 import {
   blank,
   decoration,
@@ -9,7 +10,10 @@ import {
   row,
   TYPED,
   word,
+  type Intent,
   type Line,
+  type Open,
+  type Span,
 } from './lines'
 
 /**
@@ -50,10 +54,12 @@ export type Command = {
   /**
    * Whether the word after this one means something.
    *
-   * `help` alone today, and it is what `terminal.ts` reads to decide whether
-   * completing this name should leave a trailing space under the caret. #91's
-   * `install` is the next one, and this is a field rather than a literal
-   * `'help'` over there so that it can set its own.
+   * Read in two places and written down in neither: `terminal.ts` asks it to
+   * decide whether completing this name should leave a trailing space under the
+   * caret, and `noArguments` below asks it to name the words that take one. A
+   * field rather than a literal `'help'` over there, which is what let #91's
+   * verb arrive already handled -- and what stops that sentence going stale the
+   * way it did.
    */
   readonly takesArgument?: true
 }
@@ -77,15 +83,27 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Two today.
+ * The page's own verbs. Three today.
  *
- * #88 adds `donate` and `theme`, #90 adds `demo`, #91 adds `install` -- each
- * one entry here and one branch in `run` below. They are deliberately not in
- * `MENU_ENTRIES`: the menu carries the binary's five and nothing else, because
- * putting a site verb there would be the site speaking in the binary's voice.
+ * #88 adds `donate` and `theme` and #90 adds `demo` -- each one entry here and
+ * one branch in `run` below, which is the whole of what #91's `install` cost.
+ * They are deliberately not in `MENU_ENTRIES`: the menu carries the binary's
+ * five and nothing else, because putting a site verb there would be the site
+ * speaking in the binary's voice.
+ *
+ * The order is the order `help` lists them in, and it is not alphabetical:
+ * `help` first, because it is how somebody arrives at the rest; then what the
+ * page can actually do; then `clear`, which is the way out of a screen rather
+ * than a thing to do on one.
  */
 const VERBS: readonly Command[] = [
   { name: 'help', summary: 'List everything you can type.', voice: 'site', takesArgument: true },
+  {
+    name: INSTALL,
+    summary: 'Copy the install command for your system.',
+    voice: 'site',
+    takesArgument: true,
+  },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -122,38 +140,68 @@ export const find = (name: string): Command | undefined =>
  * exists: emptying the scrollback is a change to state this module does not
  * hold. `terminal.ts` owns the scrollback and performs it.
  *
- * **Nothing here can open a select, and #91 is the ticket that adds it.** The
- * widget and every transition it needs landed with #86 and are reusable as they
- * stand -- `test/terminal.test.ts` drives a picker-shaped question through the
- * whole reducer -- but the page has no command that opens one, so the request
- * that would carry it is not written. It is the shape `clears` above already
- * has: one more optional field here, read where `terminal.ts` reads that one.
- * Written the other way round it would be a field with no consumer, which is
- * the reservation this repo deletes rather than keeps.
+ * `opens` and `intents` are #91's, and both are requests for `clears`' reason:
+ * this module computes, and acting is somebody else's job. **`opens` carries
+ * the question rather than the rows of it**, because `terminal.ts` has to mark
+ * the select live as well as draw it, and two descriptions of one widget can
+ * disagree where one cannot. `intents` is what has to happen off the page -- a
+ * clipboard write, today -- and the component is what performs it.
  */
 export type Printed = {
   readonly echo: Line
   readonly body: readonly Line[]
   readonly announcement?: string
   readonly clears?: true
+  readonly opens?: Open
+  readonly intents?: readonly Intent[]
 }
 
 /** Said when `clear` has left nothing behind to say. */
 export const EMPTIED = 'The scrollback is empty.'
 
 /**
+ * Every word on this page a second word means something after.
+ *
+ * Read off the field rather than written down, and #91 is why. The sentence
+ * below named `help` alone, which was true for exactly as long as `help` was
+ * the only verb taking an argument -- and a sentence a later ticket silently
+ * makes false is worse than one that is merely longer.
+ */
+const ARGUED: readonly Command[] = COMMANDS.filter((command) => command.takesArgument === true)
+
+/**
+ * What joins them, and the grammar around them, **written for the two that
+ * exist rather than for a list of any length.**
+ *
+ * The first draft carried a comma branch and a singular verb, and neither was
+ * reachable: two words are joined by `and` and take an argument between them.
+ * `select.ts` refuses the same thing one file over -- it does not reproduce the
+ * prompt library's skip over disabled rows, because nothing on this page can
+ * express one -- and a branch no test can reach is a branch nobody has checked.
+ *
+ * What is derived is the part that went stale before: the names. A third verb
+ * taking an argument appears in this sentence on its own, reading `a and b and
+ * c`, which is clumsy and true; a page down to one would need `takes` back.
+ * Both are edits to one line, and neither can be a lie in the meantime.
+ */
+const JOIN = ' and '
+
+/**
  * Said when a word was recognised and the rest of the line could not be used.
  *
  * The spoken form, which is what a screen reader is handed. `noArguments` below
- * puts `help` between backticks the way `notFound` does, so the printed row
- * reads ``Only `help` takes an argument here.`` and this is what is heard.
+ * puts each name between backticks the way `notFound` does, so the printed row
+ * reads ``Only `help` and `install` take an argument here.`` and this is what
+ * is heard.
  *
  * It named the page until #87 -- "this page takes no arguments" -- and that
- * stopped being true the moment `help add` did something. Naming the one word
- * that does take one is also the more useful sentence: somebody who has just
- * put an argument somewhere it does not go is being shown where one goes.
+ * stopped being true the moment `help add` did something. Naming the words that
+ * do take one is also the more useful sentence: somebody who has just put an
+ * argument somewhere it does not go is being shown where one goes.
  */
-export const NO_ARGUMENTS = 'Only help takes an argument here.'
+export const NO_ARGUMENTS = `Only ${ARGUED.map((command) => command.name).join(
+  JOIN,
+)} take an argument here.`
 
 const echoed = (voice: Voice, typed: string): Line =>
   row(decoration(PROMPTS[voice]), ink(typed))
@@ -270,12 +318,40 @@ const noArguments = (): Line[] => [
   blank(),
   row(
     prose('Only '),
-    decoration('`'),
-    word('help'),
-    decoration('`'),
-    prose(' takes an argument here.'),
+    ...ARGUED.flatMap((command, index): Span[] => [
+      ...(index === 0 ? [] : [prose(JOIN)]),
+      decoration('`'),
+      word(command.name),
+      decoration('`'),
+    ]),
+    prose(' take an argument here.'),
   ),
 ]
+
+/**
+ * Said once a command is on the clipboard.
+ *
+ * A claim rather than an instruction, because the copy has already happened by
+ * the time this is read -- `terminal.ts` hands the intent over and
+ * `components/live.tsx` performs it in the same commit that prints this row.
+ * The control beside the command is what makes the claim recoverable if a
+ * browser refused it.
+ *
+ * Prose, and set in the human's face: the two rows above it are a thing to
+ * paste, and this is the page saying what it just did with them.
+ */
+const COPIED = 'Copied. Paste it into a terminal.'
+
+/**
+ * Said when the word after `install` is not one of the three.
+ *
+ * `notFound`'s shape without its second row, because the picker that follows is
+ * the pointer -- the useful answer to *not that one* is the list of the ones
+ * there are, and #91 asks for the same widget either way. The word is named
+ * rather than the verb, which is what a shell does and what `help nonsense`
+ * already does: `install` resolved, and the thing after it did not.
+ */
+const unknownSystem = (word: string): Line[] => [row(ink(`${HOST}: no install command for ${word}`))]
 
 /**
  * What a shell says, said the way a shell says it.
@@ -298,10 +374,10 @@ const notFound = (typed: string): Line[] => [
  * line rather than silence: discarding part of what somebody typed without
  * saying so is the one habit this project's copy consistently refuses.
  *
- * **`help` is the one word here a second word means something after**, and #87
- * is where that started. Everything else on this page still answers about
- * itself and nothing else, which is what keeps `add https://…` from looking
- * like a page that might be about to add something.
+ * **A second word means something after the verbs carrying `takesArgument`**,
+ * and #87 is where that started. Everything else on this page still answers
+ * about itself and nothing else, which is what keeps `add https://…` from
+ * looking like a page that might be about to add something.
  *
  * `help X` **describes** X; it does not do what X does. Across the binary's
  * seven the distinction is invisible, because those describe themselves when
@@ -338,6 +414,28 @@ export const run = (buffer: string): Printed => {
     if (asked === undefined) return { echo, body: notFound(about) }
 
     return { echo, body: [...helped(asked), ...(spare.length > 0 ? noArguments() : [])] }
+  }
+
+  // **The only branch on this page that asks a question back.** Bare, it prints
+  // nothing and hands the select over instead; `terminal.ts` draws it, because
+  // it is also what marks the question live.
+  //
+  // Given a system it prints the offer -- the same two rows the boot puts on
+  // screen unasked, from the same function -- and declares the copy. That the
+  // copy happens here rather than at the widget is what keeps a chosen row and
+  // a typed line one gesture: `picked` runs a row by entering what the row
+  // carries, so there is no second path to disagree with this one.
+  if (command.name === INSTALL) {
+    const [system, ...spare] = rest
+
+    if (system === undefined) return { echo, body: [], opens: PICKER }
+    if (!isSystem(system)) return { echo, body: unknownSystem(system), opens: PICKER }
+
+    return {
+      echo,
+      body: [...offering(system), row(prose(COPIED)), ...(spare.length > 0 ? noArguments() : [])],
+      intents: [copying(system)],
+    }
   }
 
   return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }
