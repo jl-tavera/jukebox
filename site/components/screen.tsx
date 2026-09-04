@@ -9,12 +9,27 @@ import type { Line, Session, Tone } from '@/lib/session/lines'
  * markup, and it holds no state, runs no effect and makes no decision the
  * module did not already make.
  *
- * A server component, deliberately and load-bearingly. Every row is in the
- * served HTML, so the page is whole for a crawler, for a screen reader, for a
- * visitor whose JavaScript failed and for one who has asked for reduced motion
- * -- and #84's typing is an enhancement over that floor rather than the only
- * way to see the page. Nothing here may become a client component; the moment
- * it does, that guarantee is gone and nothing fails loudly.
+ * **Every row is in the served HTML, and #85 changed what guarantees that.**
+ * Until now this was a server component and the guarantee was structural -- a
+ * file with no `"use client"` in it cannot render anywhere but on the build
+ * machine. A live prompt needs state, and `clear` has to be able to empty rows
+ * that were served, so `components/live.tsx` now owns this and pulls it into
+ * the client bundle with it.
+ *
+ * The guarantee survives, on a different footing: `next.config.ts` sets
+ * `output: 'export'`, and a static export prerenders a client component's first
+ * render into the HTML it ships. So the page is still whole for a crawler, for
+ * a screen reader, for a visitor whose JavaScript failed and for one who has
+ * asked for reduced motion, and #84's typing is still an enhancement over that
+ * floor rather than the only way to see the page.
+ *
+ * What was lost is that the old guarantee could not fail quietly and this one
+ * can: a hydration-gated render, an effect that clears before it paints, a
+ * `dynamic()` import with `ssr: false`, and the floor is gone with nothing in
+ * this file looking any different. **`e2e/served.spec.ts` is what replaces it.**
+ * It loads the page with JavaScript disabled and asserts the version line, the
+ * five menu rows and the corner that closes the rail are all there. Delete that
+ * spec and this paragraph is a wish.
  */
 
 /**
@@ -30,7 +45,35 @@ const TONE: Record<Tone, string | undefined> = {
   dim: 'text-dim',
 }
 
-const Row = ({ line }: { line: Line }) => {
+/**
+ * What the visitor can run, and what happens without it.
+ *
+ * A span carrying `runs` becomes a control only when there is somewhere for the
+ * click to go. Handed no `onRun` -- which is every use outside the live page --
+ * it renders as the plain span it would have been, so this file still produces
+ * the same markup with no interactivity in the room. That is the property that
+ * keeps a session renderable outside a browser, and `wiring/` asserts it.
+ */
+const Landable = ({
+  text,
+  runs,
+  onRun,
+}: {
+  text: string
+  runs: string
+  onRun: (command: string) => void
+}) => (
+  // No tone class. `word()` builds these and is always `ink`, which is what
+  // `body` already is -- and it is always `ink` for a reason worth not
+  // undoing here: the hover wash is mixed to be legible under one colour. The
+  // ticket that makes a landable word dim adds the class and answers ADR-0010's
+  // contrast row at the same time.
+  <button type="button" className="u-word" onClick={() => onRun(runs)}>
+    {text}
+  </button>
+)
+
+const Row = ({ line, onRun }: { line: Line; onRun?: (command: string) => void }) => {
   // A blank row is a row, not a margin: it has the height of one line and
   // nothing in it, which is what a terminal shows and what keeps every gap on
   // this page countable.
@@ -50,19 +93,29 @@ const Row = ({ line }: { line: Line }) => {
 
   return (
     <div className="u-row">
-      {line.spans.map((span, index) => (
-        <span key={index} className={TONE[span.tone]} aria-hidden={span.hidden}>
-          {span.text}
-        </span>
-      ))}
+      {line.spans.map((span, index) =>
+        span.runs !== undefined && onRun !== undefined ? (
+          <Landable key={index} text={span.text} runs={span.runs} onRun={onRun} />
+        ) : (
+          <span key={index} className={TONE[span.tone]} aria-hidden={span.hidden}>
+            {span.text}
+          </span>
+        ),
+      )}
     </div>
   )
 }
 
-export const Screen = ({ session }: { session: Session }) => (
+export const Screen = ({
+  session,
+  onRun,
+}: {
+  session: Session
+  onRun?: (command: string) => void
+}) => (
   <main className="u-session">
     {session.lines.map((line, index) => (
-      <Row key={index} line={line} />
+      <Row key={index} line={line} onRun={onRun} />
     ))}
   </main>
 )
