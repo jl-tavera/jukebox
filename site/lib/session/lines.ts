@@ -58,6 +58,13 @@ export type Tone = 'inverted' | 'ink' | 'prose' | 'dim'
  * is better off without it. It is a rendering hint and nothing more: `text`
  * below joins hidden spans with the rest, because the terminal prints them.
  *
+ * `struck` is the second such hint and #86 is what asked for it. The prompt
+ * library strikes out the value a select was abandoned on, and a strikethrough
+ * is decoration rather than colour -- so it is part of the shape the page has
+ * to match, where the library's cyan and green are exactly what it must not
+ * copy. One flag rather than a step of the ladder: it is orthogonal to tone,
+ * and the struck value is dim underneath it.
+ *
  * `runs` is the odd one out and is worth admitting rather than glossing: every
  * other field here describes drawing, and this one describes what happens when
  * a person lands on the word and presses Enter. #85 added it, and the
@@ -68,7 +75,7 @@ export type Tone = 'inverted' | 'ink' | 'prose' | 'dim'
  * Saying which spans are landable is a decision, and decisions belong to the
  * module rather than to a `String.prototype.includes` in the renderer.
  */
-export type Span = { text: string; tone: Tone; hidden?: true; runs?: string }
+export type Span = { text: string; tone: Tone; hidden?: true; struck?: true; runs?: string }
 
 /**
  * One row of the session.
@@ -120,8 +127,44 @@ export type Line =
  */
 export type Intent = { kind: 'copy'; value: string; what: string }
 
-/** What the module computes and the renderer is handed. Nothing else crosses. */
-export type Session = { lines: readonly Line[]; intents: readonly Intent[] }
+/**
+ * One row of a select, and what choosing it types.
+ *
+ * `label` is what the widget shows and `hint` is what the active row says about
+ * itself. `runs` is what the page enters when the row is chosen, and **absent
+ * means the row only closes the select** -- which is the whole of what `quit`
+ * is, and what "the way out" means in a menu that launches commands.
+ *
+ * It is the second argument of `word` one screen down, arriving as a field:
+ * #91's picker shows a row reading `macos` and enters something considerably
+ * longer than that.
+ */
+export type Option = { label: string; hint: string; runs?: string }
+
+/**
+ * A select still waiting on an answer: what it asks, what it offers, and which
+ * row the cursor is standing on.
+ *
+ * Here rather than in `select.ts`, where the widget is drawn, because `Session`
+ * below has to name it and a leaf reaching back through the module that
+ * composes it is the dependency pointing the wrong way -- the reason `COMMENT`,
+ * `PROMPT` and `TYPED` moved down here in #85. It sits beside `Intent` for the
+ * matching reason: both are state the module hands over that is not a row.
+ */
+export type Open = { message: string; options: readonly Option[]; cursor: number }
+
+/**
+ * What the module computes and the renderer is handed. Nothing else crosses.
+ *
+ * `open` is the one field the renderer ignores, and it is not for the renderer:
+ * the rows of the widget are already in `lines`, drawn. It is what says the
+ * widget is still *live* -- that arrows move it and Enter answers it -- which
+ * is the fact `terminal.ts` needs and cannot recover from the rows. It travels
+ * on the session rather than in the reducer's own state so that `finished` can
+ * hand a served page a menu that is already open, with one source of truth
+ * rather than two that can disagree.
+ */
+export type Session = { lines: readonly Line[]; intents: readonly Intent[]; open?: Open }
 
 /**
  * The constructors, which exist so that composing a session reads like the
@@ -152,17 +195,40 @@ export const inverted = (text: string): Span => ({ text, tone: 'inverted' })
 export const decoration = (text: string): Span => ({ text, tone: 'dim', hidden: true })
 
 /**
+ * A value the widget was left on, struck the way the prompt library strikes it.
+ *
+ * A hint like `decoration` rather than a step of the ladder, and it sits here
+ * for that reason: strikethrough is orthogonal to tone, and the value under it
+ * is dim either way. Always dim, because a select that was abandoned is the
+ * only thing on this page that draws one.
+ */
+export const struck = (text: string): Span => ({ text, tone: 'dim', struck: true })
+
+/**
  * A word the cursor can land on, and what it runs when it does.
  *
  * The page has no buttons, so this is what a control looks like here: a bare
  * word that inverts under focus and washes under hover, with a tap target
  * around it that nobody can see. #85 draws the first ones -- the command names
- * in `help` -- and #86's menu rows, #88's copy controls and #89's chips are all
- * the same word wearing the same class.
+ * in `help` -- and #88's copy controls and #89's chips are the same word
+ * wearing the same class.
+ *
+ * **The menu's rows are deliberately not among them, and #86 is where that was
+ * decided rather than overlooked.** The tap target is real padding on the row,
+ * so a landable label grows its row from one line to 44px; five of those inside
+ * a rail put the `│` glyphs thirty pixels apart and the vertical line the
+ * widget is identified by comes apart. The rail's shape is the whole of what
+ * #86 is protecting, so the select is driven from the prompt instead -- arrows,
+ * Enter, or typing an entry's name.
  *
  * `runs` defaults to the text because the common case is a command name that
- * reads and runs as itself. #91's picker is the case the second argument
- * exists for: a row reading `macos` runs something longer than that.
+ * reads and runs as itself, and every caller today takes that default. The
+ * second argument was written for #91's picker and no longer has it: the rows
+ * of a select are not words, since #86, and a row that reads one thing and runs
+ * another is now `Option.runs` a screen up. It is left rather than removed
+ * because it is #85's and #88's copy controls are its likely first caller -- a
+ * word reading `copy` that runs something else is exactly its shape. If that
+ * ticket lands without using it, delete it there.
  *
  * Always `ink`, and not by accident. ADR-0010's floor asks `--dim` to clear
  * 4.5:1 over the hover wash, and in the light theme `--dim` has no headroom to
