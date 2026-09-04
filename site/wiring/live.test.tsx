@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { Live } from '@/components/live'
 import { Screen } from '@/components/screen'
-import { CLI_VERSION, MENU_ENTRIES } from '@/lib/content'
+import { CLI_COMMANDS, CLI_VERSION, MENU_ENTRIES } from '@/lib/content'
 import { run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
@@ -25,6 +25,17 @@ import { mounted, prefers, pressed, type Mounted } from './dom'
  */
 
 const live = (): Promise<Mounted> => mounted(<Live initial={finished(CLI_VERSION)} />)
+
+/**
+ * What `add` says about itself, read from the generated list rather than
+ * written down.
+ *
+ * This seam asserts wiring and not copy -- so what it needs is *some* text the
+ * page is known to have printed, and since #87 that text is the binary's and
+ * arrives here by generator. A literal would be a copy no diff checks, which is
+ * the rule `test/header.test.ts` states for generated content.
+ */
+const ADD = CLI_COMMANDS.find((command) => command.name === 'add')!.summary
 
 const region = (page: Mounted): HTMLElement => page.one('[role="status"]')
 
@@ -133,7 +144,7 @@ describe('the live region', () => {
     await page.type('add')
     await page.press('Enter')
 
-    expect(region(page).textContent).toBe('Track a playlist.')
+    expect(region(page).textContent).toContain(ADD)
     expect(region(page).textContent).not.toContain(`jukebox ${CLI_VERSION}`)
 
     await page.unmount()
@@ -175,7 +186,7 @@ describe('the live region', () => {
     await page.type('add')
     await page.press('Enter')
 
-    expect(region(page).textContent).toBe('Track a playlist.')
+    expect(region(page).textContent).toContain(ADD)
     expect(region(page).firstElementChild).not.toBe(first)
 
     await page.unmount()
@@ -190,7 +201,7 @@ describe('the renderer on its own', () => {
 
     expect(page.all('button')).toHaveLength(0)
     expect(page.all('.u-word')).toHaveLength(0)
-    expect(page.container.textContent).toContain('Track a playlist.')
+    expect(page.container.textContent).toContain(ADD)
 
     await page.unmount()
   })

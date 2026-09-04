@@ -1,5 +1,5 @@
 import { replay, type Frame } from './boot'
-import { COMMANDS, run } from './commands'
+import { COMMANDS, find, run } from './commands'
 import { blank, spoken, type Line, type Open, type Session } from './lines'
 import { abandoned, active, answered, asking, height, moved, named } from './select'
 
@@ -381,6 +381,40 @@ const entered = (terminal: Terminal): Terminal => {
   }
 }
 
+/** Still on the first word: leading space, then the prefix, then the end. */
+const FIRST = /^(\s*)(\S*)$/
+
+/** On the second: a first word, the gap after it, then the prefix. */
+const SECOND = /^(\s*)(\S+)(\s+)(\S*)$/
+
+/** What Tab has to work with, or nothing where there is nothing to complete. */
+type Completing = { readonly before: string; readonly prefix: string; readonly first: boolean }
+
+/**
+ * Which word the caret is on, and whether anything may be completed there.
+ *
+ * Two positions, because since #87 there are two. The first word is always a
+ * command name. The second is one only after a word that takes an argument --
+ * `help` today -- so `add fo` stays the no-op #85 made it rather than becoming
+ * a page that completes an argument `add` would never be handed here.
+ */
+const completing = (buffer: string): Completing | undefined => {
+  const first = FIRST.exec(buffer)
+
+  if (first !== null) {
+    const [, lead = '', prefix = ''] = first
+    return prefix === '' ? undefined : { before: lead, prefix, first: true }
+  }
+
+  const second = SECOND.exec(buffer)
+  if (second === null) return undefined
+
+  const [, lead = '', name = '', gap = '', prefix = ''] = second
+  if (find(name)?.takesArgument !== true) return undefined
+
+  return prefix === '' ? undefined : { before: lead + name + gap, prefix, first: false }
+}
+
 /**
  * Completion, and the shape of doing nothing.
  *
@@ -390,18 +424,27 @@ const entered = (terminal: Terminal): Terminal => {
  * this is the literal reading of it. The cost is that `c` is silent and may
  * feel broken; `help` is four keystrokes away.
  *
- * No trailing space on a match, because nothing on this page takes an argument
- * yet and a phantom space would sit under the caret. #87 and #91 add one when
- * there is something to type after it.
+ * That rule now covers a bare `help ` as well, where every command is a match
+ * and none of them is the only one -- so Tab on an empty second word is silent
+ * for the reason Tab on an empty first word always was.
+ *
+ * **A trailing space only where a word follows.** `version` gets none, because
+ * a phantom space would sit under the caret with nothing to type into it;
+ * `help` gets one, because the next thing to type is a command name and #87 is
+ * what gave it one. Read off `takesArgument` rather than off the name, so #91's
+ * `install` arrives here already handled.
  */
 const completed = (terminal: Terminal): Terminal => {
-  const prefix = terminal.buffer.trim()
-  if (prefix === '' || /\s/.test(prefix)) return terminal
+  const asked = completing(terminal.buffer)
+  if (asked === undefined) return terminal
 
-  const matches = COMMANDS.filter((command) => command.name.startsWith(prefix))
+  const matches = COMMANDS.filter((command) => command.name.startsWith(asked.prefix))
   const only = matches.length === 1 ? matches[0] : undefined
+  if (only === undefined) return terminal
 
-  return only === undefined ? terminal : { ...terminal, buffer: only.name }
+  const filled = asked.first && only.takesArgument === true ? `${only.name} ` : only.name
+
+  return { ...terminal, buffer: asked.before + filled }
 }
 
 const earlier = (terminal: Terminal): Terminal => {
