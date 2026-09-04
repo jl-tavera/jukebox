@@ -70,7 +70,9 @@
  * clear of the problem by construction rather than by measurement: the
  * wash is only ever laid under `.u-word`, and a word is always `ink`.
  * The first dim landable word is the day that row of the floor becomes
- * a real constraint, and #89's chips are where it will land.
+ * a real constraint, and #89's chips are where it will land. #86 came
+ * and went without it: the menu's rows are dim and are not landable,
+ * for a reason of their own two blocks down.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -237,8 +239,15 @@
     font-family: var(--font-prose);
   }
 
-  /* A word the cursor can land on. #85 establishes it; #86's menu rows, #88's
-   * copy controls and #89's chips are the same word wearing the same class.
+  /* A word the cursor can land on. #85 establishes it; #88's copy controls and
+   * #89's chips are the same word wearing the same class.
+   *
+   * **#86's menu rows deliberately are not**, and the padding below is why.
+   * A landable label grows its row from one line to 44px, and five of those
+   * inside a rail leave the glyphs thirty pixels apart with nothing drawn
+   * between them - the vertical line the widget is identified by, pulled apart
+   * by its own tap targets. The menu is driven from the prompt instead, and
+   * `e2e/menu.spec.ts` measures the rows to keep it that way.
    *
    * There is no border, no box and no pill, because the page has none. The
    * block cursor is the only pointer it owns: it sits on a hovered word as a
