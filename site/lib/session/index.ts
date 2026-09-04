@@ -1,5 +1,6 @@
-import { hero, MENU_ENTRIES, WHAT_NEXT } from '../content'
+import { hero, MENU_ENTRIES, WHAT_NEXT, type System } from '../content'
 import { header } from './header'
+import { elsewhere, offering, SYSTEMS } from './install'
 import {
   blank,
   COMMENT,
@@ -48,14 +49,31 @@ export { COMMENT, PROMPT, TYPED } from './lines'
  *
  * The rows below are drawn from this, and it is handed over beside them so that
  * `terminal.ts` knows the frame is live -- a menu the visitor can move and
- * answer, rather than a picture of one. It is the page's only caller of the
- * widget today; #91's install picker is the second, and opens its own.
+ * answer, rather than a picture of one. It was the page's only caller of the
+ * widget until #91, whose install picker is the second and opens its own from
+ * `install.ts` without either of them changing the widget.
  *
  * The cursor sits on the first entry, which is where the binary leaves it.
  */
 const MENU: Open = { message: WHAT_NEXT, options: MENU_ENTRIES, cursor: 0 }
 
-export const finished = (version: string): Session => ({
+/**
+ * Whose install command a page served to nobody in particular carries.
+ *
+ * The first system of the first command, so it is `README.md`'s lead rather
+ * than a name written here -- and the curl line rather than the PowerShell one,
+ * because #79's complaint about the old page was that two install rows
+ * dominated it, and a served page showing both so that one can be taken away
+ * would put that back for as long as hydration takes.
+ *
+ * A static export cannot know who is reading it, so this is what a crawler, a
+ * browser whose JavaScript failed and the first paint of every visit all get.
+ * `terminal.ts` swaps it for the visitor's own on a guess, and `install` reaches
+ * all three when the guess is wrong.
+ */
+const SERVED: System = SYSTEMS[0]!
+
+export const finished = (version: string, system: System = SERVED): Session => ({
   lines: [
     // Both lifted verbatim from `README.md` through `content.ts`, and both set
     // as comments because the boot below has nowhere to put them: the binary's
@@ -68,6 +86,16 @@ export const finished = (version: string): Session => ({
     // is the CLI's own rule -- a long line wraps rather than being cut.
     row(decoration(`${COMMENT} `), prose(hero.tagline)),
     row(decoration(`${COMMENT} `), prose(hero.lede)),
+
+    // The page's first job, done before the page has finished arriving. It sits
+    // above the boot because `boot.ts` replays from the `$ jukebox` line
+    // downwards -- so this is on screen in the first frame rather than a second
+    // and a half later -- and because it could not sit below it in any case:
+    // `terminal.ts` reads the open frame off the tail of the session, so the
+    // menu has to be the last thing here.
+    blank(),
+    ...offering(system),
+    elsewhere(),
 
     blank(),
     row(decoration(`${PROMPT} `), ink(TYPED)),
@@ -85,8 +113,11 @@ export const finished = (version: string): Session => ({
     ...asking(MENU),
   ],
 
-  // Nothing here writes to a clipboard, moves focus or sets a timer, so there
-  // is nothing to hand the renderer. #88 and #91 are the first to declare one.
+  // **Still nothing, and #91 arriving is what makes that a decision.** The page
+  // now has a command on it and a control that copies it, and it does not use
+  // either on the visitor's behalf: a clipboard nobody reached for is not the
+  // page's to write. Every intent this module can produce comes from something
+  // somebody did.
   intents: [],
 
   // The boot ends on a question, so the session the page is served with is one
