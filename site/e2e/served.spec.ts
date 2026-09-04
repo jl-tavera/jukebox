@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { CLI_VERSION, MENU_ENTRIES } from '../lib/content'
+import { commandFor } from '../lib/session/install'
 import { served, SESSION } from './harness'
 
 /**
@@ -40,6 +41,24 @@ test.describe('the page, with no JavaScript at all', () => {
       expect(session, `the menu lost ${entry.label}`).toContain(entry.label)
     }
     expect(session).toContain('└')
+  })
+
+  test('still hands over the command the page exists to hand over', async ({ page }) => {
+    // ADR-0010 gave up a guarantee here and named what replaces it: the command
+    // used to be in static markup at a fixed place, and its presence is now a
+    // property of a build step and a boot sequence -- *and a property of that
+    // kind has to be checked rather than assumed*. This is that check.
+    //
+    // One command, not three. A visitor whose JavaScript failed gets the line
+    // this page is served with rather than the one a guess would have picked
+    // for them, and `install` is how the other two are reached by everybody
+    // whose browser is working.
+    await served(page)
+
+    const session = (await page.locator(SESSION).textContent()) ?? ''
+
+    expect(session).toContain(commandFor('macos').command)
+    expect(session).toContain('copy')
   })
 
   test('still carries the wordmark', async ({ page }) => {
