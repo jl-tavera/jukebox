@@ -260,14 +260,26 @@ export const CLI_VERSION: string = cli.version
  * The menu carries the binary's entries and nothing else. `install`, `donate`
  * and `theme` are the page's own verbs and belong at the page's own prompt;
  * putting one here would be the site speaking in the binary's voice.
+ *
+ * **`runs` is the page's own field and not a sixth thing quoted from the CLI.**
+ * ADR-0007 makes every entry a launch of a command that already exists, so this
+ * is that command, and the page runs it exactly as it would have run a typed
+ * one -- which is what stops an entry printing something no prompt would.
+ * `quit` carries none, because the way out launches nothing; that is what
+ * closes the menu and lands the visitor at the prompt.
+ *
+ * Four of them repeat their label today, and the repetition is the honest
+ * shape rather than a redundancy to fold away: a row's word and the command it
+ * launches are two facts, and #91's picker has a row reading `macos` that runs
+ * something considerably longer.
  */
 export const WHAT_NEXT = 'What next?'
 
 export const MENU_ENTRIES: readonly Option[] = [
-  { label: 'add', hint: 'Track a playlist' },
-  { label: 'sync', hint: 'Ask every playlist what changed' },
-  { label: 'list', hint: 'Every playlist you track' },
-  { label: 'config', hint: 'Every setting, where it came from, and change one' },
+  { label: 'add', hint: 'Track a playlist', runs: 'add' },
+  { label: 'sync', hint: 'Ask every playlist what changed', runs: 'sync' },
+  { label: 'list', hint: 'Every playlist you track', runs: 'list' },
+  { label: 'config', hint: 'Every setting, where it came from, and change one', runs: 'config' },
   { label: 'quit', hint: 'Leave the menu' },
 ]
 

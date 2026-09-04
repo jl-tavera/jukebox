@@ -1,6 +1,7 @@
 import { replay, type Frame } from './boot'
 import { COMMANDS, run } from './commands'
-import { blank, spoken, type Line, type Session } from './lines'
+import { blank, spoken, type Line, type Open, type Session } from './lines'
+import { abandoned, active, answered, asking, height, moved, named } from './select'
 
 /**
  * The live prompt, as a pure function of state and input.
@@ -95,8 +96,9 @@ export type Terminal = {
  * shape in disguise.
  *
  * `earlier` and `later` are named for the direction rather than the
- * consequence, which is what lets #86 add a branch instead of a vocabulary: the
- * same two keys move the menu's cursor while the menu is open.
+ * consequence, and #86 is where that paid: the same two inputs move an open
+ * select's cursor and recall history, and neither the component nor this type
+ * had to learn a second word for a key that already had one.
  */
 export type Input =
   | { readonly kind: 'typed'; readonly value: string }
@@ -135,6 +137,31 @@ type Keyed = Exclude<Input, { kind: 'typed' } | { kind: 'chosen' } | Replaying>[
 export const KEYS: Readonly<Record<string, Keyed>> = {
   Enter: 'entered',
   Tab: 'completed',
+  ArrowUp: 'earlier',
+  ArrowDown: 'later',
+}
+
+/**
+ * The subset a page nobody has clicked on still answers.
+ *
+ * The page boots with a question on it and nothing focused, so a keystroke
+ * reaches the window rather than the field -- and without this the menu's own
+ * gesture, the one its legend advertises, does nothing at all until a visitor
+ * thinks to click first. These are the keys a select owns, and the component
+ * forwards them from the window when the prompt does not have them.
+ *
+ * **Tab is deliberately not among them.** Cancelling it out there would trap
+ * focus on the page, since walking to the prompt is how a keyboard user reaches
+ * it at all -- the same bug `e2e/prompt.spec.ts` found at the field itself, one
+ * element over. Completion belongs to a prompt somebody is typing at, which is
+ * the one place it can mean anything.
+ *
+ * A second record rather than a filter over `KEYS`, so that the decision reads
+ * as a list somebody wrote and `bun test` can check the two agree about what
+ * each key means.
+ */
+export const UNFOCUSED: Readonly<Record<string, Keyed>> = {
+  Enter: 'entered',
   ArrowUp: 'earlier',
   ArrowDown: 'later',
 }
@@ -181,26 +208,149 @@ export const booted = (session: Session): Terminal => ({
   printed: 0,
 })
 
+/**
+ * The rows above the open frame: everything on screen that is not the widget.
+ *
+ * A live select is always the last thing printed -- answering one or walking
+ * away from one both redraw it before anything else is written underneath -- so
+ * the frame is the tail, and redrawing it is a splice rather than a search.
+ */
+const above = (session: Session, open: Open): readonly Line[] =>
+  session.lines.slice(0, session.lines.length - height(open))
+
+/**
+ * The frame, redrawn where it stands.
+ *
+ * `open` is what the session is *still* waiting for, so the two endings pass
+ * nothing and the session comes back with no live widget on it.
+ */
+const redrawn = (terminal: Terminal, was: Open, drawn: readonly Line[], open?: Open): Session => ({
+  lines: [...above(terminal.session, was), ...drawn],
+  intents: terminal.session.intents,
+  open,
+})
+
+/**
+ * What a live region is handed, out of what was printed.
+ *
+ * The blanks go, because a screen reader has no use for the air a terminal puts
+ * between things, and the rail and the sigils go with them -- `spoken` drops
+ * every span the page marked as decoration.
+ */
+const said = (lines: readonly Line[]): string =>
+  lines
+    .map(spoken)
+    .filter((line) => line !== '')
+    .join('\n')
+
+/**
+ * An arrow, when the open select is the one it belongs to.
+ *
+ * **An empty prompt belongs to the widget; a prompt with something in it
+ * belongs to the person typing.** One sentence, covering the arrows here and
+ * Enter below, and it is what keeps #85's history reachable while #91's picker
+ * is open rather than trading one for the other.
+ *
+ * `undefined` means the select did not want the key, and the caller falls
+ * through to the history it has always done.
+ */
+const selecting = (terminal: Terminal, by: 1 | -1): Terminal | undefined => {
+  const open = terminal.session.open
+  if (open === undefined || terminal.buffer !== '') return undefined
+
+  const next = moved(open, by)
+
+  return {
+    ...terminal,
+    session: redrawn(terminal, open, asking(next), next),
+    // Moving the cursor is the one thing on this page a sighted visitor can see
+    // and a screen reader would otherwise be told nothing about. The row it
+    // lands on is what is said, and the count is bumped so that walking back
+    // onto a row already visited is announced again.
+    announcement: spoken(active(next)),
+    printed: terminal.printed + 1,
+  }
+}
+
+/**
+ * A row of the open select, answered.
+ *
+ * **The frame collapses first, and then the row runs the command it launches**
+ * -- through the same path a typed line takes, so what an entry prints is what
+ * the command prints, echo and history and all. That is ADR-0007 quoted rather
+ * than paraphrased: the menu is a launcher, an entry runs a command that
+ * already exists, and nothing a visitor learns here is wrong at a real prompt.
+ *
+ * A row carrying no command runs nothing, which is the whole of what `quit` is.
+ * The collapsed frame is the record that the question was answered, and the
+ * prompt below is where the visitor lands.
+ */
+const picked = (terminal: Terminal, open: Open, at: number): Terminal => {
+  const option = open.options[at]!
+  const frame = answered({ ...open, cursor: at })
+
+  const left: Terminal = {
+    ...terminal,
+    session: redrawn(terminal, open, frame),
+    buffer: '',
+  }
+
+  return option.runs === undefined
+    ? {
+        ...left,
+        recall: left.history.length,
+        draft: '',
+        // The exchange, as a screen reader is given it: the question, and the
+        // answer it was given. Derived rather than written, so a second caller
+        // with a way out of its own announces its own words.
+        announcement: said(frame),
+        printed: terminal.printed + 1,
+      }
+    : entered({ ...left, buffer: option.runs })
+}
+
 const entered = (terminal: Terminal): Terminal => {
+  const open = terminal.session.open
   const typed = terminal.buffer.trim()
+
+  if (open !== undefined) {
+    // An empty prompt belongs to the widget, so Enter answers the question the
+    // legend says it answers. A word that names a row is the same answer
+    // reached by typing -- which is the only way `quit` can mean anything at a
+    // prompt where it is not a command, and it keeps a typed `add` and a chosen
+    // `add` from being two different things.
+    const answering = typed === '' ? open.cursor : named(open, typed)
+    if (answering !== undefined) return picked(terminal, open, answering)
+  }
+
   if (typed === '') return terminal
 
-  const printed = run(terminal.buffer)
+  // Whatever was typed is not an answer to the question on screen, so the
+  // question is over. The frame collapses to the library's cancel, which is
+  // what Ctrl-C draws at the real menu -- and `cli/src/menu.ts` says a cancel
+  // leaves the same way `quit` does. Leaving it drawn as it was would be worse
+  // than untidy: a legend still offering to navigate, above output, on a widget
+  // nothing can move any more.
+  const walked: Terminal =
+    open === undefined
+      ? terminal
+      : { ...terminal, session: redrawn(terminal, open, abandoned(open)) }
+
+  const printed = run(walked.buffer)
 
   // One blank row of air above the echo, and none when there is nothing above
   // it to be separated from -- which is the state `clear` leaves behind. The
   // CLI never double-spaces and neither does this.
   const appended = [
-    ...terminal.session.lines,
-    ...(terminal.session.lines.length > 0 ? [blank()] : []),
+    ...walked.session.lines,
+    ...(walked.session.lines.length > 0 ? [blank()] : []),
     printed.echo,
     ...printed.body,
   ]
 
   // Immediate repeats are not recorded, or up-arrow after running something
   // twice walks through a wall of the same word.
-  const history =
-    terminal.history.at(-1) === typed ? terminal.history : [...terminal.history, typed]
+  const history = walked.history.at(-1) === typed ? walked.history : [...walked.history, typed]
 
   return {
     // Nothing is replaying by the time a command runs: `after` collapses the
@@ -215,19 +365,19 @@ const entered = (terminal: Terminal): Terminal => {
     // the ticket that has to answer it.
     session: {
       lines: printed.clears === true ? [] : capped(appended),
-      intents: terminal.session.intents,
+      intents: walked.session.intents,
+
+      // No `open`. Either there was no question, or the frame above just closed
+      // the one there was -- and `clear` empties the rows a live one would have
+      // been drawn in, so there is no arrangement of these that leaves a widget
+      // the reducer still believes it can move.
     },
     buffer: '',
     history,
     recall: history.length,
     draft: '',
-    announcement:
-      printed.announcement ??
-      printed.body
-        .map(spoken)
-        .filter((said) => said !== '')
-        .join('\n'),
-    printed: terminal.printed + 1,
+    announcement: printed.announcement ?? said(printed.body),
+    printed: walked.printed + 1,
   }
 }
 
@@ -292,10 +442,18 @@ const later = (terminal: Terminal): Terminal => {
  * The last frame's `lines` is the array `finished` returned -- `boot.ts` hands
  * it back rather than a copy -- so a replay that ran to its end leaves the
  * renderer holding the very rows it was prerendered with.
+ *
+ * **Everything but the rows is carried through**, which since #86 means the
+ * open select as well as the intents. A replay is the page redrawing what it
+ * was served, so what the served page was waiting for is still what the last
+ * frame is waiting for. That the intermediate frames say so too, while the
+ * frame is still half-drawn, is unobservable: `after` collapses a replay ahead
+ * of every input but its own timer's, so nothing can answer a question that is
+ * not finished being asked.
  */
 const showing = (terminal: Terminal, frames: readonly Frame[], at: number): Terminal => ({
   ...terminal,
-  session: { lines: frames[at]!.lines, intents: terminal.session.intents },
+  session: { ...terminal.session, lines: frames[at]!.lines },
   boot: at === frames.length - 1 ? undefined : { frames, at },
 })
 
@@ -355,9 +513,9 @@ export const after = (terminal: Terminal, input: Input): Terminal => {
     case 'completed':
       return completed(settled)
     case 'earlier':
-      return earlier(settled)
+      return selecting(settled, -1) ?? earlier(settled)
     case 'later':
-      return later(settled)
+      return selecting(settled, 1) ?? later(settled)
     case 'chosen':
       return after(after(settled, { kind: 'typed', value: input.command }), { kind: 'entered' })
 
