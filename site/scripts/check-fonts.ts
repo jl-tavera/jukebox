@@ -96,10 +96,11 @@ const REQUIRED: readonly Requirement[] = [
   { what: 'the chosen radio', from: 0x25cf },
   { what: 'the radios that were not chosen', from: 0x25cb },
 
-  // The same widget's other three states. `lib/session/select.ts` draws only
-  // the waiting one today, because the menu on the page cannot yet be answered
-  // -- #86 is what makes it live, and an answered, cancelled or failed step
-  // draws one of these the day it lands.
+  // The same widget's other three states. Two of them arrived with #86, which
+  // made the menu answerable: `lib/session/select.ts` draws the answered mark
+  // when a row is chosen and the cancelled one when a visitor types past the
+  // question. The third is still waiting -- nothing on this page validates an
+  // answer -- and it stays for the reason the entry below it gives.
   //
   // They are here and U+2192 is not, which is the distinction worth stating
   // rather than leaving to look arbitrary: these are marks of a widget this
@@ -109,7 +110,7 @@ const REQUIRED: readonly Requirement[] = [
   // between them. One is a glyph waiting for its state; the other was a glyph
   // nothing would ever draw.
   { what: 'the mark on a step that has been answered', from: 0x25c7 },
-  { what: 'the mark on a step that was cancelled', from: 0x25a0 },
+  { what: 'the mark on a step that was left for something else', from: 0x25a0 },
   { what: 'the mark on a step that failed validation', from: 0x25b2 },
 
   // #85 is this code point's first consumer, which is what earns it an entry.

@@ -102,6 +102,15 @@ export const find = (name: string): Command | undefined =>
  * `clears` is a request rather than an action, for the reason the whole module
  * exists: emptying the scrollback is a change to state this module does not
  * hold. `terminal.ts` owns the scrollback and performs it.
+ *
+ * **Nothing here can open a select, and #91 is the ticket that adds it.** The
+ * widget and every transition it needs landed with #86 and are reusable as they
+ * stand -- `test/terminal.test.ts` drives a picker-shaped question through the
+ * whole reducer -- but the page has no command that opens one, so the request
+ * that would carry it is not written. It is the shape `clears` above already
+ * has: one more optional field here, read where `terminal.ts` reads that one.
+ * Written the other way round it would be a field with no consumer, which is
+ * the reservation this repo deletes rather than keeps.
  */
 export type Printed = {
   readonly echo: Line
