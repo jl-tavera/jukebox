@@ -81,6 +81,57 @@ Object.assign(dom.window, {
   }),
 })
 
+/**
+ * What reached the clipboard, and the only way this seam can see one.
+ *
+ * jsdom implements no `navigator.clipboard` at all, so without this every test
+ * that copies anything throws -- and `SITE.md` 06 asks for exactly this shape
+ * anyway: *verify by capturing the argument to `clipboard.writeText`, not by
+ * eye*. A stub that records is what makes that sentence checkable with no
+ * browser in the room, and #91 is the first ticket that needed it.
+ *
+ * `forget` rather than a fresh jsdom per case, because this window is one
+ * object shared by the file -- the arrangement `prefers` above already has.
+ */
+const writes: string[] = []
+
+export const written = (): readonly string[] => writes
+
+export const forget = (): void => {
+  writes.length = 0
+}
+
+Object.assign(dom.window.navigator, {
+  clipboard: {
+    writeText: (value: string): Promise<void> => {
+      writes.push(value)
+      return Promise.resolve()
+    },
+  },
+})
+
+/**
+ * Who the page thinks it is talking to.
+ *
+ * **It answers with nothing until a test says otherwise**, and that is the
+ * useful default: `guessed` reads an empty agent as *I cannot tell*, so every
+ * case in this directory that is about something else mounts the page exactly
+ * as it was served, with no line swapped underneath its assertions.
+ *
+ * Defined rather than assigned, because jsdom puts `userAgent` on the Navigator
+ * prototype as a getter and an assignment to one of those is silently dropped.
+ */
+let agent = ''
+
+export const pretending = (userAgent: string): void => {
+  agent = userAgent
+}
+
+Object.defineProperty(dom.window.navigator, 'userAgent', {
+  get: () => agent,
+  configurable: true,
+})
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 /**
