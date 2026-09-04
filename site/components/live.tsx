@@ -5,7 +5,7 @@ import { Screen } from '@/components/screen'
 import { REDUCED_MOTION } from '@/lib/session/boot'
 import { PROMPTS } from '@/lib/session/commands'
 import type { Session } from '@/lib/session/lines'
-import { after, booted, KEYS, pause } from '@/lib/session/terminal'
+import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
 
 /**
  * The page, made live.
@@ -37,6 +37,9 @@ export const Live = ({ initial }: { initial: Session }) => {
   const input = useRef<HTMLInputElement>(null)
 
   const replaying = pause(terminal) !== undefined
+
+  /** Whether a question is on screen waiting for an answer. */
+  const asking = terminal.session.open !== undefined
 
   /**
    * The boot, started once the page is really on a screen.
@@ -113,6 +116,66 @@ export const Live = ({ initial }: { initial: Session }) => {
     window.addEventListener('keydown', skip)
     return () => window.removeEventListener('keydown', skip)
   }, [replaying])
+
+  /**
+   * The keys a page nobody has touched yet still answers.
+   *
+   * **The page boots with a question on it and nothing focused**, so the
+   * gesture the menu's own legend advertises -- press down, press Enter --
+   * reaches no handler at all until a visitor thinks to click first. That is
+   * the one interaction #86 exists to deliver, so it arrives at the window
+   * instead.
+   *
+   * Four guards, each closing something a looser listener would have broken.
+   * **Only while a question is open**, so with nothing to answer the arrows go
+   * back to scrolling the page, which is what they are for. **Only while
+   * nothing is focused**, so a focused field or a focused word keeps its own
+   * keys -- without it, Enter on a landable word would run the word and answer
+   * the question in the same keystroke. **Only unmodified**, for the reason the
+   * field's own handler gives one screen down: a held modifier means the
+   * keystroke is the browser's rather than the page's. And **only `UNFOCUSED`**,
+   * which is why Tab is not in it: cancelling Tab here would stop focus reaching
+   * the prompt at all.
+   *
+   * The focus question is asked of `activeElement` rather than of the event's
+   * target, and the difference is not pedantic: a key pressed at a page nobody
+   * has clicked on is dispatched at `body` in a browser and at `window` by a
+   * test that reaches for the window directly, and `activeElement` answers the
+   * question both were asking.
+   *
+   * It is deliberately not the skip listener with a second job. That one is
+   * over once the boot is, and this one has not started until then -- the first
+   * key of a replay means *stop the animation*, and should not also move a
+   * cursor the visitor has not seen arrive.
+   *
+   * **It hands focus to the prompt on the way through, and that is what makes
+   * the state visible.** Driven from `body`, the selection moves while the
+   * browser's focus is nowhere a visitor can see, which is a menu being
+   * operated with no focus indicator on the page at all. Moving focus to the
+   * field on the first forwarded key inverts the sigil -- this page's own focus
+   * state -- and every key after it arrives at the field's handler rather than
+   * here. Not on mount, because a page that grabs focus before anybody has
+   * pressed anything scrolls itself on a small screen; on the keystroke, which
+   * is somebody asking for it.
+   */
+  useEffect(() => {
+    if (replaying || !asking) return
+
+    const forward = (event: KeyboardEvent) => {
+      if (document.activeElement !== document.body) return
+      if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
+
+      const kind = UNFOCUSED[event.key]
+      if (kind === undefined) return
+
+      event.preventDefault()
+      dispatch({ kind })
+      input.current?.focus()
+    }
+
+    window.addEventListener('keydown', forward)
+    return () => window.removeEventListener('keydown', forward)
+  }, [replaying, asking])
 
   /**
    * A word was clicked.

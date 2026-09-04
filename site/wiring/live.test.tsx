@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { Live } from '@/components/live'
 import { Screen } from '@/components/screen'
-import { CLI_VERSION } from '@/lib/content'
+import { CLI_VERSION, MENU_ENTRIES } from '@/lib/content'
 import { run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
@@ -289,6 +289,73 @@ describe('the boot replay', () => {
     } finally {
       globalThis.setTimeout = scheduling
       globalThis.clearTimeout = clearing
+      prefers('reduce')
+    }
+  })
+})
+
+describe('the keys a page nobody has clicked on answers', () => {
+  /** What the session says, as one string, so a change is a comparison. */
+  const shown = (page: Mounted): string => page.one('main').textContent ?? ''
+
+  it('reaches the reducer, so the menu moves before anything is focused', async () => {
+    // The gesture the menu's own legend advertises, performed the way a visitor
+    // performs it: the page loads, nothing is focused, and they press down.
+    // Which row it lands on is `test/terminal.test.ts`; that the key arrived at
+    // all is only answerable here.
+    const page = await live()
+
+    const before = shown(page)
+    await pressed('ArrowDown')
+
+    expect(shown(page)).not.toBe(before)
+    expect(shown(page)).toContain(MENU_ENTRIES[1]!.hint)
+
+    await page.unmount()
+  })
+
+  it('leaves Tab alone, because that is how focus reaches the prompt', async () => {
+    // The mirror of the Shift+Tab case above, one element out: a listener on
+    // the window that cancelled Tab would stop a keyboard user reaching the
+    // page's only field.
+    const page = await live()
+
+    expect((await pressed('Tab')).defaultPrevented).toBe(false)
+
+    await page.unmount()
+  })
+
+  it('keeps its hands off while the field has them', async () => {
+    // Both handlers are listening at once, and only one may act: a key that
+    // arrived at the field must not also be answered out here, or every arrow
+    // would move the cursor twice.
+    const page = await live()
+
+    page.field().focus()
+
+    const before = shown(page)
+    await pressed('ArrowDown')
+
+    expect(shown(page)).toBe(before)
+
+    await page.unmount()
+  })
+
+  it('is not what the first key of a boot does', async () => {
+    // #84's rule: any keypress skips. The first key means *stop the animation*,
+    // and must not also move a cursor the visitor has not seen arrive yet.
+    prefers('no-preference')
+
+    try {
+      const page = await live()
+
+      await pressed('ArrowDown')
+
+      expect(shown(page)).toContain(versionLine(CLI_VERSION))
+      expect(shown(page)).toContain(MENU_ENTRIES[0]!.hint)
+
+      await page.unmount()
+    } finally {
       prefers('reduce')
     }
   })

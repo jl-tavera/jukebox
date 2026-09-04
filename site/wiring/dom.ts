@@ -92,10 +92,17 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
  * keystroke reaches `<body>` and never passes through React's root handler at
  * all.
  */
-export const pressed = async (key: string): Promise<void> => {
+export const pressed = async (key: string): Promise<Event> => {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+
   await act(async () => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+    window.dispatchEvent(event)
   })
+
+  // Handed back for the same reason `press` above hands its own back: whether a
+  // keystroke was cancelled is only answerable from the event, and #86 has a
+  // key out here that must not be -- Tab, which is how focus reaches the page.
+  return event
 }
 
 /** Modifiers held down alongside a keystroke. */
