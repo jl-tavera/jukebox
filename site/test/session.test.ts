@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
-import { CLI_VERSION, hero, MENU_ENTRIES, WHAT_NEXT } from '../lib/content'
+import { CLI_VERSION, hero, MENU_ENTRIES, platforms, WHAT_NEXT, type System } from '../lib/content'
 import { versionLine } from '../lib/session/header'
+import { commandFor } from '../lib/session/install'
 import { text, type Line } from '../lib/session/lines'
 import { BAR, BAR_END, STEP } from '../lib/session/select'
 import { COMMENT, finished, PROMPT, TYPED } from '../lib/session'
@@ -43,6 +44,50 @@ describe('what a human wrote', () => {
     expect(drawn.indexOf(`${COMMENT} ${hero.lede}`)).toBeLessThan(
       drawn.indexOf(`${PROMPT} ${TYPED}`),
     )
+  })
+})
+
+describe('the command the page exists to hand over', () => {
+  /** The offer's second row, as the terminal prints it. */
+  const offered = (system: System): string =>
+    `${commandFor(system).prompt} ${commandFor(system).command}   copy`
+
+  it('offers one, with a control, and asks for no clipboard nobody reached for', () => {
+    // `SITE.md` 01's first job, and the guarantee ADR-0010 traded away when the
+    // page became a terminal: a visitor who reads one screen leaves with the
+    // command. The offer is an offer -- the page hands it over and does not
+    // touch a clipboard to do it.
+    expect(rows(session().lines)).toContain(offered('macos'))
+    expect(session().intents).toEqual([])
+  })
+
+  it('says who the line is for, above it', () => {
+    expect(rows(session().lines)).toContain(`${COMMENT} ${platforms(commandFor('macos'))}`)
+  })
+
+  it('leads with the curl line, which is the one README leads with', () => {
+    expect(rows(session().lines)).not.toContain(offered('windows'))
+  })
+
+  it('hands a windows visitor the powershell line, under its own sigil', () => {
+    const drawn = rows(finished(CLI_VERSION, 'windows').lines)
+
+    expect(drawn).toContain(offered('windows'))
+    expect(drawn).not.toContain(offered('macos'))
+  })
+
+  it('says where the other systems are, for a guess that went wrong', () => {
+    expect(rows(session().lines)).toContain(`${COMMENT} Run \`install\` to choose another system.`)
+  })
+
+  it('puts all of it above the boot, so it is there before a character is typed', () => {
+    // `boot.ts` replays from the `$ jukebox` line downwards, so everything above
+    // it is in the first frame. Below the boot it would arrive a second and a
+    // half late -- and could not go there at all, because the open frame has to
+    // be the tail of the session.
+    const drawn = rows(session().lines)
+
+    expect(drawn.indexOf(offered('macos'))).toBeLessThan(drawn.indexOf(`${PROMPT} ${TYPED}`))
   })
 })
 

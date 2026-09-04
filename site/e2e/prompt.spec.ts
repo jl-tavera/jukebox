@@ -25,6 +25,24 @@ import {
 /** The mark in front of the field. It is what focus inverts. */
 const SIGIL = '.u-prompt > span'
 
+/**
+ * Tab until the keyboard has actually reached something.
+ *
+ * **A fixed number of presses is a count of the page's controls**, and #91 is
+ * where that stopped being one: the boot now carries a copy control and a word
+ * pointing at `install`, both above the prompt, so the single Tab this file
+ * used to press lands two stops short of it. Walking until the element answers
+ * keeps the case about the field rather than about how much sits above it.
+ */
+const tabTo = async (page: Page, selector: string): Promise<void> => {
+  for (let pressed = 0; pressed <= 20; pressed++) {
+    if ((await page.locator(`${selector}:focus`).count()) > 0) return
+    await page.keyboard.press('Tab')
+  }
+
+  throw new Error(`the keyboard never reached ${selector}`)
+}
+
 /** The page, with the help listing on screen -- which is where the words are. */
 const listed = async (page: Page): Promise<void> => {
   await open(page)
@@ -92,7 +110,7 @@ test.describe('focus against hover', () => {
     const hover = { field: await painted(page, FIELD), sigil: await painted(page, SIGIL) }
 
     await page.mouse.move(0, 0)
-    await page.keyboard.press('Tab')
+    await tabTo(page, FIELD)
     const focus = { sigil: await painted(page, SIGIL) }
 
     expect(hover.field.background).not.toEqual(rest.field.background)
