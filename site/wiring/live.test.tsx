@@ -4,7 +4,9 @@ import { Screen } from '@/components/screen'
 import { CLI_VERSION } from '@/lib/content'
 import { run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
-import { mounted, type Mounted } from './dom'
+import { replay } from '@/lib/session/boot'
+import { versionLine } from '@/lib/session/header'
+import { mounted, prefers, pressed, type Mounted } from './dom'
 
 /**
  * Seam two: what the component does with what the module computed.
@@ -200,5 +202,94 @@ describe('the renderer on its own', () => {
     expect(page.all('.u-row, .u-art')).toHaveLength(session.lines.length)
 
     await page.unmount()
+  })
+})
+
+describe('the boot replay', () => {
+  /**
+   * Mounted with one answer to the motion query, and the answer put back
+   * afterwards -- this file shares one jsdom, so a preference left set would
+   * follow every case below it.
+   */
+  const asking = async (
+    preference: 'reduce' | 'no-preference',
+    check: (page: Mounted) => Promise<void> | void,
+  ): Promise<void> => {
+    prefers(preference)
+    const page = await live()
+
+    try {
+      await check(page)
+    } finally {
+      await page.unmount()
+      prefers('reduce')
+    }
+  }
+
+  const rowsWhenFinished = (): number => finished(CLI_VERSION).lines.length
+  const rowsInFirstFrame = (): number => replay(finished(CLI_VERSION))[0]!.lines.length
+
+  it('does not run at all for a visitor who asked for reduced motion', async () => {
+    // The criterion, at the only seam that can see it: the component asked, was
+    // told to hold still, and rendered the session the page was served with
+    // rather than nothing. Turning off animation costs no content.
+    await asking('reduce', (page) => {
+      expect(page.all('.u-row, .u-art')).toHaveLength(rowsWhenFinished())
+      expect(page.container.textContent).toContain(versionLine(CLI_VERSION))
+    })
+  })
+
+  it('rewinds to its first frame for everyone else', async () => {
+    await asking('no-preference', (page) => {
+      expect(page.all('.u-row, .u-art')).toHaveLength(rowsInFirstFrame())
+      expect(page.container.textContent).not.toContain(versionLine(CLI_VERSION))
+    })
+  })
+
+  it('reaches the end on a key pressed with nothing focused', async () => {
+    // Where the skip has to work and the field's own handler cannot reach: at
+    // boot nothing is focused, so the keystroke never passes through React's
+    // root at all. What the collapse then does is `test/terminal.test.ts`'s.
+    await asking('no-preference', async (page) => {
+      await pressed('a')
+
+      expect(page.all('.u-row, .u-art')).toHaveLength(rowsWhenFinished())
+    })
+  })
+
+  it('leaves no frame timer behind when the page goes away', async () => {
+    // Matched on the delay the first frame asks for, so React's own scheduling
+    // is not counted and the assertion is about this component's timer alone.
+    const hold = replay(finished(CLI_VERSION))[0]!.hold
+    const pending = new Set<unknown>()
+
+    const scheduling = globalThis.setTimeout
+    const clearing = globalThis.clearTimeout
+
+    globalThis.setTimeout = ((run: () => void, ms?: number, ...rest: unknown[]) => {
+      const id = scheduling(run, ms, ...rest)
+      if (ms === hold) pending.add(id)
+      return id
+    }) as typeof globalThis.setTimeout
+
+    globalThis.clearTimeout = ((id?: unknown) => {
+      pending.delete(id)
+      return clearing(id as Parameters<typeof clearing>[0])
+    }) as typeof globalThis.clearTimeout
+
+    try {
+      prefers('no-preference')
+      const page = await live()
+
+      expect(pending.size, 'the first frame scheduled nothing').toBe(1)
+
+      await page.unmount()
+
+      expect(pending.size, 'a frame timer outlived the component').toBe(0)
+    } finally {
+      globalThis.setTimeout = scheduling
+      globalThis.clearTimeout = clearing
+      prefers('reduce')
+    }
   })
 })

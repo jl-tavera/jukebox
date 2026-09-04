@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom'
 import { act, type ReactNode } from 'react'
+import { REDUCED_MOTION } from '@/lib/session/boot'
 
 /**
  * A DOM, and the smallest set of helpers that can drive a component in one.
@@ -48,7 +49,54 @@ Object.assign(globalThis, {
   cancelAnimationFrame: dom.window.cancelAnimationFrame.bind(dom.window),
 })
 
+/**
+ * What the page is told about motion, and the one dial a test here has to set.
+ *
+ * **jsdom implements no `matchMedia` at all**, so without this every test that
+ * mounts `Live` throws the moment #84's mount effect asks. The stub answers one
+ * query and no other: a stub that said `matches` to anything would agree with a
+ * component asking the wrong question.
+ *
+ * **It answers `reduce` until a test says otherwise.** Every case in this
+ * directory that is about something else then mounts the finished session with
+ * no timer running, exactly as it did before #84 -- while a default of
+ * `no-preference` would start a frame chain underneath assertions about a live
+ * region and a caret. The boot's own cases ask for motion explicitly and put it
+ * back in a `finally`, because this jsdom is one object shared by the file.
+ */
+let motion: 'reduce' | 'no-preference' = 'reduce'
+
+export const prefers = (preference: typeof motion): void => {
+  motion = preference
+}
+
+Object.assign(dom.window, {
+  matchMedia: (query: string) => ({
+    matches: query === REDUCED_MOTION && motion === 'reduce',
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+})
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
+
+/**
+ * A key pressed with nothing focused, which is where a page that has just
+ * loaded starts.
+ *
+ * Dispatched on `window` rather than on an element, because that is the only
+ * place #84's skip can listen: at boot the field has not been touched, so a
+ * keystroke reaches `<body>` and never passes through React's root handler at
+ * all.
+ */
+export const pressed = async (key: string): Promise<void> => {
+  await act(async () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+  })
+}
 
 /** Modifiers held down alongside a keystroke. */
 export type Held = { readonly shiftKey?: boolean; readonly ctrlKey?: boolean }
