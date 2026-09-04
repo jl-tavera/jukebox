@@ -85,3 +85,23 @@ jobs:
       # scripts/check-installers.ts.
       - run: bun run --cwd site check:installers
 
+      # Both webfonts, read back from `out/` on the same reasoning again -- and
+      # here it is the reasoning ADR-0010 leaned on when it gave up SITE.md 03's
+      # no-webfont guarantee. The wordmark is built entirely from Block
+      # Elements, a default latin subset drops every one of them, and the
+      # per-glyph fallback that replaces them shears the art apart silently, on
+      # somebody else's machine rather than on the one that built the page. A
+      # correct public/fonts/*.woff2 that never gets copied is a sheared
+      # wordmark, so this reads the export.
+      #
+      # It does not subset anything. The .woff2 files are committed artefacts,
+      # written by `bun run --cwd site fonts:build`, which reaches the network
+      # and shells out to fontTools and is run by hand. That is what keeps this
+      # workflow on one runtime: the check needs nothing installed, because
+      # scripts/woff2.ts reads the cmap out of the bytes itself.
+      #
+      # Nothing here proves the glyphs render at the right width -- a code point
+      # in a cmap is not an advance width. That is #83's Playwright harness, and
+      # it must not drift here.
+      - run: bun run --cwd site check:fonts
+

@@ -240,7 +240,7 @@ Not aspirations. A build that misses one of these is not finished.
 | Theme flash | None, on hard reload, in either theme |
 | **Discovery document published** | `out/discovery.json` exists and satisfies `DiscoveryDocument` from `schema/`. Checked by `bun run --cwd site check:discovery`, which reads the export rather than `public/` — a correct source file that never gets copied is a CLI that cannot boot. Run by CI and again by `deploy`, because the edit this file is most likely to receive is a kill switch flipped by hand, and that edit never opens a pull request. |
 | Static export | `out/` is complete and serves standalone with no Next.js runtime |
-| No webfont | `out/` contains no font files and the HTML preloads none |
+| **Webfont subset intact** | `out/fonts/*.woff2` are served from this origin, carry the whole Block Elements range and every mark the menu draws, and are named by both a preload and a stylesheet. Checked by `bun run --cwd site check:fonts`, which reads the export rather than `public/` — a correct source file that never gets copied is a wordmark that shears. *(Replaces "no webfont: `out/` contains no font files", reversed by ADR-0010.)* |
 
 The first is the one to actually measure rather than eyeball — a per-glyph font fallback can look almost right on the machine that built it and be obviously broken elsewhere.
 

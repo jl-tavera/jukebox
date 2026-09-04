@@ -10,7 +10,8 @@
     "fonts:build": "bun run scripts/build-fonts.ts",
     "check:discovery": "bun run scripts/check-discovery.ts",
     "check:installers": "bun run scripts/check-installers.ts",
-    "deploy": "bun run build && bun run check:discovery && bun run check:installers && wrangler deploy"
+    "check:fonts": "bun run scripts/check-fonts.ts",
+    "deploy": "bun run build && bun run check:discovery && bun run check:installers && bun run check:fonts && wrangler deploy"
   },
   "dependencies": {
     "next": "^16.3.3",
