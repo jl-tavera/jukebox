@@ -7,6 +7,7 @@
     "build": "next build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "bun test",
+    "fonts:build": "bun run scripts/build-fonts.ts",
     "check:discovery": "bun run scripts/check-discovery.ts",
     "check:installers": "bun run scripts/check-installers.ts",
     "deploy": "bun run build && bun run check:discovery && bun run check:installers && wrangler deploy"
