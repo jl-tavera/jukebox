@@ -1,3 +1,4 @@
+import { replay, type Frame } from './boot'
 import { COMMANDS, run } from './commands'
 import { blank, spoken, type Line, type Session } from './lines'
 
@@ -24,9 +25,32 @@ import { blank, spoken, type Line, type Session } from './lines'
  * no DOM lib at all.
  */
 
+/**
+ * Where the boot replay stands, while one is running.
+ *
+ * The frames are carried rather than recomputed, because `replay` deconstructs
+ * a whole session and the timer would otherwise redo that work on every tick.
+ * They are cheap to hold: each frame's `lines` is a fresh array over the same
+ * `Line` objects the session already had.
+ */
+type Boot = { readonly frames: readonly Frame[]; readonly at: number }
+
 export type Terminal = {
   /** What is on screen. Handed to the renderer unchanged, already capped. */
   readonly session: Session
+
+  /**
+   * The boot replay, while one is running, and `undefined` otherwise.
+   *
+   * **`undefined` means both *not started yet* and *finished*, and the two do
+   * not need telling apart.** In either the session is the one the page was
+   * served with, nothing is scheduled and nothing is pending -- which is the
+   * whole of what anything downstream asks. The component dispatches
+   * `replayed` exactly once, from a mount effect, so "not started" is a state
+   * that lasts one render and answers every question the same way "finished"
+   * does.
+   */
+  readonly boot: Boot | undefined
 
   /** What is typed at the prompt and not yet entered. */
   readonly buffer: string
@@ -81,8 +105,23 @@ export type Input =
   | { readonly kind: 'earlier' }
   | { readonly kind: 'later' }
   | { readonly kind: 'chosen'; readonly command: string }
+  | Replaying
 
-type Keyed = Exclude<Input, { kind: 'typed' } | { kind: 'chosen' }>['kind']
+/**
+ * The three the boot replay is driven by.
+ *
+ * Named apart from the rest because they are the only inputs no visitor
+ * performs: `replayed` and `advanced` come from the component's own mount and
+ * its own timer, and `skipped` is the one a keypress reaches. Excluding them
+ * from `Keyed` below is what stops `KEYS` naming a frame advance as though it
+ * were a key somebody could press.
+ */
+type Replaying =
+  | { readonly kind: 'replayed' }
+  | { readonly kind: 'advanced' }
+  | { readonly kind: 'skipped' }
+
+type Keyed = Exclude<Input, { kind: 'typed' } | { kind: 'chosen' } | Replaying>['kind']
 
 /**
  * Which keystroke means which input.
@@ -129,6 +168,11 @@ const capped = (lines: readonly Line[]): readonly Line[] =>
 
 export const booted = (session: Session): Terminal => ({
   session,
+  // Not replaying. The reducer's first state is exactly the session the page
+  // was served with, which is what a crawler, a browser whose JavaScript failed
+  // and a visitor who asked for reduced motion all get -- and what #84's replay
+  // is an enhancement over rather than a replacement for.
+  boot: undefined,
   buffer: '',
   history: [],
   recall: 0,
@@ -159,6 +203,12 @@ const entered = (terminal: Terminal): Terminal => {
     terminal.history.at(-1) === typed ? terminal.history : [...terminal.history, typed]
 
   return {
+    // Nothing is replaying by the time a command runs: `after` collapses the
+    // boot ahead of every input but its own timer's, so a command is only ever
+    // entered against the finished session. Spelled rather than carried, so
+    // this stays true by statement rather than by inheritance.
+    boot: undefined,
+
     // `intents` is carried through rather than replaced. #85 declares none --
     // `help` and `clear` write no clipboard and set no timer -- so the question
     // of when a performed intent leaves the array stays unopened, and #88 is
@@ -232,6 +282,45 @@ const later = (terminal: Terminal): Terminal => {
 }
 
 /**
+ * The boot replay, one frame at a time.
+ *
+ * `showing` is the only thing that moves it. Reaching the last frame puts
+ * `boot` back to `undefined` rather than leaving it parked on the end, so
+ * "is anything still replaying" is one comparison and there is no terminal
+ * frame to remember not to schedule after.
+ *
+ * The last frame's `lines` is the array `finished` returned -- `boot.ts` hands
+ * it back rather than a copy -- so a replay that ran to its end leaves the
+ * renderer holding the very rows it was prerendered with.
+ */
+const showing = (terminal: Terminal, frames: readonly Frame[], at: number): Terminal => ({
+  ...terminal,
+  session: { lines: frames[at]!.lines, intents: terminal.session.intents },
+  boot: at === frames.length - 1 ? undefined : { frames, at },
+})
+
+/**
+ * How long the frame on screen is held before the next one, and `undefined`
+ * when nothing is replaying.
+ *
+ * The whole of what the component needs to drive the boot, so `Boot` itself
+ * stays private: the effect schedules one number and asks nothing about where
+ * the replay is or how many frames are left.
+ */
+export const pause = (terminal: Terminal): number | undefined =>
+  terminal.boot === undefined ? undefined : terminal.boot.frames[terminal.boot.at]!.hold
+
+const skipped = (terminal: Terminal): Terminal =>
+  terminal.boot === undefined
+    ? terminal
+    : showing(terminal, terminal.boot.frames, terminal.boot.frames.length - 1)
+
+const advanced = (terminal: Terminal): Terminal =>
+  terminal.boot === undefined
+    ? terminal
+    : showing(terminal, terminal.boot.frames, terminal.boot.at + 1)
+
+/**
  * One input, applied.
  *
  * **Every branch that changes nothing returns the terminal it was handed.**
@@ -241,20 +330,49 @@ const later = (terminal: Terminal): Terminal => {
  *
  * `chosen` is defined by composition rather than by a second path, so a word
  * that was clicked and a word that was typed cannot drift apart.
+ *
+ * **Every input but the timer's own reaches the end of the boot first, and that
+ * is the whole of #84's skip.** A listener in the component could say it for a
+ * keystroke and could not say it for a word that was clicked -- which would
+ * otherwise print into a session still being drawn, and have the next frame
+ * overwrite what it printed. Collapsing here makes that unreachable instead of
+ * handled, and makes "any keypress skips" a fact `bun test` can read.
+ *
+ * The `boot === undefined` half of the guard is not an optimisation either: it
+ * is what keeps the paragraph above true once a collapse runs ahead of every
+ * input. With nothing replaying, `settled` *is* `terminal`, and every no-op
+ * branch still hands back the object it was given.
  */
 export const after = (terminal: Terminal, input: Input): Terminal => {
+  const settled =
+    input.kind === 'advanced' || terminal.boot === undefined ? terminal : skipped(terminal)
+
   switch (input.kind) {
     case 'typed':
-      return { ...terminal, buffer: input.value, recall: terminal.history.length }
+      return { ...settled, buffer: input.value, recall: settled.history.length }
     case 'entered':
-      return entered(terminal)
+      return entered(settled)
     case 'completed':
-      return completed(terminal)
+      return completed(settled)
     case 'earlier':
-      return earlier(terminal)
+      return earlier(settled)
     case 'later':
-      return later(terminal)
+      return later(settled)
     case 'chosen':
-      return after(after(terminal, { kind: 'typed', value: input.command }), { kind: 'entered' })
+      return after(after(settled, { kind: 'typed', value: input.command }), { kind: 'entered' })
+
+    // Rewinds, rather than resuming, so a second dispatch is a boot rather than
+    // two -- which is what React's StrictMode does to a mount effect in `dev`.
+    // `settled` has already collapsed any replay in flight, so this always
+    // deconstructs the finished session rather than a frame of itself.
+    case 'replayed':
+      return showing(settled, replay(settled.session), 0)
+    case 'advanced':
+      return advanced(settled)
+
+    // Already done, above. The input exists so the component has something to
+    // dispatch on a keypress without pretending the key meant anything else.
+    case 'skipped':
+      return settled
   }
 }
