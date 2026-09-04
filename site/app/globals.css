@@ -51,6 +51,51 @@
 }
 
 /* ------------------------------------------------------------------ *
+ * Landing on a word - #85.
+ *
+ * `--target` is SITE.md 06's touch target as a token, because two rules
+ * and a Playwright helper all have to agree on it. `e2e/harness.ts`
+ * writes the number again, since a custom property is not importable.
+ *
+ * `--wash` is mixed from the two colours the page already has rather
+ * than added as a third, so the palette is still two colours that swap
+ * places. It follows the theme for free: `--ink` and `--ground` are
+ * redeclared on `.dark`, and a custom property substitutes at computed
+ * -value time, so the mix is re-taken in whichever theme is on.
+ *
+ * **Ten percent is a ceiling rather than a preference.** ADR-0010 asks
+ * `--dim` to clear 4.5:1 over this wash, and in the light theme `--dim`
+ * on `--ground` is already about 5:1 with nothing to spare - any mix
+ * darkens the ground and spends headroom that is not there. #85 stays
+ * clear of the problem by construction rather than by measurement: the
+ * wash is only ever laid under `.u-word`, and a word is always `ink`.
+ * The first dim landable word is the day that row of the floor becomes
+ * a real constraint, and #89's chips are where it will land.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --target: 44px;
+
+  /* The ground, and hover simply does not paint. Overridden immediately below
+     wherever `color-mix` exists, which is everywhere this page is measured. */
+  --wash: var(--ground);
+}
+
+/* **Written out rather than left to the compiler, because the fallback it
+ * picks is the dangerous one.** Given the mix alone, Lightning CSS emits
+ * `--wash: var(--ink)` outside the `@supports` it generates -- read back out of
+ * `out/` to be sure, not assumed -- so a browser without `color-mix` would
+ * paint ink on ink and erase the word under the cursor. That is the precise
+ * opposite of what this token is for: the states must stay distinct, *or a
+ * keyboard user cannot find themselves*. Failing to no wash is recoverable;
+ * failing to an invisible word is not. Focus still inverts either way. */
+@supports (color: color-mix(in oklab, red, blue)) {
+  :root {
+    --wash: color-mix(in oklab, var(--ink) 10%, var(--ground));
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * The two faces, vendored - ADR-0010.
  *
  * Neon is the machine's voice and Argon is the human's. The split is
@@ -190,6 +235,133 @@
 
   .u-prose {
     font-family: var(--font-prose);
+  }
+
+  /* A word the cursor can land on. #85 establishes it; #86's menu rows, #88's
+   * copy controls and #89's chips are the same word wearing the same class.
+   *
+   * There is no border, no box and no pill, because the page has none. The
+   * block cursor is the only pointer it owns: it sits on a hovered word as a
+   * wash and on a focused one as an inversion.
+   *
+   * **Two axes, two mechanisms, and the asymmetry is the whole design.**
+   *
+   * Vertical growth is real padding on an `inline-block`, whose margin box
+   * participates in the line box - so the row grows, and rows growing is
+   * precisely what stops two targets overlapping. A pseudo-element would leave
+   * the rows one line apart while every 44px box ate a third of its
+   * neighbour's, and a tap in the seam would run the wrong command. That is
+   * worse than a small target, not better. `display: inline-block` is
+   * therefore load-bearing: the same padding on a plain inline span overflows
+   * its line and changes nothing a finger can find.
+   *
+   * Horizontal growth is a pseudo-element, and must be. Padding of half a cell
+   * would move every column to its right, and this page's whole claim is that
+   * a horizontal offset is a whole character written into the string. The
+   * `::before` is out of flow, so it grows the hit area and moves nothing -
+   * and a pointer over a pseudo-element hit-tests to the element that owns it.
+   *
+   * The overhang lands in whitespace by arithmetic rather than by luck. The
+   * shortest name is `add` at three cells; at 375 a cell is about 7.8px, so the
+   * box is about 23px and overhangs about 10px each side. To its left is the
+   * listing's two-space indent, to its right the padding to the summary
+   * column - both wider, and both scaling with `--cell` while 44px does not,
+   * so the narrowest viewport is the tightest case and it clears. */
+  .u-word {
+    display: inline-block;
+    position: relative;
+    padding-block: calc((var(--target) - var(--row)) / 2);
+    appearance: none;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+
+  .u-word::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    translate: -50% 0;
+    width: max(100%, var(--target));
+  }
+
+  /* Hover washes, focus inverts. Two different mechanisms rather than two
+   * shades of one, so a keyboard user can always find themselves and the
+   * difference survives on a screen that renders colour badly. */
+  .u-word:hover {
+    background-color: var(--wash);
+  }
+
+  /* After the hover rule deliberately: equal specificity, so source order is
+   * what decides a word that is both, and focus is the one that must win.
+   *
+   * The global ring below `:focus-visible` is a box, and #85 introduces none.
+   * Inversion is this page's own focus indicator - it is what the menu already
+   * draws its cursor with - and an ink ring around an ink background would not
+   * be visible anyway. */
+  .u-word:focus-visible {
+    background-color: var(--ink);
+    color: var(--ground);
+    outline: none;
+  }
+
+  /* The live prompt.
+   *
+   * Not a row of the session, and deliberately not `.u-row`: it is the one
+   * element on this page a person operates, and a `Line` cannot express one
+   * without putting a control inside a type whose whole claim is that it only
+   * describes drawing.
+   *
+   * `align-items: baseline` keeps the sigil and the typed text on one baseline
+   * while the field carries the padding that makes it 44px. */
+  .u-prompt {
+    display: flex;
+    align-items: baseline;
+    min-height: var(--target);
+    /* The same one-character inset the session carries, so the sigil sits in
+     * the column the rows above it start in. `.u-session`'s bottom padding is
+     * one row, which is the single blank line of air between the last output
+     * and the prompt - zero or one line, like every other gap on the page. */
+    padding-inline: 1ch;
+  }
+
+  /* The sigil keeps its own trailing space, which this row has no `pre-wrap`
+   * to preserve for it. */
+  .u-prompt > span {
+    white-space: pre;
+  }
+
+  .u-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-block: calc((var(--target) - var(--row)) / 2);
+    appearance: none;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    caret-color: var(--ink);
+  }
+
+  .u-prompt:hover .u-input {
+    background-color: var(--wash);
+  }
+
+  /* Focus inverts the sigil rather than drawing a ring around the field, which
+   * is what a terminal does and what the rest of this page already does. The
+   * field itself washes on hover, so the two states stay distinguishable here
+   * the same way they do on a word. */
+  .u-input:focus-visible {
+    outline: none;
+  }
+
+  .u-prompt:has(.u-input:focus-visible) > span {
+    background-color: var(--ink);
+    color: var(--ground);
   }
 
   /* The wordmark. Sized so 67 characters always fit the viewport: monospace
