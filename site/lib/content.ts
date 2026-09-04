@@ -1,5 +1,5 @@
 import cli from '../../cli/package.json'
-import type { Option } from './session/select'
+import type { Option } from './session/lines'
 
 /**
  * Everything the page says. README.md owns user-facing copy
