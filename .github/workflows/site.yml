@@ -105,3 +105,25 @@ jobs:
       # it must not drift here.
       - run: bun run --cwd site check:fonts
 
+      # And here it is: the third of the three things ADR-0010 traded SITE.md
+      # 03's no-webfont guarantee for. The step above proves the shipped faces
+      # still carry every Block Element; this one proves the browser draws them
+      # at the same advance the spaces beside them get. A face can satisfy the
+      # first and fail the second, and the art shears silently when it does.
+      #
+      # **This installs a browser, which nothing else in this repo does.** Every
+      # other step here runs on the one runtime `setup-bun` provides, and the
+      # comment above says needing nothing installed is a virtue. It is, and
+      # this is the exception worth buying: an advance width is not a fact about
+      # a file, it is a fact about rendering, and there is no way to read one
+      # without something that renders. Chromium only, so it is one download
+      # rather than three -- `playwright.config.ts` makes a second engine a line
+      # in an array if that is ever wanted.
+      #
+      # It runs last because it is the slowest step and needs `out/` from the
+      # build above -- `playwright.config.ts` serves the export through
+      # `wrangler dev`, the same asset path production uses, because a test of
+      # the shipped font has no business reading `public/`.
+      - run: bun run --cwd site e2e:install
+      - run: bun run --cwd site test:e2e
+
