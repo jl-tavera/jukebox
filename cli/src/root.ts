@@ -2,6 +2,7 @@ import { defineCommand, type ArgsDef } from 'citty'
 import { add } from './commands/add'
 import { config } from './commands/config'
 import { list } from './commands/list'
+import { open } from './commands/open'
 import { remove } from './commands/remove'
 import { show } from './commands/show'
 import { sync } from './commands/sync'
@@ -52,5 +53,5 @@ export const root = defineCommand({
     description: 'Mirror public playlists and keep a local record of what is in them.',
   },
   args,
-  subCommands: { add, config, list, remove, show, sync, version },
+  subCommands: { add, config, list, open, remove, show, sync, version },
 })

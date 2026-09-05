@@ -4,13 +4,17 @@ import type { ErrorCode } from '@jukebox/schema'
  * Codes the CLI raises on its own behalf, where the API's five say what the
  * server could not do.
  *
- * Nine now. Each arrived with the thing that raises it, and the latest is
- * `playlist_ambiguous`, which arrived with the change that let `show` and
- * `remove` accept a name -- so it arrived with the first reference a person can
- * give that fairly describes two Playlists. The rule the file set down -- no
- * code before something raises it -- is kept the way it was kept for the other
- * eight: the code raising it ships in the same commit as the code, and is
- * exercised at the seam its commands are exercised at.
+ * Twelve now. Each arrived with the thing that raises it, and the latest three
+ * arrived together with `open`: a number naming no Track, a Track with no audio
+ * on disk, and a hand-off the machine would not run. The rule the file set down
+ * -- no code before something raises it -- is kept the way it was kept for the
+ * other nine: each ships in the same commit as the code that raises it, and is
+ * exercised at the seam its command is exercised at.
+ *
+ * Three at once is the most this file has taken in one change, and they are
+ * three rather than one because they are three different things for a caller to
+ * do: count again, fetch the audio, or fix the machine. A single
+ * `open_failed` would have made every one of those the same event.
  */
 export type ClientErrorCode =
   /** The argument vector names no command, or one that does not exist. */
@@ -113,6 +117,57 @@ export type ClientErrorCode =
    * and a setting called `libary_path` is not a thing that could exist.
    */
   | 'config_unwritable'
+  /**
+   * The number given names no Track this Playlist still holds.
+   *
+   * The number is `show`'s `#` column: contiguous, counted from one, over the
+   * Tracks a Playlist still holds. A Playlist with nine of them has no ninth
+   * hundredth, and this is what it says so.
+   *
+   * Not `invalid_usage`, and this is the closest call in the file. The argument
+   * is an index into state rather than into a vocabulary this binary owns, which
+   * is the line `config_unwritable` draws in the other direction: `libary_path`
+   * is not a thing that could exist, and a tenth Track is a thing that could
+   * exist and does not here. The counter-argument is real -- the number's whole
+   * meaning is "a row `show` just printed", so one outside the range is a
+   * mistyped index -- and folding this into `invalid_usage` would be defensible.
+   * It is separate because a caller that walks a Playlist wants to tell "I
+   * counted wrong" from "the vector was malformed", and only one of those is
+   * worth retrying with a fresh `show`.
+   *
+   * Not `playlist_not_tracked`: the Playlist is here and was found.
+   */
+  | 'track_not_recorded'
+  /**
+   * The Track is recorded, and there is no audio for it in the Playlist's
+   * folder.
+   *
+   * Named for the state rather than a cause. It does not say a download failed,
+   * because none was attempted -- in this release nothing downloads at all, so
+   * this is the ordinary answer rather than an exceptional one, and the message
+   * beside it says as much rather than leaving a reader to conclude something
+   * broke. DESIGN section 06's reconcile table already calls this divergence
+   * `missing`.
+   *
+   * A failure rather than a success with a note, which `remove`'s `leftAlone`
+   * might suggest otherwise. That one succeeds because a person was asked what
+   * they wanted and got it; nobody chose this. And the exit code is the point:
+   * `jukebox open X 2 && ...` must not run the second half on a file nothing
+   * opened.
+   */
+  | 'track_file_missing'
+  /**
+   * The hand-off to the operating system would not run.
+   *
+   * A Linux box with no desktop session has no `xdg-open` to spawn, which is not
+   * a bug in this binary -- `mirror_unopenable` and `config_unwritable` are the
+   * precedents, and the sentence is theirs: a machine that cannot do the thing
+   * is not the same as code that got it wrong.
+   *
+   * Says nothing about whether the file then played. The program that opens it
+   * is a third process, and no platform's hand-off reports back from it.
+   */
+  | 'file_unopenable'
 
 /**
  * One vocabulary, in one place.

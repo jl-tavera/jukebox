@@ -85,6 +85,7 @@ describe('the CLI, run as its own process', () => {
       'add',
       'config',
       'list',
+      'open',
       'remove',
       'show',
       'sync',

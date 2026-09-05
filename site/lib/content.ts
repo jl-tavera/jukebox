@@ -378,7 +378,7 @@ export interface CliCommand {
 }
 
 /**
- * The binary's seven commands, in the binary's own words. **Generated - do not
+ * The binary's eight commands, in the binary's own words. **Generated - do not
  * edit the entries below by hand.**
  *
  * Written from the `meta` and `args` of each command under `cli/src/commands/`
@@ -428,6 +428,15 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
     summary: 'Show every playlist you track, with its status and what it holds',
     usage: 'jukebox list',
     args: [],
+  },
+  {
+    name: 'open',
+    summary: 'Open one track\'s file with whatever plays it on this machine',
+    usage: 'jukebox open [OPTIONS] <PLAYLIST> <TRACK>',
+    args: [
+      { name: '<PLAYLIST>', description: 'Its name, as `jukebox list` prints it, or its id or address' },
+      { name: '<TRACK>', description: 'Its number, as `jukebox show` prints it in the `#` column' },
+    ],
   },
   {
     name: 'remove',
