@@ -111,9 +111,11 @@ describe('a Playlist the Mirror holds', () => {
 
     const run = await showing(site, home, ID, false)
 
-    // The id beside the title, because this is the screen somebody copies it
-    // off in order to run `remove`.
-    expect(run.stdout).toContain(`"Rain / Shine" (${ID})`)
+    // The name alone. The id used to be here because this was the screen
+    // somebody copied it off in order to run `remove`; that command takes the
+    // name now, so the heading says what the reader would type.
+    expect(run.stdout).toContain('"Rain / Shine"')
+    expect(run.stdout).not.toContain(ID)
     expect(run.stdout).toContain('2 tracks')
 
     // Several artists joined for a reader, and the duration as a person writes
@@ -410,5 +412,41 @@ describe('a table wider than the terminal it is drawn on', () => {
 
     expect(run.stdout).not.toContain('Ninety Miles')
     expect(run.stdout).toContain('Long Way Down')
+  })
+})
+
+describe('naming a Playlist by what it is called', () => {
+  it('finds it by the name the table prints', async () => {
+    const site = servingItsOwnApi()
+    const home = await tracked(site, 'jukebox-show-by-title-')
+
+    // The whole of why the id left the table: what a reader has in front of
+    // them is now what the next command takes.
+    const run = await showing(site, home, 'Rain / Shine', false)
+
+    expect(run.stdout).toContain('"Rain / Shine"')
+    expect(run.code).toBe(0)
+  })
+
+  it('matches a name however it was typed', async () => {
+    const site = servingItsOwnApi()
+    const home = await tracked(site, 'jukebox-show-loose-')
+
+    // Quoted, because the screen prints it quoted and that is what a person
+    // copies; cased however they cased it; and padded, because a paste often
+    // is. The strictness a URL is matched with protects the Source adapter's
+    // boundary, and a title has no such boundary behind it.
+    for (const typed of ['"Rain / Shine"', 'rain / shine', '  RAIN / SHINE  ']) {
+      expect((await showing(site, home, typed, false)).code).toBe(0)
+    }
+  })
+
+  it('still answers to its id', async () => {
+    const site = servingItsOwnApi()
+    const home = await tracked(site, 'jukebox-show-still-id-')
+
+    // The id is gone from the screen, not from the interface. A script holding
+    // one from `--json` goes on working, and it is the handle the menu passes.
+    expect((await showing(site, home, ID, false)).code).toBe(0)
   })
 })

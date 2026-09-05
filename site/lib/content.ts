@@ -434,7 +434,7 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
     summary: 'Stop tracking a playlist on this machine and delete its local record',
     usage: 'jukebox remove [OPTIONS] <PLAYLIST>',
     args: [
-      { name: '<PLAYLIST>', description: 'Its id, as `jukebox list` prints it, or the address you added it with' },
+      { name: '<PLAYLIST>', description: 'Its name, as `jukebox list` prints it, or its id or address' },
     ],
   },
   {
@@ -442,7 +442,7 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
     summary: 'Show one playlist and the tracks recorded for it',
     usage: 'jukebox show [OPTIONS] <PLAYLIST>',
     args: [
-      { name: '<PLAYLIST>', description: 'Its id, as `jukebox list` prints it, or the address you added it with' },
+      { name: '<PLAYLIST>', description: 'Its name, as `jukebox list` prints it, or its id or address' },
     ],
   },
   {

@@ -28,6 +28,16 @@ export const counted = (n: number, one: string, many: string): string =>
   `${n} ${n === 1 ? one : many}`
 
 /**
+ * A Playlist, as far as calling it something goes.
+ *
+ * The structural shape rather than a `MirroredPlaylist`, so that the file every
+ * command borrows its words from does not come to depend on the file that reads
+ * the Mirror. It was written out twice before it was named -- in `labels` and
+ * `ambiguous` -- which is a type asking to be born.
+ */
+export type Titled = { id: PlaylistId; title: string | null }
+
+/**
  * A Mirror with nothing in it, said out loud.
  *
  * `sync`'s until `list` needed the same sentence. Both are commands that can
@@ -73,6 +83,33 @@ export const skippedly = (skipped: number): string =>
   skipped === 0 ? 'nothing skipped' : `${counted(skipped, 'entry', 'entries')} skipped`
 
 /**
+ * A name that found more than one Playlist.
+ *
+ * Each candidate is named as well as identified, and the naming is not
+ * decoration. A title is matched by `sameness`, which folds case and strips the
+ * quotes a screen prints -- so the two rows that collided can read visibly
+ * differently, `"Chill"` against `"chill "`, and a list of bare ids would show a
+ * reader neither the thing they typed nor the thing that answered to it.
+ *
+ * Refused rather than resolved, and the ids are here because this is the one
+ * place a reader is shown them on purpose. `labels` prints an id on a `list` row
+ * whose name has stopped identifying it, so a person who runs `list` will see
+ * the collision before they hit this -- but a person who typed a name straight
+ * from memory will not, and telling them to go and find an id without saying
+ * which two are in play would be sending them back to look for something this
+ * command is already holding.
+ *
+ * Shared by `show` and `remove` for `notTracked`'s reason: the same question of
+ * the same table, and the same answer owed.
+ */
+export const ambiguous = (reference: string, playlists: readonly Titled[]): string =>
+  [
+    `${counted(playlists.length, 'playlist is', 'playlists are')} called ${reference}.`,
+    'Name the one you mean by its id:',
+    ...playlists.map((playlist) => `  ${identified(playlist.title, playlist.id)}`),
+  ].join('\n')
+
+/**
  * The Mirror was asked about a Playlist it does not hold.
  *
  * Shared by `show` and `remove`, which ask the same question of the same table
@@ -110,6 +147,73 @@ export const notTracked = (reference: string): string =>
  */
 export const identified = (title: string | null, id: PlaylistId): string =>
   title === null ? id : `${named(title, id)} (${id})`
+
+/**
+ * Two titles reduced to the one thing that decides whether they are the same
+ * title.
+ *
+ * Exported because two places have to agree about it and would be a bug apart:
+ * `labels` decides whether a name still identifies a Playlist, and
+ * `playlistNamed` decides whether a name a person typed found one. A table
+ * printing two rows as `"Chill"` while the lookup called them one string would
+ * be showing a reader something they cannot act on.
+ *
+ * Case is folded, because a name is read off a screen and typed back by hand.
+ * Surrounding quotes go, because the screen prints them and a copy takes them
+ * with it. Whitespace goes, because a paste often brings some.
+ *
+ * A Playlist genuinely called `"Quoted"`, marks and all, is reachable by its id
+ * and not by its name. That is the cost of stripping, it is a Source's own edge
+ * case, and the alternative -- printing a name a reader cannot retype -- is
+ * worse in the ordinary case rather than in a rare one.
+ */
+export const sameness = (title: string): string =>
+  title
+    .trim()
+    .replace(/^"(.*)"$/s, '$1')
+    .trim()
+    .toLowerCase()
+
+/**
+ * What to call every Playlist in a list, where what one is called depends on
+ * what the others are called.
+ *
+ * The whole set rather than a row at a time, and that is the point of it. A name
+ * identifies a Playlist right up until a second Playlist has the same one, and
+ * whether that has happened is not a fact any single row holds. So the id is
+ * printed exactly where the name has stopped doing the identifying -- a title
+ * the Source never offered, or one two rows share -- and nowhere else.
+ *
+ * It is the rule `playlistNamed` enforces from the other side, shown rather than
+ * raised: a reader sees the collision in the table before they type a command
+ * against it, instead of finding out from an error afterwards.
+ *
+ * Compared case-insensitively, because that is how a title is looked up. Two
+ * Playlists called `Chill` and `chill` are one string to anybody typing, so a
+ * table calling them both `"Chill"` would be showing two rows that a command
+ * cannot tell apart.
+ *
+ * Taking the shape rather than a `MirroredPlaylist` for `held`'s reason: the
+ * file every command borrows its words from does not depend on the one that
+ * reads the Mirror.
+ */
+export const labels = (playlists: readonly Titled[]): Map<PlaylistId, string> => {
+  const shared = new Map<string, number>()
+  for (const { title } of playlists) {
+    if (title === null) continue
+    const folded = sameness(title)
+    shared.set(folded, (shared.get(folded) ?? 0) + 1)
+  }
+
+  return new Map(
+    playlists.map(({ id, title }) => [
+      id,
+      title !== null && (shared.get(sameness(title)) ?? 0) > 1
+        ? identified(title, id)
+        : named(title, id),
+    ]),
+  )
+}
 
 /**
  * What the Mirror holds for a Playlist, counted.

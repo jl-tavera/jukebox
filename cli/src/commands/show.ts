@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { fitted, type Move } from '../fitting'
-import { counted, identified, notTracked, skippedly, stamp } from '../phrasing'
+import { ambiguous, counted, named, notTracked, skippedly, stamp } from '../phrasing'
 import {
   mirroredTracks,
   playlistNamed,
@@ -42,9 +42,17 @@ export const showPlaylist = async (reference: string): Promise<Renderable<Shown>
 }
 
 const looked = (mirror: Mirror, reference: string): Renderable<Shown> => {
-  const playlist = playlistNamed(mirror, reference)
-  if (playlist === null) return failed('show', 'playlist_not_tracked', notTracked(reference))
+  const found = playlistNamed(mirror, reference)
+  if (found.kind === 'none') return failed('show', 'playlist_not_tracked', notTracked(reference))
 
+  // Refused rather than resolved. `show` only reads, so guessing here would cost
+  // nothing but a wrong answer -- and a wrong answer to "which of these two did
+  // you mean" is the one thing a reader has no way to notice.
+  if (found.kind === 'many') {
+    return failed('show', 'playlist_ambiguous', ambiguous(reference, found.playlists))
+  }
+
+  const { playlist } = found
   const held = mirroredTracks(mirror, playlist.id)
 
   return succeeded('show', { playlist, ...held }, (width) => human(playlist, held, width))
@@ -54,7 +62,7 @@ const human = (playlist: MirroredPlaylist, held: MirroredTracks, width: number):
   const note = statusNote(playlist.status)
 
   return [
-    identified(playlist.title, playlist.id),
+    named(playlist.title, playlist.id),
     holds(playlist, held),
     ...(note === null ? [] : [note]),
     ...listing(held, width),
@@ -244,7 +252,7 @@ export const show = defineCommand({
     // turns into `invalid_usage`.
     playlist: {
       type: 'positional',
-      description: 'Its id, as `jukebox list` prints it, or the address you added it with',
+      description: 'Its name, as `jukebox list` prints it, or its id or address',
     },
   },
   run: ({ args }) => showPlaylist(args.playlist!),

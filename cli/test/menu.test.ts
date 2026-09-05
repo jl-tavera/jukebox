@@ -28,7 +28,7 @@ import {
 } from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
 import { MINIMUM_BELOW, region, RELEASED } from '../src/pinned'
-import { held, identified, NOTHING_TRACKED } from '../src/phrasing'
+import { held, labels, named, NOTHING_TRACKED } from '../src/phrasing'
 import type { MirroredPlaylist } from '../src/reading'
 import { ERASED } from '../src/spinner'
 import { WORDMARK } from '../src/wordmark'
@@ -411,8 +411,9 @@ describe('the playlists this Mirror holds', () => {
     const { playlists } = listed(await against(home, ['list', '--json']))
     expect(playlists).toHaveLength(2)
 
+    const called = labels(playlists)
     for (const playlist of playlists) {
-      const name = identified(playlist.title, playlist.id)
+      const name = called.get(playlist.id)!
       expect(run.stderr).toContain(`${name}, ${playlist.status}, ${held(playlist)}`)
     }
 
@@ -437,8 +438,8 @@ describe('the playlists this Mirror holds', () => {
     // One status stands for the three that are not `ok`. Nothing in `offer`
     // branches on which it is -- the word is copied out of the row -- so a Gone
     // or an Unreachable Playlist reaches the screen down the same line of code.
-    expect(run.stderr).toContain(`${identified(null, PENDING_ID)}, pending, no tracks`)
-    expect(run.stderr).toContain(`${identified('Rain / Shine', ID)}, ok, 2 tracks`)
+    expect(run.stderr).toContain(`${named(null, PENDING_ID)}, pending, no tracks`)
+    expect(run.stderr).toContain(`${named('Rain / Shine', ID)}, ok, 2 tracks`)
   })
 
   it('shows the one that was picked, exactly as `show` does', async () => {
@@ -555,7 +556,7 @@ describe('a picker built from what `list` returned', () => {
       keys: [...LIST, ...outOf(1), ...QUIT],
     })
 
-    expect(run.stderr).toContain(`${identified(INVENTED.title, INVENTED.id)}, ok, 3 tracks`)
+    expect(run.stderr).toContain(`${named(INVENTED.title, INVENTED.id)}, ok, 3 tracks`)
 
     // The two this home really tracks, and the assertion a second reader of
     // local state would fail: it would have offered these instead.
