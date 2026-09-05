@@ -48,6 +48,22 @@ export type Titled = { id: PlaylistId; title: string | null }
 export const NOTHING_TRACKED = 'Nothing is tracked yet. Add a playlist with `jukebox add <url>`.'
 
 /**
+ * The standing fact that this release downloads nothing, said where somebody
+ * went looking for a file.
+ *
+ * `config`'s `NOTE` says the same thing and is not reusable here: it is about
+ * two settings and a schedule, and it is printed by a command nobody ran. This
+ * one answers a person who picked a Track and got nothing, which is a different
+ * question with the same cause -- so the two sentences exist on purpose rather
+ * than by oversight, and `config.ts` carries a pointer saying so.
+ *
+ * It will stop being true, and the commit that makes Fetching write a file is
+ * the commit that deletes it.
+ */
+export const NOTHING_FETCHED =
+  'Jukebox records playlists and downloads nothing in this release, so a playlist folder is empty unless you put something in it yourself.'
+
+/**
  * A moment, in the reader's own timezone, to the minute.
  *
  * Local rather than UTC because every timestamp the CLI prints is about
@@ -258,3 +274,61 @@ export const held = ({ tracks, removed }: { tracks: number; removed: number }): 
   tracks === 0 && removed === 0
     ? 'no tracks'
     : counted(tracks, 'track', 'tracks') + (removed === 0 ? '' : `, ${removed} removed`)
+
+/**
+ * What a Source did not say, marked rather than filled in.
+ *
+ * `CONTEXT.md`'s rule about an absent title generalises to every field it lists:
+ * a placeholder is worse than a gap, because nobody downstream can tell one from
+ * a real value. An album nobody named must not read as an album called nothing,
+ * and a missing duration must not read as `0:00`.
+ *
+ * `show`'s own until #108, where the Track picker had to name the same artists
+ * `show` names. Moved rather than copied for the reason at the top of this file,
+ * and this pair is the clearest case of it there has been: `', '` joined in two
+ * files is two screens one keystroke apart billing the same recording
+ * differently.
+ */
+export const UNKNOWN = '--'
+
+export const performers = (artists: string[]): string =>
+  artists.length === 0 ? UNKNOWN : artists.join(', ')
+
+/**
+ * A Track, as far as billing it goes.
+ *
+ * `Titled`'s sibling, and structural for `Titled`'s reason: the file every
+ * command borrows its words from does not come to depend on the file that reads
+ * the Mirror. A caller passes the row and TypeScript takes the two fields it
+ * named.
+ */
+export type Performed = { title: string; artists: string[] }
+
+/**
+ * One Track, on one row of a picker.
+ *
+ * An em dash with spaces around it. A hyphen is what titles and artist names are
+ * full of, and it is also what `show` puts in the `#` column beside a Removed
+ * row -- a separator that appears inside both things it separates is not one.
+ * Non-ASCII costs nothing here that has not already been spent: the wordmark and
+ * the spinner both draw Block Elements on any terminal that opens the menu, and
+ * this is a label on stderr that nothing parses.
+ *
+ * A Track nobody is credited on is billed by its title alone, rather than as
+ * `Title -- --`. This is a deliberate disagreement with `show`, and the reason
+ * is the shape of the two screens rather than a change of mind about absent
+ * values: `show` has a fixed ARTIST column and a cell that held nothing would
+ * let the columns either side of it run together, so the gap has to be marked to
+ * be read. A label has no columns and nothing to hold open, so the mark stands
+ * in for a gap that is already plainly visible. Left as it is: a later reader
+ * tidying this toward consistency would be making the row worse in the name of
+ * matching a table it is not in.
+ *
+ * Two Tracks billed identically are left identical. `labels` disambiguates
+ * Playlists because a Playlist is then *named* to a command; a Track is reached
+ * by the number of the row it is on, so two rows reading the same are still
+ * telling the machine two different things. If it ever matters, the lever is to
+ * put that number on the label.
+ */
+export const billed = ({ title, artists }: Performed): string =>
+  artists.length === 0 ? title : `${title} — ${performers(artists)}`
