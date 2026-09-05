@@ -184,6 +184,16 @@ export const FIELD = 'input.u-input'
 export const WORD = '.u-word'
 
 /**
+ * One row of the session, and the only thing on the page that is visible
+ * content rather than frame.
+ *
+ * `theme.spec.ts` counts these to say *before anything had been parsed*: a
+ * document with no rows in it is a document with nothing on screen to have
+ * flashed the wrong colour.
+ */
+export const ROW = '.u-row'
+
+/**
  * The page, without waiting on a font.
  *
  * `open` above awaits `document.fonts.ready` inside `page.evaluate`, which is
