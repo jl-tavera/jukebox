@@ -56,6 +56,34 @@ const DEVICES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i
 const LONGEST = 100
 
 /**
+ * A title with the characters no filesystem will take removed, its whitespace
+ * collapsed, and nothing on either end.
+ *
+ * `sanitized`'s first half, and only its first half: no length cap, no device
+ * suffix, no falling back to an id. Those three are decisions about what a
+ * *folder* is called, and this is the part that is a decision about characters.
+ *
+ * Extracted in #108, when `open` needed to match a Track's title against the
+ * names of files sitting in a Playlist's folder. Those names were written
+ * through this pass, so a matcher that did not use it would compare a title
+ * holding a slash against a filename that cannot hold one and find nothing. A
+ * second sanitizer in another file is exactly the drift that keeps one
+ * implementation of anything shared in this codebase -- and it is worse than
+ * most, because it would fail on the titles nobody thinks to test.
+ *
+ * The trailing-mark pass runs after the collapse, because Windows strips
+ * trailing dots and spaces when it creates a directory and a single pass over
+ * `Focus. . .` leaves one of each behind. A name the Mirror and the disk
+ * disagree about is one a later Fetch would look up and not find.
+ */
+export const madeSafe = (text: string): string =>
+  text
+    .replace(FORBIDDEN, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/, '')
+
+/**
  * The folder name a Playlist would take if nothing else held it.
  *
  * The id is the fallback rather than an invented placeholder, and it is the same
@@ -66,16 +94,7 @@ const LONGEST = 100
  * guaranteed to contain.
  */
 export const sanitized = (title: string | null, id: PlaylistId): string => {
-  const stripped = (title ?? '')
-    .replace(FORBIDDEN, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  // Repeated, because Windows strips trailing dots and spaces when it creates a
-  // directory and a single pass over `Focus. . .` leaves one of each behind. A
-  // name the Mirror and the disk disagree about is one a later Fetch would look
-  // up and not find.
-  const trimmed = stripped.replace(/[. ]+$/, '')
+  const trimmed = madeSafe(title ?? '')
 
   if (trimmed === '') return id.replace(':', '-')
 
