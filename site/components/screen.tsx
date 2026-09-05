@@ -45,6 +45,10 @@ const TONE: Record<Tone, string | undefined> = {
   dim: 'text-dim',
 }
 
+/** Every class that applies, joined, and an empty string where none does. */
+const classed = (...names: readonly (string | undefined)[]): string =>
+  names.filter((name) => name !== undefined).join(' ')
+
 /**
  * A span's tone, and the one thing that is not a tone.
  *
@@ -54,11 +58,9 @@ const TONE: Record<Tone, string | undefined> = {
  * ordinary `ink` span still renders with no class attribute at all.
  */
 const styled = (span: Span): string | undefined => {
-  const classes = [TONE[span.tone], span.struck === true ? 'line-through' : undefined].filter(
-    (name) => name !== undefined,
-  )
+  const classes = classed(TONE[span.tone], span.struck === true ? 'line-through' : undefined)
 
-  return classes.length === 0 ? undefined : classes.join(' ')
+  return classes === '' ? undefined : classes
 }
 
 /**
@@ -73,21 +75,28 @@ const styled = (span: Span): string | undefined => {
  * `copies` and `onCopy` are the same arrangement for #91's copy control, one
  * component down.
  */
-const Landable = ({
+export const Landable = ({
   text,
   runs,
+  tone,
   onRun,
 }: {
   text: string
   runs: string
+  tone: Tone
   onRun: (command: string) => void
 }) => (
-  // No tone class. `word()` builds these and is always `ink`, which is what
-  // `body` already is -- and it is always `ink` for a reason worth not
-  // undoing here: the hover wash is mixed to be legible under one colour. The
-  // ticket that makes a landable word dim adds the class and answers ADR-0010's
-  // contrast row at the same time.
-  <button type="button" className="u-word" onClick={() => onRun(runs)}>
+  // **The tone travels, and until #89 it did not have to.** `word()` builds
+  // these and is always `ink`, which is what `body` already is, so the class
+  // would have restated it. `chip()` is the first landable word with a voice of
+  // its own -- `prose`, the human's face -- and the row would silently render
+  // in the machine's without this.
+  //
+  // Still no *colour* here that `word` did not already have. The hover wash is
+  // mixed to be legible under one colour, and `prose` moves the typeface and
+  // leaves the colour alone; the ticket that makes a landable word `dim`
+  // answers ADR-0010's contrast row at the same time.
+  <button type="button" className={classed('u-word', TONE[tone])} onClick={() => onRun(runs)}>
     {text}
   </button>
 )
@@ -157,7 +166,15 @@ const Row = ({
     <div className="u-row">
       {line.spans.map((span, index) => {
         if (span.runs !== undefined && onRun !== undefined) {
-          return <Landable key={index} text={span.text} runs={span.runs} onRun={onRun} />
+          return (
+            <Landable
+              key={index}
+              text={span.text}
+              runs={span.runs}
+              tone={span.tone}
+              onRun={onRun}
+            />
+          )
         }
 
         if (span.copies !== undefined && onCopy !== undefined) {
@@ -174,16 +191,36 @@ const Row = ({
   )
 }
 
+/**
+ * `onReach` is the odd one out and is worth admitting rather than glossing.
+ *
+ * `onRun` and `onCopy` are handed to a control the module said was there;
+ * this is handed to the whole surface, and it answers a gesture the module
+ * has no word for -- #89's *tapping the terminal raises the software
+ * keyboard*, which is a tap anywhere that is not a control. It is wiring
+ * rather than a decision, which is why it arrives as a prop and is performed
+ * in `components/live.tsx`: what it does is move focus, and this file still
+ * holds no state and runs no effect.
+ *
+ * Absent, the surface is inert -- the arrangement `onRun` already has, and
+ * what keeps a session renderable outside a browser.
+ */
 export const Screen = ({
   session,
   onRun,
   onCopy,
+  onReach,
 }: {
   session: Session
   onRun?: (command: string) => void
   onCopy?: (intent: Copying) => void
+  onReach?: () => void
 }) => (
-  <main className="u-session">
+  // A click handler on a non-interactive element, knowingly. It adds nothing a
+  // keyboard user did not have -- the field it focuses is in the tab order and
+  // one Tab away -- so there is no keyboard equivalent to give it and no role
+  // to claim. Reaching for either would announce the scrollback as a control.
+  <main className="u-session" onClick={onReach}>
     {session.lines.map((line, index) => (
       <Row key={index} line={line} onRun={onRun} onCopy={onCopy} />
     ))}
