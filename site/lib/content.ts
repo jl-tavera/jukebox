@@ -183,23 +183,22 @@ export const hero = {
 } as const
 
 /**
- * The donation rows, which the page does not currently say.
+ * The donation rows.
  *
  * #82 replaced the hero with the terminal session and the donate dialog left
- * with it, so nothing references these today. #88 is their consumer: it prints
- * the rows into the scrollback with copy controls, and deletes the dialog for
- * good.
+ * with it, so for two tickets nothing referenced these at all. #88 is the
+ * consumer that was promised: `lib/session/donate.ts` prints them into the
+ * scrollback with copy controls, and the dialog is not coming back.
  *
- * Kept rather than deleted, and the distinction `SITE.md` 07 draws is why --
- * that rule is about a token or utility held as a reservation, and this is the
- * copy deck 04 owns, lifted from `README.md`, which stays its source of truth
- * whether or not a page is rendering it today.
- *
- * The addresses are the part that makes deleting the riskier move. `SITE.md` 06
- * requires each example to break its own chain's encoding, so that a wallet
- * rejects it before a send can happen; a value carrying that property is not
- * one to retype out of a diff. If #88 is dropped rather than built, delete
- * these -- a consumer that is never coming is a reservation after all.
+ * Keeping them through that gap was the right call for the reason given at the
+ * time, and it is worth leaving written down. `SITE.md` 07's rule about
+ * deleting a reservation is about a token or a utility; this is the copy deck
+ * 04 owns, lifted from `README.md`, which stays its source of truth whether or
+ * not a page is rendering it. And the addresses are the part that made
+ * deleting the riskier move: `SITE.md` 06 requires each example to break its
+ * own chain's encoding so that a wallet rejects it before a send can happen,
+ * and a value carrying that property is not one to retype out of a diff.
+ * `test/donate.test.ts` now asserts each of them does.
  */
 export interface Donation {
   /** Short key, shown as the row label. */
@@ -211,8 +210,13 @@ export interface Donation {
 }
 
 /**
- * Flip to false once real addresses replace the examples below. Drives the
- * warning shown inside the donate modal.
+ * Flip to false once real addresses replace the examples below.
+ *
+ * It is what `donate` prints its warning row from, and it is also what
+ * `giving`'s second parameter defaults to -- so flipping it here is the whole
+ * of turning the notice off, and a test can reach the other branch without
+ * flipping anything. There is no modal any more; #88 put the rows in the
+ * scrollback and ADR-0010 says why.
  */
 export const DONATIONS_ARE_EXAMPLES = true
 
