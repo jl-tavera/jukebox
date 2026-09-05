@@ -138,3 +138,47 @@ otherwise decide them again, differently.
 The consequence stays exactly as the previous amendment left it. **Nothing creates the folder**, and
 setting `library_path` does not either: a write brings the configuration directory and the file into
 existence, and nothing else.
+
+## Amendment, 2026-09-05: the first thing to look in the folder
+
+Every amendment above ends on the same note: **nothing creates the folder.** That is still true, and
+#108 is the first thing that *reads* it. `jukebox open <playlist> <n>` takes a Track's number, works
+out where its audio would be under this ADR's layout, and hands the file to whatever the machine
+opens audio with. Six choices had to be made to do that, each recorded for the reason the previous
+sixteen were — a later reader would otherwise decide them again, differently.
+
+- **The file is found by looking, not by computing a name.** The obvious implementation builds
+  `{nn} - {title}.{ext}` and asks whether it is there. That is DESIGN §11's template, it is still
+  marked **Proposed**, and inheriting it by looking at it is precisely what this ADR already refused
+  to do with `~2`. Worse, it would find nothing that a person put in the folder themselves — which,
+  in a release that downloads nothing, is every file that exists. So the directory is read and a
+  name is matched. Fetching stays free to settle any template it likes, and whatever it settles will
+  already be found.
+- **"Matches" means the filename holds the Track's title**, with the title put through the same
+  character pass the folder name gets. That pass is now `folders.madeSafe`, exported rather than
+  copied: a title with a slash in it cannot appear in a filename holding that slash, so comparing
+  raw strings fails on exactly the titles nobody thinks to test. A name that *is* the title beats
+  one that merely contains it, because a short title is a substring of every longer one and `Rain`
+  would otherwise open `Rain and Shine`.
+- **Only audio counts**, from a named list — `.flac`, `.mp3`, `.ogg`, `.opus`, `.m4a`, `.wav`. The
+  folder is the user's own and holds cover art, playlist files and notes; opening a JPEG because its
+  name matched is a worse answer than saying nothing is there. A `*.pid.part` never counts: that is
+  `files.ts`'s write-then-rename in flight or dead, and half a file is not a thing to hand a player.
+- **Two matches are resolved rather than refused**, first by sorted name, silently. This parts on
+  purpose from `reading.ts`, which refuses an ambiguous Playlist and says so. That rule's stated
+  reason is that a wrong answer to *which of these did you mean* is one the reader cannot notice, and
+  it does not hold here: a player names what it opened, in a window, a second later. `remove` is
+  where the strictness earns itself, and this is not `remove`.
+- **A folder that is not there reads exactly like a folder with nothing in it.** In this release
+  those are the same fact — you have not downloaded this — and `ENOENT` is not something a person
+  needs told. The sentence names the folder it looked in and says outright that Jukebox fetches
+  nothing yet, so an empty answer never reads as a download that failed.
+- **`tracks.file_path` exists and is NULL in every row.** Migration 3 added it, knowingly, against a
+  rule in that same file; it argues itself there. What matters here is that it is not what answers
+  the question. The folder is, today and after Fetching writes to that column: a path records where a
+  file was *put*, and only the filesystem knows whether it is still there. It also holds a name
+  inside this ADR's folder rather than an absolute path, for the reason migration 1 gives for
+  Playlists — the root moves, and a stored absolute path is wrong the moment it does.
+
+DESIGN §11's template stays **Proposed**. Nothing here decides it, and this amendment is deliberately
+written so that it need not.

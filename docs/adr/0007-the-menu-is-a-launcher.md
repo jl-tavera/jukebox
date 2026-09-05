@@ -178,3 +178,67 @@ two the spinner's amendment above lists:
 The release is in the `finally` that already gives back the input stream, because every way out of a
 session passes through it: `quit`, a cancel from any screen, and a version gate closing the menu. A
 shell left with a scroll region set is the one failure here a person could not undo by looking at it.
+
+## Amendment, 2026-09-05: a picker may replace the answer it was built from
+
+This document says every entry renders the result object the command returned. #108 narrows that by
+one clause: **and renders it, unless the screen is putting that same answer up in another shape.**
+
+The Track picker is the case, and so far the only one. Picking a Playlist used to launch `jukebox
+show` and let its table land — which put forty rows of columns in front of somebody who wanted one
+recording out of them, and then offered them nothing to press. The picker is that table's own rows,
+in that table's own order, carrying two of its columns, offered as things to choose. Printing the
+table above it would be the same answer twice, and the second copy is the one nobody asked for.
+
+**This is not the screen of the menu's own that this document rejects**, and the three tests it set
+out are the ones to check it against.
+
+- **It reads no state.** The rows come out of the result object `show` returned, exactly as the
+  Playlist picker's rows come out of the one `list` returned. Nothing here opens the Mirror, and —
+  the sharper case, because it is the one that would have been tempting — nothing here reads the
+  Library either. A row is not marked as having audio or lacking it, because finding out means
+  reading the Playlist's folder, and a menu that read the folder would be the second reader of local
+  state this document exists to prevent. The disk is consulted once, by `open`, about the one Track
+  somebody actually pressed.
+- **It adds no capability.** `jukebox open <playlist> <n>` shipped in the same commit, because of
+  this rule rather than in spite of it. That is the consequence below — "anything wanted in the menu
+  is a command first" — working exactly as written, and it is worth recording that the cost landed
+  as predicted: the flag form is one almost nobody will type, and an agent can now open a Track's
+  audio because a person can.
+- **The assertion survives, and it got stronger.** The old one compared the session's stdout against
+  `list` and `show` run in turn, byte for byte. It could never have caught the failure that actually
+  matters here, because it never looked at the picker at all: a picker quietly disagreeing with
+  `show` about what a Playlist holds would have passed it every time. What replaced it is three
+  claims instead of one — stdout is byte-identical to `list` **alone**, which is what proves the
+  table is absent; every picker row is derived from `show --json` rather than retyped in the test;
+  and byte identity returns in full for the `open` launch, which is the entry that acts.
+
+**What may never be replaced.** A failure, so a screen cannot swallow a refusal and leave a person
+pressing return at nothing. A success with nothing in it, which is the case that shaped the
+mechanism: a Playlist holding no Tracks has no picker to build, so its answer is left alone and
+`show`'s own sentence reaches the screen in the command's words — and the entry that would have
+opened an empty picker is not offered at all. And the warnings, always, because a warning held back
+here would print above the *next* command's output.
+
+The rule lives in `render.ts` rather than in the entry that asked for it, so an entry cannot silence
+a command by forgetting. `Launch`'s third argument is a predicate rather than a flag for the same
+reason the empty case exists: whether there is anything to replace the answer with is a property of
+the answer, and nothing knows it before the command has run.
+
+**That third argument is not the widening this document warns about.** It says what the *screen* does
+with an answer, not what may be *asked for* — the same distinction the spinner's amendment drew for
+the second argument. An entry still cannot hand over a vector a person could not type.
+
+**The cost, stated rather than argued away.** Somebody who wants the table types `jukebox show`, one
+command away, and the menu exists to spare them the copying of ids rather than the reading of
+tables. And this is the second concession to #50's stories about the scrollback: the amendment above
+gave up the older history, and this gives up part of the current screen, so the sentence at the top
+of this document — *what is left in the scrollback is the same text the flags would have produced* —
+is now false rather than merely qualified. It is left standing above with this paragraph under it,
+because a document that quietly edited its own claim would be doing the thing it twice accuses a
+comment of.
+
+One thing a reader arriving here will go looking for: `open` reads the Library folder to find a
+Track's audio, and the Mirror has carried a `tracks.file_path` column since the same ticket that
+nothing writes to. Migration 3 in `cli/src/migrations.ts` argues that column, and ADR-0004's fourth
+amendment argues the search.
