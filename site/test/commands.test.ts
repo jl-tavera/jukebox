@@ -114,8 +114,8 @@ describe('help', () => {
     )
   })
 
-  it('covers all seven of the binary and all six of the page', () => {
-    expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(7)
+  it('covers all eight of the binary and all six of the page', () => {
+    expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(8)
     // The order is the order `help` lists them in, and it is not alphabetical:
     // `help` first because it is how somebody arrives at the rest, then what
     // the page can actually do, then `clear`, which is the way out of a screen
@@ -222,7 +222,7 @@ describe('a binary command', () => {
   })
 
   it('prints every argument the binary declares, for every command', () => {
-    // The acceptance criterion, over all seven rather than over a sample:
+    // The acceptance criterion, over all eight rather than over a sample:
     // curating the set is what would let the page's help disagree with the
     // binary's.
     for (const command of CLI_COMMANDS) {
@@ -265,7 +265,7 @@ describe('a binary command', () => {
 
   it('never doubles a blank line, and never ends on one', () => {
     // `lines.ts`: every vertical gap is zero or one line, and the CLI never
-    // double-spaces. Over all seven, because the block is assembled per command.
+    // double-spaces. Over all eight, because the block is assembled per command.
     for (const command of CLI_COMMANDS) {
       const drawn = rows(run(command.name, RESTING).body)
 
@@ -323,7 +323,7 @@ describe('help, given a command', () => {
 
   it('describes the page\'s own verbs rather than running them', () => {
     // `help X` describes X; it does not do what X does. The distinction is
-    // invisible across the binary's seven, which describe themselves when typed
+    // invisible across the binary's eight, which describe themselves when typed
     // because they never run -- and `clear` is where it shows: typing it empties
     // the scrollback, and asking about it must not.
     const clear = COMMANDS.find((one) => one.name === 'clear')!
@@ -408,7 +408,7 @@ describe('install', () => {
   })
 
   it('describes itself when asked, rather than doing what it does', () => {
-    // `help X` describes X. Across the binary's seven the distinction is
+    // `help X` describes X. Across the binary's eight the distinction is
     // invisible, because those describe themselves when typed. Here it is the
     // difference between a sentence and a clipboard write.
     const printed = run('help install', RESTING)
