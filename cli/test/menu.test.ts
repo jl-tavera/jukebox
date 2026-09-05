@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'bun:test'
 import { defineCommand, type CommandDef } from 'citty'
 import pkg from '../package.json'
 import { shown } from '../src/commands/config'
 import type { Listed } from '../src/commands/list'
+import type { Shown as ShownPlaylist } from '../src/commands/show'
 import { LOCAL_ONLY } from '../src/commands/remove'
 import {
   CONFIG_FILE,
@@ -18,17 +19,29 @@ import {
 import { header, NARROW_MARK } from '../src/header'
 import {
   askingFor,
+  BACK,
   ENTRIES,
   FOR_THIS_PLAYLIST,
+  PLAYLIST_ENTRIES,
+  playlistActions,
   THE_ADDRESS,
   WHICH_PLAYLIST,
   WHICH_SETTING,
+  WHICH_TRACK,
   WORKING,
 } from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
 import { MINIMUM_BELOW, region, RELEASED } from '../src/pinned'
-import { askingToStop, held, labels, named, NOTHING_TRACKED } from '../src/phrasing'
-import type { MirroredPlaylist } from '../src/reading'
+import {
+  askingToStop,
+  billed,
+  held,
+  labels,
+  named,
+  NOTHING_TRACKED,
+  performers,
+} from '../src/phrasing'
+import type { MirroredPlaylist, MirroredTrack } from '../src/reading'
 import { ERASED } from '../src/spinner'
 import { WORDMARK } from '../src/wordmark'
 import {
@@ -102,9 +115,32 @@ const FIRST = [ENTER]
 /** Past every entry a picker offers to the way back, which both pickers put after them. */
 const outOf = (playlists: number): string[] => [...new Array<string>(playlists).fill(DOWN), ENTER]
 
-/** On a Playlist's own screen: the way back is first, and `remove` is second. */
-const LEAVE_IT = [ENTER]
-const REMOVE_IT = [DOWN, ENTER]
+/**
+ * The keys that walk a Playlist's own screen to one action and take it.
+ *
+ * `taking`'s sibling, and written for the reason that one gives, having been
+ * taught it the hard way: these were two hand-counted arrays until #108 put a
+ * third entry on the screen above them, and both silently retargeted -- the one
+ * meaning `back` began pressing `list all tracks`, which opens a picker, which
+ * left every run in the file short of keys and hanging on a keyboard that never
+ * ends. Counted out of the array now, so the order stays that array's to decide.
+ */
+const onThePlaylist = (
+  action: (typeof PLAYLIST_ENTRIES)[number]['value'],
+  // A Playlist holding no Tracks is offered one entry fewer, so the count has to
+  // be taken against the screen actually drawn rather than against the full set.
+  entries = PLAYLIST_ENTRIES,
+): string[] => [
+  ...new Array<string>(entries.findIndex((one) => one.value === action)).fill(DOWN),
+  ENTER,
+]
+
+const ITS_TRACKS = onThePlaylist('tracks')
+const REMOVE_IT = onThePlaylist('remove')
+const LEAVE_IT = onThePlaylist(BACK)
+
+/** The same way out, on a Playlist with nothing to list. */
+const LEAVE_EMPTY = onThePlaylist(BACK, playlistActions(0))
 
 /**
  * The keys that walk from the top of the settings picker to one setting and
@@ -176,6 +212,16 @@ const twoPlaylists = async (site: Site, name: string): Promise<string> => {
 /** One command run against a home, the way a shell would run it. */
 const against = (home: string, argv: string[]): Promise<Run> =>
   jukebox(argv, { home, discovery: NO_SITE })
+
+/**
+ * What a `show --json` answered.
+ *
+ * So that the Track rows a picker is asserted to hold are derived from the
+ * command's own answer rather than retyped in this file. A test that spelled out
+ * the titles it expected would pass while the picker and `show` disagreed, which
+ * is the exact failure the launcher rule exists to make impossible.
+ */
+const shownBy = (run: Run): ShownPlaylist => oneObject(run).data as ShownPlaylist
 
 /** One menu session against a home, driven by the keys a person would press. */
 const session = (home: string, keys: string[]): Promise<Run> =>
@@ -441,19 +487,134 @@ describe('the playlists this Mirror holds', () => {
     expect(run.stderr).toContain(`${named('Rain / Shine', ID)}, ok, 2 tracks`)
   })
 
-  it('shows the one that was picked, exactly as `show` does', async () => {
+  it('offers every Track `show` lists, and puts none of its table on the screen', async () => {
     const site = servingItsOwnApi()
-    const home = await twoPlaylists(site, 'jukebox-menu-show-')
+    const home = await twoPlaylists(site, 'jukebox-menu-tracks-')
 
-    const run = await session(home, [...LIST, ...FIRST, ...LEAVE_IT, ...outOf(2), ...QUIT])
+    const run = await session(home, [
+      ...LIST,
+      ...FIRST,
+      ...ITS_TRACKS,
+      ...outOf(2),
+      ...LEAVE_IT,
+      ...outOf(2),
+      ...QUIT,
+    ])
 
-    // The launcher rule, asserted the only way worth asserting it: what the
-    // session put on stdout is what the two commands put there, in order and to
-    // the byte. A menu that had grown a screen of its own could not pass this.
     const listing = await against(home, ['list'])
     const showing = await against(home, ['show', ID])
 
-    expect(run.stdout).toBe(listing.stdout + showing.stdout)
+    // Byte identity against `list` **alone**, which is the whole of "the table
+    // is not on the screen": stdout cannot be holding a table and be equal to
+    // the output of a command that prints none.
+    //
+    // This is where #56's assertion used to compare against `list` and `show`
+    // together. It is narrower and it proves more, because what it now excludes
+    // is a thing that used to be there.
+    expect(run.stdout).toBe(listing.stdout)
+
+    // The other half, and the half the old assertion could never have made: it
+    // compared two stdouts and never once looked at the picker, so a picker
+    // quietly disagreeing with `show` would have passed it. Every row is derived
+    // from the answer `show` gave rather than retyped here.
+    const { tracks } = shownBy(await against(home, ['show', ID, '--json']))
+    expect(tracks).toHaveLength(2)
+
+    for (const [at, track] of tracks.entries()) {
+      expect(run.stderr).toContain(`${at + 1}. ${billed(track)}`)
+
+      // And the rows are the table's rows. Two columns of the thing that is no
+      // longer printed, still reachable in the thing that replaced it.
+      expect(showing.stdout).toContain(track.title)
+      expect(showing.stdout).toContain(performers(track.artists))
+    }
+  })
+
+  it('offers a Track whose audio is not there, and says so when it is picked', async () => {
+    // The ordinary case rather than an edge one: nothing downloads in this
+    // release, so a Library with nothing in it is every machine. A picker that
+    // hid rows with no file would be empty for everybody, which is why it must
+    // not consult the disk at all -- and could not, without becoming the second
+    // reader of state ADR-0007 forbids.
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-nofile-')
+
+    const run = await session(home, [
+      ...LIST,
+      ...FIRST,
+      ...ITS_TRACKS,
+      ...FIRST,
+      ...outOf(2),
+      ...LEAVE_IT,
+      ...outOf(2),
+      ...QUIT,
+    ])
+
+    const { tracks } = shownBy(await against(home, ['show', ID, '--json']))
+
+    // Every Track offered, with nothing on disk for any of them.
+    for (const track of tracks) expect(run.stderr).toContain(billed(track))
+
+    // And picking one says why, in `open`'s own words, on the stream a failure
+    // goes to.
+    expect(run.stderr).toContain('No audio for')
+    expect(run.stderr).toContain('downloads nothing in this release')
+    expect(run.opened).toEqual([])
+
+    // Still on the Tracks afterwards. `open` changed no local state, so every
+    // row is still what `show` reported and the next one along is one arrow
+    // away.
+    expect(run.stderr.lastIndexOf(WHICH_TRACK)).toBeGreaterThan(run.stderr.indexOf('No audio for'))
+  })
+
+  it('opens the Track that was picked, exactly as `open` does', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-open-')
+
+    // A Library with the first Track's audio actually in it, so the launch has
+    // something to say on stdout and the comparison below has something to
+    // compare.
+    const root = temporaryHome('jukebox-menu-library-')
+    mkdirSync(join(root, 'Rain Shine'), { recursive: true })
+    writeFileSync(join(root, 'Rain Shine', '01 - Blue Dot.mp3'), 'not really audio\n')
+
+    const keys = [
+      ...LIST,
+      ...FIRST,
+      ...ITS_TRACKS,
+      ...FIRST,
+      ...outOf(2),
+      ...LEAVE_IT,
+      ...outOf(2),
+      ...QUIT,
+    ]
+
+    const run = await jukebox([], {
+      home,
+      discovery: NO_SITE,
+      keys,
+      env: { [LIBRARY_VARIABLE]: root },
+    })
+
+    const listing = await jukebox(['list'], {
+      home,
+      discovery: NO_SITE,
+      env: { [LIBRARY_VARIABLE]: root },
+    })
+    const opening = await jukebox(['open', ID, '1'], {
+      home,
+      discovery: NO_SITE,
+      env: { [LIBRARY_VARIABLE]: root },
+    })
+
+    // Byte identity restored, on the entry that acts. ADR-0007 says this
+    // assertion must exist; it now lives on the launch that renders rather than
+    // on the one whose answer the screen replaced.
+    expect(run.stdout).toBe(listing.stdout + opening.stdout)
+
+    // And it really was handed over, by the menu, once.
+    expect(run.opened).toHaveLength(1)
+    expect(run.opened[0]!.at(-1)).toBe(join(root, 'Rain Shine', '01 - Blue Dot.mp3'))
   })
 
   it('stops tracking from that screen, exactly as `remove` does', async () => {
@@ -578,6 +739,111 @@ describe('a picker built from what `list` returned', () => {
     // that is precisely what failed.
     expect(run.stderr).toContain(NOTHING_TO_SHOW)
     expect(run.stderr).not.toContain(FOR_THIS_PLAYLIST)
+    expect(run.code).toBe(0)
+  })
+
+  /** A Track no Mirror holds, and one no Source ever offered a credit for. */
+  const INVENTED_TRACKS: MirroredTrack[] = [
+    {
+      trackId: 'spotify:invented-one',
+      title: 'Invented One',
+      artists: ['Nobody At All'],
+      album: null,
+      durationMs: null,
+      isrc: null,
+      coverImageUrl: null,
+      position: 0,
+      addedAt: 1,
+      removedAt: null,
+      filePath: null,
+    },
+    {
+      trackId: 'spotify:invented-two',
+      title: 'Invented Two',
+      artists: [],
+      album: null,
+      durationMs: null,
+      isrc: null,
+      coverImageUrl: null,
+      position: 1,
+      addedAt: 1,
+      removedAt: null,
+      filePath: null,
+    },
+  ]
+
+  /** The sentence a real `show` prints for a Playlist holding nothing. */
+  const NOTHING_RECORDED = 'No tracks are recorded for it.'
+
+  /**
+   * A `show` that reports whatever Tracks it is handed, and an `open` that
+   * cannot open one. Both are things the real commands can never be, which is
+   * the point: what reaches the picker can then only have come from the answer.
+   */
+  const holdingTracks = (tracks: MirroredTrack[]): CommandDef =>
+    defineCommand({
+      meta: { name: 'jukebox' },
+      subCommands: {
+        list: defineCommand({
+          meta: { name: 'list', description: 'Reports whatever it was handed' },
+          run: () => succeeded('list', { playlists: [INVENTED] }, () => 'reported'),
+        }),
+        show: defineCommand({
+          meta: { name: 'show', description: 'Reports whatever it was handed' },
+          run: () =>
+            succeeded('show', { playlist: INVENTED, tracks, removed: [] }, () =>
+              tracks.length === 0 ? NOTHING_RECORDED : 'a table nobody should see',
+            ),
+        }),
+        open: defineCommand({
+          meta: { name: 'open', description: 'Refuses' },
+          run: () => failed('open', 'track_file_missing', 'There is no audio for that one.'),
+        }),
+      },
+    })
+
+  it('builds the Track picker from what `show` answered, not from a second read', async () => {
+    const site = servingItsOwnApi()
+    const home = await twoPlaylists(site, 'jukebox-menu-tracks-derived-')
+
+    const run = await jukebox([], {
+      home,
+      discovery: NO_SITE,
+      root: holdingTracks(INVENTED_TRACKS),
+      keys: [...LIST, ...FIRST, ...ITS_TRACKS, ...outOf(2), ...LEAVE_IT, ...outOf(1), ...QUIT],
+    })
+
+    // Tracks that exist only in that answer. A picker reading the Mirror would
+    // have offered the two this home really holds instead.
+    for (const track of INVENTED_TRACKS) expect(run.stderr).toContain(billed(track))
+    expect(run.stderr).not.toContain('Blue Dot')
+    expect(run.stderr).not.toContain('Long Way Down')
+
+    // And the table that `show` would have printed is not on the screen, which
+    // is what `replaced` is for. Asserted here as well as on the real command,
+    // because this is the only place the rendering can be made unmistakable.
+    expect(run.stdout).not.toContain('a table nobody should see')
+    expect(run.code).toBe(0)
+  })
+
+  it('says a Playlist holds no Tracks in `show`’s own words, rather than opening an empty picker', async () => {
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-no-tracks-'),
+      discovery: NO_SITE,
+      root: holdingTracks([]),
+      keys: [...LIST, ...FIRST, ...LEAVE_EMPTY, ...outOf(1), ...QUIT],
+    })
+
+    // The case the predicate exists for. Replacing an answer with a picker built
+    // from nothing would leave a person looking at a screen with no rows and no
+    // sentence -- so the answer is not replaced, and the command's own sentence
+    // reaches stdout exactly as it would from a shell.
+    expect(run.stdout).toContain(NOTHING_RECORDED)
+
+    // And the entry that would have opened that empty picker is not offered at
+    // all, so there is no press that reaches one.
+    expect(run.stderr).not.toContain('list all tracks')
+    expect(run.stderr).not.toContain(WHICH_TRACK)
     expect(run.code).toBe(0)
   })
 })

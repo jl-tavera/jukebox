@@ -51,6 +51,30 @@ const envelope = (outcome: Outcome, version: string): Envelope =>
  *
  * They are written before the result rather than after, because that is the
  * order they happened in: the fallback is why the answer below reads as it does.
+ *
+ * **A caller may say it is putting this answer on screen in another shape**, and
+ * then the human text is not written. #108's Track picker is the case and the
+ * only one: it is `show`'s answer -- the same rows in the same order, two of the
+ * same columns -- offered as something to press rather than as a table to copy a
+ * number out of. Printing the table above the picker built from it would be the
+ * same answer twice.
+ *
+ * The rule lives here rather than in the menu entry that wanted it, and the
+ * three things it will not do are why:
+ *
+ * - **The warnings still go out.** Always, and first. Leaving them queued would
+ *   print them above the *next* command's output, which `main` names as the
+ *   thing to avoid.
+ * - **A failure is never replaced.** Structurally, so an entry cannot silence a
+ *   command by asking for the wrong thing. A screen that suppressed a refusal
+ *   would leave a person pressing return at nothing.
+ * - **JSON mode always writes the object.** Unreachable today, since prompts and
+ *   JSON are mutually exclusive, and stated rather than relied on: the stdout
+ *   guarantee is not something to leave resting on a predicate somewhere else
+ *   being false.
+ *
+ * ADR-0007's amendment argues why this is a narrowing of the launcher rule
+ * rather than the screen-of-its-own that document rejects.
  */
 export const render = (
   renderable: Renderable,
@@ -58,6 +82,7 @@ export const render = (
   version: string,
   io: Io,
   warnings: string[],
+  replaced = false,
 ): void => {
   for (const warning of warnings) io.err(warning + '\n')
 
@@ -65,6 +90,8 @@ export const render = (
     io.out(JSON.stringify(envelope(renderable.outcome, version)) + '\n')
     return
   }
+
+  if (replaced && renderable.outcome.ok) return
 
   const text = renderable.human(io.columns)
   if (text === '') return
