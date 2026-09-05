@@ -20,6 +20,7 @@ import {
 import {
   after,
   booted,
+  completes,
   KEYS,
   pause,
   SCROLLBACK,
@@ -187,6 +188,25 @@ describe('completion', () => {
   it('does nothing at an empty prompt, where everything matches', () => {
     const terminal = start()
     expect(after(terminal, { kind: 'completed' })).toBe(terminal)
+  })
+
+  it('says whether it has anything to fill in, so the key can be let go', () => {
+    // **#89 is what asked, and it asked because the prompt stopped being the
+    // last thing on the page.** Tab is cancelled at the field so completion can
+    // own it; with a chip row below, cancelling it on an empty prompt strands
+    // the row -- forward is the only way to reach it and the field eats the
+    // key. So the component asks first, and this is what it asks.
+    //
+    // Read off the identity return the whole module is built on rather than by
+    // re-deciding it: "Tab does something" is exactly "`completed` handed back
+    // a different object", which is the same fact every case above asserts.
+    expect(completes(typing(start(), 'co'))).toBe(true)
+    expect(completes(typing(start(), 'hel'))).toBe(true)
+
+    // The three that do nothing, and the empty prompt among them.
+    expect(completes(start())).toBe(false)
+    expect(completes(typing(start(), 'c'))).toBe(false)
+    expect(completes(typing(start(), 'zz'))).toBe(false)
   })
 
   it('does nothing in a second word after a command that takes none', () => {

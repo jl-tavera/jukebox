@@ -7,7 +7,7 @@ import { Screen } from '@/components/screen'
 import { REDUCED_MOTION } from '@/lib/session/boot'
 import { CHIPS, PROMPTS } from '@/lib/session/commands'
 import type { Copying, Session } from '@/lib/session/lines'
-import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
+import { after, booted, completes, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
 import { isScheme, isTheme, RESTING } from '@/lib/session/theme'
 
 /**
@@ -414,6 +414,19 @@ export const Live = ({ initial }: { initial: Session }) => {
 
               const kind = KEYS[event.key]
               if (kind === undefined) return
+
+              // **Tab is only the prompt's while it has something to finish,
+              // and #89 is what narrowed that.** The field used to be the end
+              // of the tab order, so eating the key cost nothing; the status
+              // line is below it now, and forward is the only way a keyboard
+              // reaches the chips. On an empty prompt or an ambiguous prefix
+              // completion does nothing anyway -- so letting the key go trades
+              // a no-op for the only path to the row.
+              //
+              // The module answers, this only asks: `completes` is `completed`'s
+              // own identity return read as a question, and both halves of it
+              // are pinned in `test/terminal.test.ts`.
+              if (kind === 'completed' && !completes(terminal)) return
 
               // Without this, Tab walks focus out of the field and the arrows
               // jump the caret to either end of the line -- two bugs no other

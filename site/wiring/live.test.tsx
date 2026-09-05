@@ -58,9 +58,32 @@ describe('the keys the browser would otherwise take', () => {
     // caret to either end of the line. Neither is visible to any other seam.
     const page = await live()
 
+    // Something Tab can actually finish, because since #89 that is the
+    // condition for taking the key at all -- the case below is the other half.
+    await page.type('co')
+
     for (const key of ['Tab', 'ArrowUp', 'ArrowDown']) {
       expect((await page.press(key)).defaultPrevented, `${key} was not cancelled`).toBe(true)
     }
+
+    await page.unmount()
+  })
+
+  it('lets Tab go when there is nothing to complete, or the chips are stranded', async () => {
+    // **#89's own regression, caught by #89's own spec.** The field is no
+    // longer the end of the tab order: the status line sits below it, and
+    // forward is the only way a keyboard reaches it. Cancelling Tab on an empty
+    // prompt is a trap rather than a completion.
+    //
+    // The two conditions are the module's, not this file's -- `completes` is
+    // asserted in `test/terminal.test.ts`. What is asserted here is only that
+    // the answer decides the key.
+    const page = await live()
+
+    expect((await page.press('Tab')).defaultPrevented, 'an empty prompt ate Tab').toBe(false)
+
+    await page.type('c')
+    expect((await page.press('Tab')).defaultPrevented, 'an ambiguous prefix ate Tab').toBe(false)
 
     await page.unmount()
   })

@@ -510,6 +510,26 @@ const completed = (terminal: Terminal): Terminal => {
 }
 
 /**
+ * Whether Tab has anything to fill in here.
+ *
+ * **#89 is what asked for this, and it asked because the prompt stopped being
+ * the last thing on the page.** `components/live.tsx` cancels Tab at the field
+ * so that completion can own the key -- which cost nothing while the field was
+ * the end of the tab order, and became a trap the moment a chip row was pinned
+ * below it: forward is the only way to reach the row, and a cancelled key never
+ * gets there. So the component asks this first and lets the key go when the
+ * answer is no, which is every empty prompt and every ambiguous prefix.
+ *
+ * Nothing about completion is re-decided here. It is `completed`'s own identity
+ * return read as a question -- *did that change anything* -- which is the
+ * property `after`'s docblock calls the crispest available statement of the Tab
+ * criterion, and the one every case in `test/terminal.test.ts` already asserts
+ * against. A second predicate that decided it independently could disagree with
+ * the transition it is supposed to describe; this cannot.
+ */
+export const completes = (terminal: Terminal): boolean => completed(terminal) !== terminal
+
+/**
  * A value put on the clipboard again, and nothing else.
  *
  * **Nothing is printed, which is the whole of what the control is for.** #91
