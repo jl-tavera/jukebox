@@ -69,6 +69,16 @@ export type MirroredTrack = {
   position: number
   addedAt: number
   removedAt: number | null
+  /**
+   * The file's name inside the Playlist's folder, once Fetching writes one.
+   * `null` in every row this release can produce, and never an absolute path --
+   * migration 3 argues both.
+   *
+   * Reading this is not how anything learns whether a Track's audio is on disk.
+   * `jukebox open` reads the folder, because a name records where a file was put
+   * and only the filesystem knows whether it is still there.
+   */
+  filePath: string | null
 }
 
 /**
@@ -275,4 +285,5 @@ const asTrack = (row: TrackRow): MirroredTrack => ({
   position: row.position,
   addedAt: row.added_at,
   removedAt: row.removed_at,
+  filePath: row.file_path,
 })

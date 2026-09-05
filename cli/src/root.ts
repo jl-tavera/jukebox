@@ -36,6 +36,14 @@ const args: ArgsDef = {
  * Commands arrive with the tickets that can complete them. Nothing here is
  * registered before it works: a command listed in `--help` that answers "not
  * built yet" is the same mistake as a column nothing writes to.
+ *
+ * The rule holds and the comparison no longer does, which is worth saying here
+ * rather than leaving for a reader to catch. Since #108 the Mirror carries
+ * exactly one column nothing writes to -- `tracks.file_path` -- added knowingly,
+ * argued in migration 3, and permitted there on grounds that do not reach a
+ * command: it is NULL in every row and so can never say anything untrue, whereas
+ * a registered command that does not work answers a person who ran it. Every
+ * command in this tree still works the day it is listed.
  */
 export const root = defineCommand({
   meta: {
