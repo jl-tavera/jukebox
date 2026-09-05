@@ -66,7 +66,7 @@ export const render = (
     return
   }
 
-  const text = renderable.human()
+  const text = renderable.human(io.columns)
   if (text === '') return
 
   if (renderable.outcome.ok) io.out(text + '\n')
