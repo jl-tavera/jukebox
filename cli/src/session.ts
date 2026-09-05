@@ -1,4 +1,5 @@
 import { boot, type Backend } from './boot'
+import type { Opener } from './opening'
 
 /**
  * What a command is handed, and everything it may find there.
@@ -60,6 +61,7 @@ export type Session = {
   backend: () => Promise<Backend>
   patience: Patience
   ask: Ask | null
+  opener: Opener
 }
 
 /**
@@ -106,6 +108,30 @@ export const backend = async (data: unknown): Promise<Backend> => {
  */
 export const patienceOf = (data: unknown): Patience =>
   (data as Session | undefined)?.patience ?? PATIENCE
+
+/**
+ * The way this run opens a file, out of the same `any`.
+ *
+ * Refuses like `backend` rather than falling back like `patienceOf`, and the
+ * line between those two is the whole reason this has its own accessor. A
+ * command with no session has a perfectly good answer to how long to wait, and
+ * no safe answer at all to whose machine it may start a program on. Defaulting
+ * to the real opener would make "nobody wired up a session" indistinguishable
+ * from "the caller asked for the real one" -- in the one place in this CLI where
+ * being wrong launches something.
+ *
+ * It is also what makes the harness's recorder airtight. No test can launch an
+ * application by forgetting to pass an opener, because forgetting throws.
+ */
+export const openerOf = (data: unknown): Opener => {
+  const session = data as Session | undefined
+
+  if (typeof session?.opener !== 'function') {
+    throw new Error('this command was run with no session to open a file through')
+  }
+
+  return session.opener
+}
 
 /**
  * Booted at most once per run, and only if something asks.

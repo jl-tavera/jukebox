@@ -7,6 +7,7 @@ import type { Io } from './io'
 import { confirming, menu } from './menu'
 import { MirrorUnopenable } from './mirror'
 import { promptsAllowed, selectMode } from './mode'
+import { handing, type Opener } from './opening'
 import { failed, succeeded, type Renderable } from './outcome'
 import { render } from './render'
 import { root as jukebox } from './root'
@@ -39,6 +40,18 @@ export type Seams = {
    * reachable inside a test suite that has to finish.
    */
   patience?: Patience
+  /**
+   * How a file is handed to the operating system. The real spawn by default,
+   * and `patience`'s category exactly: ordinary behaviour a test must be able to
+   * replace, and no environment variable, because it is not a thing a user
+   * configures.
+   *
+   * The one seam where the default is not merely inconvenient in a test but
+   * disruptive -- an unreplaced one starts a music player on whoever ran the
+   * suite. `openerOf` therefore refuses a session without one rather than
+   * falling back, and the harness installs a recorder unasked.
+   */
+  opening?: Opener
 }
 
 /**
@@ -73,6 +86,11 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
     // and the streams. A command is handed the result rather than the question,
     // so nothing below has to remember to check before asking.
     ask: promptsAllowed(mode, io) ? confirming(io) : null,
+    // Not gated on the mode, unlike `ask`. `render` decides how an answer is
+    // written and never whether a command did what it was asked -- `remove`
+    // deletes in a pipe -- so `open --json` opens the file and then says so in
+    // one object.
+    opener: seams.opening ?? handing,
   }
 
   const root = seams.root ?? jukebox

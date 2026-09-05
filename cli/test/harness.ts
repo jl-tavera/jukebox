@@ -7,6 +7,7 @@ import type { CommandDef } from 'citty'
 import type { Io } from '../src/io'
 import { MIRROR_FILE } from '../src/mirror'
 import { main } from '../src/main'
+import { handedTo, type Opener } from '../src/opening'
 import { HOME_VARIABLE, locations, type Locations } from '../src/paths'
 import type { Patience } from '../src/session'
 
@@ -41,6 +42,17 @@ export type Run = {
   home: string
   /** Where the CLI resolved to inside it, while it was running. */
   locations: Locations
+  /**
+   * Every command line this run would have handed to the operating system, in
+   * order, and empty for the runs that handed over nothing.
+   *
+   * What the run *would* have done rather than what it did, which is the only
+   * observable a suite can have here: actually opening the file means starting a
+   * music player on whoever ran the tests. The vector is the whole of the
+   * decision anyway -- `handing` is three lines over `handedTo`, and `handedTo`
+   * is pure and checked on every platform in `opening.test.ts`.
+   */
+  opened: string[][]
 }
 
 export type Options = {
@@ -108,6 +120,15 @@ export type Options = {
    * being assumed.
    */
   patience?: Patience
+  /**
+   * How this run hands a file to the operating system.
+   *
+   * Almost never passed. The default records the command line and starts
+   * nothing, which is what a test asserting `Run.opened` wants; this is here for
+   * the one kind of test the recorder cannot serve, which is one that needs the
+   * hand-off itself to misbehave.
+   */
+  opening?: Opener
   /** Variables set for the length of this run and put back after, as the home already is. */
   env?: Record<string, string | undefined>
   /**
@@ -245,6 +266,14 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
 
   const restore = forThisRun({ ...options.env, [HOME_VARIABLE]: home })
 
+  // Recording by default, so that a test which forgets to say anything about
+  // opening still cannot open anything. Every other seam defaults to the real
+  // thing and is merely awkward when it does; this one would start a music
+  // player on whoever ran the suite, and the default that protects against that
+  // has to be the one nobody has to remember.
+  const opened: string[][] = []
+  const recording: Opener = (host, path) => void opened.push(handedTo(host, path))
+
   try {
     const where = locations()
     options.prepare?.(where)
@@ -253,8 +282,9 @@ const runOnce = async (argv: string[], options: Options): Promise<Run> => {
       root: options.root,
       discovery: options.discovery,
       patience: options.patience,
+      opening: options.opening ?? recording,
     })
-    return { stdout, stderr, interleaved, code, home, locations: where }
+    return { stdout, stderr, interleaved, code, home, locations: where, opened }
   } finally {
     restore()
   }
