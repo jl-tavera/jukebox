@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { ThemeProvider } from 'next-themes'
+import { RESTING } from '@/lib/session/theme'
 import { hero } from '@/lib/content'
 import './globals.css'
 
@@ -70,10 +71,16 @@ export default function RootLayout({
 
         {/* next-themes ships its own "use client", so it drops straight into
             a server layout. Its inline script runs before paint, which is what
-            keeps a statically exported page from flashing the wrong theme. */}
+            keeps a statically exported page from flashing the wrong theme.
+
+            The default comes from `theme.ts` rather than from a literal,
+            because since #88 three things have to agree about what a page
+            nobody has chosen for is in: this, the reducer's first state, and
+            what a bare `theme` reports before the provider has answered. One
+            value is how they agree. */}
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme={RESTING.theme}
           enableSystem
           disableTransitionOnChange
         >

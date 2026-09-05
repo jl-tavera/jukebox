@@ -16,7 +16,7 @@ import {
   ink,
   prose,
   row,
-  type Intent,
+  type Copying,
   type Line,
   type Span,
 } from './lines'
@@ -82,7 +82,7 @@ export const UNCONFIGURED = 'not configured'
  * `btc` would be four rows of the same three letters to somebody who cannot
  * see which one the cursor is on.
  */
-export const copying = (donation: Donation): Intent => ({
+export const copying = (donation: Donation): Copying => ({
   kind: 'copy',
   value: donation.address,
   what: `the ${donation.label} address`,

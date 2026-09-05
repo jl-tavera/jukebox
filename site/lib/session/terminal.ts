@@ -3,7 +3,8 @@ import { replay, type Frame } from './boot'
 import { COMMANDS, find, run } from './commands'
 import { finished } from './index'
 import { guessed } from './install'
-import { blank, spoken, type Intent, type Line, type Open, type Session } from './lines'
+import { blank, spoken, type Copying, type Line, type Open, type Session } from './lines'
+import { RESTING, type Preference } from './theme'
 import { abandoned, active, answered, asking, height, moved, named } from './select'
 
 /**
@@ -87,6 +88,17 @@ export type Terminal = {
    * again. It exists for that and for nothing else.
    */
   readonly printed: number
+
+  /**
+   * What the visitor's browser is set to, as the provider last said it.
+   *
+   * Here rather than reached for, because this module has no browser to reach
+   * into: `next-themes` owns the theme and `components/live.tsx` dispatches
+   * what it answers. It is `detected`'s arrangement wearing different clothes
+   * -- the module owns the question, the component asks it -- and it is the
+   * whole of how a bare `theme` can report anything under `bun test`.
+   */
+  readonly preference: Preference
 }
 
 /**
@@ -110,8 +122,9 @@ export type Input =
   | { readonly kind: 'earlier' }
   | { readonly kind: 'later' }
   | { readonly kind: 'chosen'; readonly command: string }
-  | { readonly kind: 'copied'; readonly intent: Intent }
+  | { readonly kind: 'copied'; readonly intent: Copying }
   | { readonly kind: 'detected'; readonly agent: string }
+  | { readonly kind: 'preferred'; readonly preference: Preference }
   | Replaying
 
 /**
@@ -130,7 +143,12 @@ type Replaying =
 
 type Keyed = Exclude<
   Input,
-  { kind: 'typed' } | { kind: 'chosen' } | { kind: 'copied' } | { kind: 'detected' } | Replaying
+  | { kind: 'typed' }
+  | { kind: 'chosen' }
+  | { kind: 'copied' }
+  | { kind: 'detected' }
+  | { kind: 'preferred' }
+  | Replaying
 >['kind']
 
 /**
@@ -214,6 +232,11 @@ export const booted = (session: Session): Terminal => ({
   draft: '',
   announcement: '',
   printed: 0,
+  // The served page, described rather than guessed at: `system` is the
+  // provider's own default and `light` is what the stylesheet paints with no
+  // class on it. `components/live.tsx` replaces it once the provider has
+  // mounted and said what the visitor actually asked for.
+  preference: RESTING,
 })
 
 /**
@@ -344,7 +367,7 @@ const entered = (terminal: Terminal): Terminal => {
       ? terminal
       : { ...terminal, session: redrawn(terminal, open, abandoned(open)) }
 
-  const printed = run(walked.buffer)
+  const printed = run(walked.buffer, walked.preference)
 
   // The frame a command asked for, drawn here rather than by `run` -- this is
   // also what marks the question live, and one description of a widget cannot
@@ -397,6 +420,10 @@ const entered = (terminal: Terminal): Terminal => {
     // out is a page waiting on an answer nobody was told it wanted.
     announcement: printed.announcement ?? said([...printed.body, ...opened]),
     printed: walked.printed + 1,
+    // Carried, because this branch spells the whole terminal out rather than
+    // spreading one -- which is deliberate, and is why every field it does not
+    // reset has to be named here.
+    preference: walked.preference,
   }
 }
 
@@ -479,7 +506,7 @@ const completed = (terminal: Terminal): Terminal => {
  * only record and `printed` is bumped to make a live region read it again --
  * copying the same value twice is two events and produces the same sentence.
  */
-const copied = (terminal: Terminal, intent: Intent): Terminal => ({
+const copied = (terminal: Terminal, intent: Copying): Terminal => ({
   ...terminal,
   session: { ...terminal.session, intents: [intent] },
   announcement: `Copied ${intent.what}.`,
@@ -524,6 +551,30 @@ const detected = (terminal: Terminal, agent: string): Terminal => {
 
   return { ...terminal, session: finished(CLI_VERSION, system) }
 }
+
+/**
+ * What the provider says the visitor is looking at.
+ *
+ * **It changes nothing on screen, and that is the whole of it.** The rows a
+ * theme moves are painted by a stylesheet from two custom properties that swap
+ * places, so a switch is a class on `<html>` rather than a session redrawn --
+ * which is why this stores an answer and prints nothing, where `detected`
+ * rebuilds the session outright.
+ *
+ * `printed` is deliberately not bumped. A live region has nothing to say about
+ * a preference arriving, and bumping it would step past `detected`'s
+ * `printed > 0` guard and cost the visitor the system detection their own
+ * stored theme happened to arrive before.
+ *
+ * A preference that changed nothing hands back the terminal it was given,
+ * which matters more here than anywhere: this is dispatched from an effect
+ * keyed on values the provider re-publishes, so the no-op is the common case.
+ */
+const preferred = (terminal: Terminal, preference: Preference): Terminal =>
+  terminal.preference.theme === preference.theme &&
+  terminal.preference.system === preference.system
+    ? terminal
+    : { ...terminal, preference }
 
 const earlier = (terminal: Terminal): Terminal => {
   if (terminal.recall === 0) return terminal
@@ -624,7 +675,9 @@ const advanced = (terminal: Terminal): Terminal =>
  */
 export const after = (terminal: Terminal, input: Input): Terminal => {
   const settled =
-    input.kind === 'advanced' || terminal.boot === undefined ? terminal : skipped(terminal)
+    input.kind === 'advanced' || input.kind === 'preferred' || terminal.boot === undefined
+      ? terminal
+      : skipped(terminal)
 
   switch (input.kind) {
     case 'typed':
@@ -643,6 +696,15 @@ export const after = (terminal: Terminal, input: Input): Terminal => {
       return copied(settled, input.intent)
     case 'detected':
       return detected(settled, input.agent)
+
+    // Exempt from the collapse above, with `advanced`, and for a reason worth
+    // stating rather than inferring: this is not a visitor doing anything. It
+    // arrives from the provider on mount, before anybody has touched the page,
+    // so collapsing on it would skip the boot for every visitor who has ever
+    // chosen a theme -- and skip it for the rest as soon as the provider
+    // settled on following their system.
+    case 'preferred':
+      return preferred(settled, input.preference)
 
     // Rewinds, rather than resuming, so a second dispatch is a boot rather than
     // two -- which is what React's StrictMode does to a mount effect in `dev`.

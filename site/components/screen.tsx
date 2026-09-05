@@ -1,4 +1,4 @@
-import type { Intent, Line, Session, Span, Tone } from '@/lib/session/lines'
+import type { Copying, Line, Session, Span, Tone } from '@/lib/session/lines'
 
 /**
  * The one thing that writes.
@@ -104,9 +104,9 @@ const Landable = ({
  * bare text, an invisible tap target, and the block cursor as the only pointer.
  *
  * **The label is what a screen reader hears instead of `copy` on its own.** One
- * such word is unambiguous and four are not -- #88 puts a control on every
- * donation row -- and the visible word is inside the accessible name rather
- * than replaced by it, so the two cannot disagree.
+ * such word was unambiguous and five are not -- #88 put a control on every
+ * configured donation row -- and the visible word is inside the accessible
+ * name rather than replaced by it, so the two cannot disagree.
  */
 const Copier = ({
   text,
@@ -114,8 +114,8 @@ const Copier = ({
   onCopy,
 }: {
   text: string
-  intent: Intent
-  onCopy: (intent: Intent) => void
+  intent: Copying
+  onCopy: (intent: Copying) => void
 }) => (
   <button
     type="button"
@@ -134,7 +134,7 @@ const Row = ({
 }: {
   line: Line
   onRun?: (command: string) => void
-  onCopy?: (intent: Intent) => void
+  onCopy?: (intent: Copying) => void
 }) => {
   // A blank row is a row, not a margin: it has the height of one line and
   // nothing in it, which is what a terminal shows and what keeps every gap on
@@ -181,7 +181,7 @@ export const Screen = ({
 }: {
   session: Session
   onRun?: (command: string) => void
-  onCopy?: (intent: Intent) => void
+  onCopy?: (intent: Copying) => void
 }) => (
   <main className="u-session">
     {session.lines.map((line, index) => (

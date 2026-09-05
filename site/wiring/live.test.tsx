@@ -7,6 +7,7 @@ import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
 import { versionLine } from '@/lib/session/header'
 import { commandFor } from '@/lib/session/install'
+import { RESTING } from '@/lib/session/theme'
 import { forget, mounted, prefers, pressed, pretending, written, type Mounted } from './dom'
 
 /**
@@ -198,7 +199,7 @@ describe('the renderer on its own', () => {
   it('draws a landable word as a plain span when there is nowhere to click to', async () => {
     // The property that keeps a session renderable outside a browser: handed no
     // `onRun`, this file produces the markup it produced before #85.
-    const page = await mounted(<Screen session={{ lines: run('help').body, intents: [] }} />)
+    const page = await mounted(<Screen session={{ lines: run('help', RESTING).body, intents: [] }} />)
 
     expect(page.all('button')).toHaveLength(0)
     expect(page.all('.u-word')).toHaveLength(0)

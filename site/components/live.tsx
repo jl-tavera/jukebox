@@ -1,11 +1,13 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef } from 'react'
 import { Screen } from '@/components/screen'
 import { REDUCED_MOTION } from '@/lib/session/boot'
 import { PROMPTS } from '@/lib/session/commands'
-import type { Intent, Session } from '@/lib/session/lines'
+import type { Copying, Session } from '@/lib/session/lines'
 import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
+import { isScheme, isTheme, RESTING } from '@/lib/session/theme'
 
 /**
  * The page, made live.
@@ -35,6 +37,21 @@ import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
 export const Live = ({ initial }: { initial: Session }) => {
   const [terminal, dispatch] = useReducer(after, initial, booted)
   const input = useRef<HTMLInputElement>(null)
+  const { theme, systemTheme, setTheme } = useTheme()
+
+  /**
+   * The switch, held where changing it cannot re-run anything.
+   *
+   * **`setTheme`'s identity moves whenever the theme does**, so naming it in
+   * the intents effect below would give that effect a second way to fire --
+   * and the thing it would fire with is a clipboard write it has already
+   * performed. The array is replaced on exactly the transition that declares
+   * an intent and on no other, which is what makes "fired once" a property of
+   * the module rather than of this file's dependency list. A ref is how the
+   * current function is reached without putting it in that list.
+   */
+  const switching = useRef(setTheme)
+  switching.current = setTheme
 
   const replaying = pause(terminal) !== undefined
 
@@ -90,6 +107,34 @@ export const Live = ({ initial }: { initial: Session }) => {
   }, [])
 
   /**
+   * What the provider says the visitor is looking at, fed back in.
+   *
+   * **An effect of its own, because it is a subscription rather than a read.**
+   * `detected` above is answered once and can therefore be ordered ahead of
+   * the boot inside one effect; this has to carry every later change as well
+   * -- a switch the page itself asked for, another tab writing to
+   * `localStorage`, an operating system moving to dark at sunset -- so it
+   * needs a dependency, and an effect with a dependency fires whenever the
+   * dependency moves. Ordering protects a one-shot; only `after`'s exemption
+   * protects a subscription, which is why the exemption is where the
+   * correctness lives and this order is only a courtesy.
+   *
+   * The strings are narrowed rather than asserted. `next-themes` types both as
+   * `string | undefined` and this workspace has no type assertion in it, so
+   * `theme.ts` is what says which strings this page has a name for -- the
+   * arrangement `install.ts` already has with a user agent.
+   */
+  useEffect(() => {
+    dispatch({
+      kind: 'preferred',
+      preference: {
+        theme: isTheme(theme) ? theme : RESTING.theme,
+        system: isScheme(systemTheme) ? systemTheme : RESTING.system,
+      },
+    })
+  }, [theme, systemTheme])
+
+  /**
    * Everything the session asked to have done off the page.
    *
    * One kind today, and the array is what `lines.ts` hands over rather than
@@ -112,7 +157,12 @@ export const Live = ({ initial }: { initial: Session }) => {
    */
   useEffect(() => {
     for (const intent of terminal.session.intents) {
-      void navigator.clipboard?.writeText(intent.value).catch(() => {})
+      if (intent.kind === 'copy') {
+        void navigator.clipboard?.writeText(intent.value).catch(() => {})
+        continue
+      }
+
+      switching.current(intent.theme)
     }
   }, [terminal.session.intents])
 
@@ -240,7 +290,7 @@ export const Live = ({ initial }: { initial: Session }) => {
    * it came from. The write itself is the effect above -- this only declares
    * it, exactly as a command would.
    */
-  const onCopy = useCallback((intent: Intent) => {
+  const onCopy = useCallback((intent: Copying) => {
     dispatch({ kind: 'copied', intent })
     input.current?.focus()
   }, [])
