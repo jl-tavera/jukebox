@@ -62,45 +62,6 @@ export const stamp = (at: number): string => {
 }
 
 /**
- * Rows of cells, aligned into columns and indented.
- *
- * The last cell of a row is never padded, so a line carries no trailing
- * whitespace -- which is what a reader's editor would strip and a test's
- * `toBe` would then disagree about.
- *
- * Widths are measured across every row handed over at once, which is the whole
- * reason this takes a list rather than being called per row. `show` relies on
- * it: its present Tracks and its Removed ones are laid out together and split
- * into two blocks afterwards, so the two blocks line up with each other rather
- * than each being square on its own.
- *
- * Width is `String.length`, which is UTF-16 code units rather than the columns a
- * terminal will spend. A CJK title takes two columns per unit and an emoji takes
- * two for a surrogate pair, so either one leans the table. Left alone: getting it
- * right needs a grapheme table and an East-Asian-width table, both of which are
- * larger than this whole binary's rendering code, and the failure is a ragged
- * column rather than a wrong answer.
- */
-export const columns = (rows: string[][]): string[] => {
-  const widths: number[] = []
-
-  for (const cells of rows) {
-    cells.forEach((cell, at) => {
-      widths[at] = Math.max(widths[at] ?? 0, cell.length)
-    })
-  }
-
-  return rows.map((cells) =>
-    (
-      '  ' +
-      cells
-        .map((cell, at) => (at === cells.length - 1 ? cell : cell.padEnd(widths[at]!)))
-        .join('   ')
-    ).trimEnd(),
-  )
-}
-
-/**
  * How many entries a Source offered that never became Tracks.
  *
  * Always said, including when it is none, so that its absence never has to be
