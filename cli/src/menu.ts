@@ -8,7 +8,7 @@ import type { Configured, SettingKey } from './config'
 import { header } from './header'
 import type { Io } from './io'
 import type { Renderable } from './outcome'
-import { held, identified, named } from './phrasing'
+import { held, labels, named } from './phrasing'
 import { pinning } from './pinned'
 import type { MirroredPlaylist } from './reading'
 import { spinning } from './spinner'
@@ -161,11 +161,11 @@ export const WORKING: Record<Reaching, string> = {
 /**
  * What is asked before anything is deleted.
  *
- * `named` rather than the `identified` every other line uses, and the reason is
- * that file's own: the id is there because it "is the string the next command
- * takes", and on this screen there is no next command for anybody to type it
- * into. The Playlist was picked from a list a moment ago and its `show` is
- * still above the question.
+ * `named`, which is what every line on this screen now uses. The id used to be
+ * on the label above and is not: `labels` prints one only where a name has
+ * stopped identifying a Playlist, and on this screen there is no command for
+ * anybody to type it into anyway. The Playlist was picked from a list a moment
+ * ago and its `show` is still above the question.
  */
 export const askingToStop = (playlist: MirroredPlaylist): string =>
   `Stop tracking ${named(playlist.title, playlist.id)}?`
@@ -429,10 +429,17 @@ const browse = async (launch: Launch, asking: Asking): Promise<Next> => {
   // the menu's own here would be the menu saying something no command says.
   if (playlists.length === 0) return 'menu'
 
+  // Once, outside the loop: the set does not move while somebody is arrowing
+  // through it, and what each Playlist is called depends on the whole of it.
+  const called = labels(playlists)
+
   for (;;) {
     const picked = await select<MirroredPlaylist | typeof BACK>({
       message: WHICH_PLAYLIST,
-      options: [...playlists.map(offer), { value: BACK, label: 'back', hint: 'Back to the menu' }],
+      options: [
+        ...playlists.map((playlist) => offer(playlist, called.get(playlist.id)!)),
+        { value: BACK, label: 'back', hint: 'Back to the menu' },
+      ],
       ...asking,
     })
 
@@ -484,12 +491,17 @@ const tracked = ({ outcome }: Renderable): MirroredPlaylist[] =>
  * and gone on a terminal that has none, and those three statuses have to read
  * differently in all of them.
  *
+ * What it is called is handed in rather than computed here, because `labels`
+ * decides it over the whole set: an id appears only where a name has stopped
+ * telling two Playlists apart. Computing it per row would be this screen quietly
+ * answering that question differently from the table above it.
+ *
  * The one column left behind is when the Mirror's copy last moved, which is the
  * table's to say. It answers nothing about which Playlist to pick.
  */
-const offer = (playlist: MirroredPlaylist) => ({
+const offer = (playlist: MirroredPlaylist, called: string) => ({
   value: playlist,
-  label: `${identified(playlist.title, playlist.id)}, ${playlist.status}, ${held(playlist)}`,
+  label: `${called}, ${playlist.status}, ${held(playlist)}`,
 })
 
 /**

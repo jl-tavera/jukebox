@@ -1,6 +1,7 @@
 import type { PlaylistId } from '@jukebox/schema'
 import { TRACK_COLUMN_NAMES, type TrackRow } from './migrations'
 import type { Mirror } from './mirror'
+import { sameness } from './phrasing'
 import type { MirrorStatus } from './tracking'
 
 /**
@@ -134,36 +135,71 @@ export const mirroredPlaylists = (mirror: Mirror): MirroredPlaylist[] =>
     .map(asPlaylist)
 
 /**
- * The one Playlist a person named, or `null` for a name this Mirror does not
- * hold.
+ * What a person named: one Playlist, none, or more than one.
  *
- * Either the id or the URL, because both are things a user has in front of
- * them: `list` prints the id, and the URL is what they pasted into `add`. One
- * `OR` rather than a branch that decides which was meant, because deciding
- * would mean recognising a URL -- and recognising a URL is the Source adapter's
- * job on the worker, which is precisely what the CLI is not allowed to
- * duplicate.
+ * The id, the URL, or the title, because all three are things a user has in
+ * front of them. The title is the one `list` now prints, and the reason it was
+ * added: the table leads with a name now and shows an id only where a name has
+ * stopped identifying a row, so the string a reader copies is usually the
+ * name. The URL is what they pasted into `add`. The id is what `--json` carries
+ * and what the menu passes.
  *
  * The URL is matched as the exact string `add` recorded. Nothing is normalized,
- * for that same reason, so an address that gained a tracking parameter since it
- * was pasted will not be found. The commands pay for that in their copy rather
- * than here: a miss that looks like a URL says that addresses match as typed,
- * and points at `list`.
+ * because recognising a URL is the Source adapter's job on the worker and
+ * precisely what the CLI is not allowed to duplicate -- so an address that
+ * gained a tracking parameter since it was pasted will not be found. The
+ * commands pay for that in their copy rather than here: a miss that looks like a
+ * URL says that addresses match as typed, and points at `list`.
  *
- * `id` wins where both could match. `id` is the primary key and `url` carries no
- * constraint at all, so two rows can satisfy the `OR` -- one Playlist whose id
- * is the string, another whose URL is -- and `.get()` would otherwise answer
- * with whichever the query planner reached first. Unreachable in practice and a
- * single clause to make impossible.
+ * A title is matched loosely, by `sameness`, and that boundary argument is why
+ * the two differ. There is no adapter behind a title. It is prose a Source
+ * handed over, printed to a screen and typed back by a person, so folding case
+ * and stripping the quotes the screen itself added duplicates nothing and is the
+ * difference between a handle that works and one that has to be pasted.
+ *
+ * **More than one row can match, and this is the whole reason it answers with a
+ * shape rather than a row.** This used to end `LIMIT 1`, on the argument that two
+ * rows satisfying it was "unreachable in practice" -- true while only the id and
+ * the URL were matched, and false the moment a title is. A Source lets two
+ * Playlists share a name. Under that `LIMIT 1` the answer would have been
+ * whichever row the query planner reached first, which on `remove` is a Playlist
+ * deleted by coin toss. Every caller has to decide what to do about `many`, and
+ * that is deliberate: it is not a case any of them may skip.
+ *
+ * An exact handle still wins over a name, so a Playlist whose id was given is
+ * never ambiguous with one that merely shares a title.
+ *
+ * Every row is read rather than one selected, and the reason is the title rather
+ * than the count: SQLite's own `lower()` folds ASCII and leaves every other
+ * alphabet alone, so a Cyrillic or Greek title matched in the query would answer
+ * differently from the same title matched by `labels` a line above. Folding in
+ * JavaScript is what makes the two agree.
+ *
+ * That does cost the id its index. A primary-key hit became a scan and a `find`,
+ * for every caller including the menu, which passes an id every time. It is paid
+ * knowingly: `list` already scans this table on every run, a Mirror holds tens of
+ * rows rather than millions, and a second query kept for the handle path would be
+ * two lookups to keep in step for a saving nothing here can measure.
  */
-export const playlistNamed = (mirror: Mirror, reference: string): MirroredPlaylist | null => {
-  const row = mirror
-    .query<PlaylistRow, [string, string, string]>(
-      `${PLAYLISTS} WHERE p.id = ? OR p.url = ? GROUP BY p.id ORDER BY (p.id = ?) DESC LIMIT 1`,
-    )
-    .get(reference, reference, reference)
+export type Found =
+  | { kind: 'one'; playlist: MirroredPlaylist }
+  | { kind: 'none' }
+  | { kind: 'many'; playlists: MirroredPlaylist[] }
 
-  return row === null ? null : asPlaylist(row)
+export const playlistNamed = (mirror: Mirror, reference: string): Found => {
+  const all = mirroredPlaylists(mirror)
+
+  const handle = all.find((one) => one.id === reference) ?? all.find((one) => one.url === reference)
+  if (handle !== undefined) return { kind: 'one', playlist: handle }
+
+  const looked = sameness(reference)
+  const called = all.filter((one) => one.title !== null && sameness(one.title) === looked)
+
+  if (called.length === 0) return { kind: 'none' }
+
+  return called.length === 1
+    ? { kind: 'one', playlist: called[0]! }
+    : { kind: 'many', playlists: called }
 }
 
 /**

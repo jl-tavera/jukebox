@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { counted, identified, notTracked } from '../phrasing'
+import { ambiguous, counted, named, notTracked } from '../phrasing'
 import { playlistNamed, type MirroredPlaylist } from '../reading'
 import { stopTracking } from '../tracking'
 
@@ -41,8 +41,17 @@ export const removePlaylist = async (reference: string): Promise<Renderable<Untr
 }
 
 const stopping = (mirror: Mirror, reference: string): Renderable<Untracked> => {
-  const playlist = playlistNamed(mirror, reference)
-  if (playlist === null) return failed('remove', 'playlist_not_tracked', notTracked(reference))
+  const found = playlistNamed(mirror, reference)
+  if (found.kind === 'none') return failed('remove', 'playlist_not_tracked', notTracked(reference))
+
+  // Refused, never resolved. `reading.ts` explains why the query stopped taking
+  // the first row it found: under a title, "whichever one the planner reached
+  // first" is a Playlist deleted by coin toss.
+  if (found.kind === 'many') {
+    return failed('remove', 'playlist_ambiguous', ambiguous(reference, found.playlists))
+  }
+
+  const { playlist } = found
 
   // Reported out of the row that found it, which was read a statement ago and is
   // still true. Counting afterwards would count what the cascade left, which is
@@ -54,7 +63,7 @@ const stopping = (mirror: Mirror, reference: string): Renderable<Untracked> => {
 
 const human = (playlist: MirroredPlaylist): string =>
   [
-    `Stopped tracking ${identified(playlist.title, playlist.id)}.`,
+    `Stopped tracking ${named(playlist.title, playlist.id)}.`,
     deleted(playlist),
     '',
     LOCAL_ONLY,
@@ -98,7 +107,7 @@ export const remove = defineCommand({
   args: {
     playlist: {
       type: 'positional',
-      description: 'Its id, as `jukebox list` prints it, or the address you added it with',
+      description: 'Its name, as `jukebox list` prints it, or its id or address',
     },
   },
   run: ({ args }) => removePlaylist(args.playlist!),

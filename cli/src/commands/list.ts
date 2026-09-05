@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { withMirror } from '../mirror'
 import { succeeded, type Renderable } from '../outcome'
 import { columns } from '../fitting'
-import { held, identified, NOTHING_TRACKED, stamp } from '../phrasing'
+import { held, labels, NOTHING_TRACKED, stamp } from '../phrasing'
 import { mirroredPlaylists, type MirroredPlaylist } from '../reading'
 
 /**
@@ -27,28 +27,35 @@ export const listPlaylists = async (): Promise<Renderable<Listed>> => {
 }
 
 const report = (playlists: MirroredPlaylist[]): Renderable<Listed> =>
-  succeeded('list', { playlists }, () =>
-    playlists.length === 0 ? NOTHING_TRACKED : columns(playlists.map(row)).join('\n'),
-  )
+  succeeded('list', { playlists }, () => {
+    if (playlists.length === 0) return NOTHING_TRACKED
+
+    const called = labels(playlists)
+    return columns(playlists.map((playlist) => row(playlist, called.get(playlist.id)!))).join('\n')
+  })
 
 /**
  * One Playlist, as four aligned cells.
  *
- * The id is printed beside the title rather than only standing in for a missing
- * one, and it is the widest thing on the line. It has to be: this is the screen
- * `show` and `remove` both point a reader at -- their argument is documented as
- * "its id, as `jukebox list` prints it" -- and a title alone is not something
- * either of them accepts. Printing only the title would make that instruction
- * false for every Playlist that has one, and leave `--json` as the only way to
- * find the string the next command wants.
+ * The name leads and the id is usually not here at all. It used to be printed
+ * beside every title, because `show` and `remove` took nothing else and their
+ * argument was documented as "its id, as `jukebox list` prints it". They take
+ * the name now, so the string a reader needs for the next command is the one
+ * already in front of them -- and thirty characters that identified nothing a
+ * reader could not already see are gone from every row.
+ *
+ * What decides that is `labels`, over the whole set rather than this row, for
+ * the reason it explains: whether a name identifies a Playlist is a fact about
+ * the Playlists beside it. A `--json` caller is unaffected either way, and has
+ * carried the id on every row since #37.
  *
  * The status is printed as the word the Mirror stores and the JSON carries,
  * rather than translated into something prettier. That is `config`'s rule for
  * its keys and it holds for the same reason: what a reader sees should be what
  * they would have to match on if they went looking.
  */
-const row = (playlist: MirroredPlaylist): string[] => [
-  identified(playlist.title, playlist.id),
+const row = (playlist: MirroredPlaylist, called: string): string[] => [
+  called,
   playlist.status,
   held(playlist),
   when(playlist.lastSyncedAt),

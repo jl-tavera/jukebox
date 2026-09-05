@@ -4,12 +4,13 @@ import type { ErrorCode } from '@jukebox/schema'
  * Codes the CLI raises on its own behalf, where the API's five say what the
  * server could not do.
  *
- * Eight now. Each arrived with the thing that raises it, and the latest is
- * `config_unwritable`: #53 is where the configuration file is first written, so
- * it is where failing to write it first has something to say. The rule the file
- * set down -- no code before something raises it -- is kept the way it was kept
- * for the other seven: the code raising it ships in the same commit as the code,
- * and is exercised at the seam its commands are exercised at.
+ * Nine now. Each arrived with the thing that raises it, and the latest is
+ * `playlist_ambiguous`, which arrived with the change that let `show` and
+ * `remove` accept a name -- so it arrived with the first reference a person can
+ * give that fairly describes two Playlists. The rule the file set down -- no
+ * code before something raises it -- is kept the way it was kept for the other
+ * eight: the code raising it ships in the same commit as the code, and is
+ * exercised at the seam its commands are exercised at.
  */
 export type ClientErrorCode =
   /** The argument vector names no command, or one that does not exist. */
@@ -70,6 +71,24 @@ export type ClientErrorCode =
    * a thing it got wrong.
    */
   | 'playlist_not_tracked'
+  /**
+   * The name given matches more than one Playlist this machine tracks.
+   *
+   * New with the change that made a name something `show` and `remove` accept.
+   * Until then the only handles were the id and the URL, and neither can
+   * name two rows -- a Source lets two Playlists share a title, so this is the
+   * first reference a person can give that is a fair description of two things.
+   *
+   * Not `playlist_not_tracked`, which says the Mirror holds no such Playlist
+   * when the truth is that it holds two. And not `invalid_usage` either, which
+   * is the line the code above draws from the other side: the argument vector
+   * was fine and what it named is real, there is simply more than one of it.
+   *
+   * Its own code rather than a sentence, because a script removing Playlists in
+   * a loop has to branch on this -- the alternative is parsing English to find
+   * out whether to try again with an id.
+   */
+  | 'playlist_ambiguous'
   /**
    * The configuration file was not written.
    *

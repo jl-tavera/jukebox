@@ -147,7 +147,7 @@ describe('a Mirror with Playlists in it', () => {
     // snapshot arrives, and a Sync answered 304 leaves it exactly where it was.
     expect(run.stdout.trim()).toMatch(
       new RegExp(
-        `^"Rain / Shine" \\(${ID}\\)\\s+ok\\s+2 tracks, 1 removed` +
+        `^"Rain / Shine"\\s+ok\\s+2 tracks, 1 removed` +
           `\\s+updated \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$`,
       ),
     )
@@ -155,7 +155,7 @@ describe('a Mirror with Playlists in it', () => {
     expect(run.code).toBe(0)
   })
 
-  it('prints the id beside a title, not instead of it', async () => {
+  it('calls a Playlist by its name, and says no id at all', async () => {
     const site = servingItsOwnApi()
     const home = temporaryHome('jukebox-list-identifies-')
     site.tracking(URL, { id: ID, status: 'ok' })
@@ -164,12 +164,34 @@ describe('a Mirror with Playlists in it', () => {
 
     const run = await listing(site, home, false)
 
-    // `show` and `remove` are documented as taking "its id, as `jukebox list`
-    // prints it", and neither takes a title. A row that showed only the title
-    // would make that instruction false and leave `--json` as the only way to
-    // find the string the next command wants. That those two then accept it is
-    // their own tests' to say.
+    // The id used to be printed beside every title, because `show` and `remove`
+    // took nothing else. They take the name now, so the string a reader needs
+    // for the next command is the one already in front of them -- and thirty
+    // characters that identified nothing they could not see are gone.
+    expect(run.stdout).toContain('"Rain / Shine"')
+    expect(run.stdout).not.toContain(ID)
+  })
+
+  it('brings the id back on the rows whose name stops identifying them', async () => {
+    const site = servingItsOwnApi()
+    const home = temporaryHome('jukebox-list-ambiguous-')
+
+    for (const [url, id] of [
+      [URL, ID],
+      [OTHER, OTHER_ID],
+    ] as const) {
+      site.tracking(url, { id, status: 'ok' })
+      site.holding(id, twoTracks)
+      await adding(site, home, url)
+    }
+
+    const run = await listing(site, home, false)
+
+    // Two Playlists, one name. A Source lets them share it, so the table has to
+    // survive it: the identifier appears exactly where the name has stopped
+    // telling two rows apart, and nowhere else.
     expect(run.stdout).toContain(`"Rain / Shine" (${ID})`)
+    expect(run.stdout).toContain(`"Rain / Shine" (${OTHER_ID})`)
   })
 })
 
