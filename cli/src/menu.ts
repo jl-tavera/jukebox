@@ -4,13 +4,17 @@ import { confirm, isCancel, select, text } from '@clack/prompts'
 import pc from 'picocolors'
 import { shown, type Shown } from './commands/config'
 import type { Listed } from './commands/list'
+// Aliased because `config` already exports a `Shown` into this file, and the two
+// are unrelated: one is every setting and where it came from, the other is a
+// Playlist and its Tracks.
+import type { Shown as ShownPlaylist } from './commands/show'
 import type { Configured, SettingKey } from './config'
 import { header } from './header'
 import type { Io } from './io'
 import type { Renderable } from './outcome'
-import { askingToStop, held, labels } from './phrasing'
+import { askingToStop, billed, held, labels } from './phrasing'
 import { pinning } from './pinned'
-import type { MirroredPlaylist } from './reading'
+import type { MirroredPlaylist, MirroredTrack } from './reading'
 import type { Ask } from './session'
 import { spinning } from './spinner'
 import { VERSION } from './version'
@@ -61,6 +65,14 @@ import { VERSION } from './version'
 
 /** The top level. One entry per command #50 puts here, and the way out. */
 type Entry = 'add' | 'sync' | 'list' | 'config' | 'quit'
+
+/**
+ * One Playlist's own screen: into its Tracks, out of the Mirror, or back.
+ *
+ * `typeof BACK` rather than the word again, so the picker's way out is the same
+ * value here as it is one screen either side of this.
+ */
+type PlaylistAction = 'tracks' | 'remove' | typeof BACK
 
 /**
  * The two entries that open the one door to the network.
@@ -121,6 +133,78 @@ export const ENTRIES: { value: Entry; label: string; hint: string }[] = [
  */
 export const WHICH_PLAYLIST = 'Which playlist?'
 export const FOR_THIS_PLAYLIST = 'What next for this playlist?'
+export const WHICH_TRACK = 'Which track?'
+
+/**
+ * The way back, spelled once and used by every screen that offers one.
+ *
+ * A named value rather than a literal because two pickers' other entries are
+ * rows out of the Mirror -- Playlists on one, Tracks on the other -- so this has
+ * to be something none of them can be mistaken for; the Playlist screen then
+ * takes the same value for the same word, rather than three screens saying
+ * `back` by three different mechanisms.
+ *
+ * Exported since #108, so that `menu.test.ts` can count keystrokes to it out of
+ * `PLAYLIST_ENTRIES` instead of writing down which press lands on it. That file
+ * had two constants doing exactly what its own `taking` docblock forbids, and
+ * they were wrong the moment a third entry appeared above them.
+ */
+export const BACK = 'back'
+
+/**
+ * What a Playlist's own screen offers, exported for `ENTRIES`' reason: a test
+ * pins these rather than a paraphrase, and counts its keystrokes out of them
+ * rather than writing down which press lands where.
+ *
+ * **On the order, because it moved.** This screen used to put `back` first, with
+ * a stated reason -- return is the key a person presses to move through a menu,
+ * both screens above this one are answered with it, and nothing irreversible
+ * should be what one more press lands on. That invariant is kept exactly.
+ * `list all tracks` is harmless, so `remove` sitting second still takes a
+ * deliberate arrow to reach, and the confirmation below it still defaults to no.
+ *
+ * What changed is where `back` goes, and it goes last to match the Track picker
+ * one keystroke below, where it is last because everything above it is a Track.
+ * Two screens that close together putting the way out in different places is
+ * worse than either arrangement is on its own.
+ *
+ * **Not added to `generate-help.ts`.** That generator quotes the *top-level*
+ * menu into the landing page, and the page's `MENU_ENTRIES` carries a `runs`
+ * field naming the command an entry launches -- which `list all tracks` has no
+ * answer for, since it launches `show` and then shows none of it. A reader
+ * wondering why this is not on the site should find that here rather than work
+ * it out.
+ */
+export const PLAYLIST_ENTRIES: { value: PlaylistAction; label: string; hint: string }[] = [
+  { value: 'tracks', label: 'list all tracks', hint: 'Every track in it, and open one' },
+  { value: 'remove', label: 'remove', hint: 'Stop tracking it on this machine' },
+  { value: BACK, label: 'back', hint: 'Choose another playlist' },
+]
+
+/**
+ * The same entries, minus the one there is nothing behind.
+ *
+ * A Playlist holding no Tracks does not offer to list them. `browse` refuses the
+ * same thing one screen up and names the reason -- an empty picker is a screen
+ * offering a person nothing to do -- and the alternative here is worse than an
+ * empty picker: an entry that visibly does nothing when pressed, since there
+ * would be no rows to draw and nothing to say that a command had not already
+ * said.
+ *
+ * Which it already has. The answer this is computed from is the same `show`
+ * whose text was left on the screen precisely because it had no Tracks in it, so
+ * "No tracks are recorded for it." is sitting above this picker as it is drawn.
+ * One fact, decided once, spelled on screen by the command and reflected here in
+ * what is offered.
+ *
+ * Exported so `menu.test.ts` counts keystrokes out of it in both shapes rather
+ * than writing down which press lands where in each -- the mistake that file
+ * made once already and now carries a docblock about.
+ */
+export const playlistActions = (
+  tracks: number,
+): { value: PlaylistAction; label: string; hint: string }[] =>
+  tracks === 0 ? PLAYLIST_ENTRIES.filter((one) => one.value !== 'tracks') : PLAYLIST_ENTRIES
 
 /**
  * What `add` asks for, and the way back out of asking.
@@ -199,8 +283,29 @@ export const askingFor = (key: SettingKey): string =>
  * was written. A spinner ticking through `render` erases the first line of the
  * thing it was covering. This names that moment and adds no other power: an
  * entry still cannot ask for anything a typed vector could not.
+ *
+ * `replaced` is the second such widening, made by #108, and it names what the
+ * *screen* does with an answer rather than what may be asked for -- which is
+ * why it is not the widening this type exists to resist. An entry that is about
+ * to put a command's own answer up in another shape says so, and the human text
+ * is not written above the shape built from it. `render` holds the limits: never
+ * a failure, never in JSON mode, and never the warnings.
+ *
+ * A predicate rather than a flag, and that is not style. A boolean fixed before
+ * the launch cannot say *only if there turns out to be something to replace it
+ * with*, and without that a Playlist holding no Tracks would show a person
+ * nothing at all -- the table suppressed and the picker empty, which is the
+ * screen offering nothing to do that `browse` already refuses by name. Asked
+ * afterwards, an entry can say "I will replace this, if it has Tracks in it",
+ * and where it does not, `show`'s own sentence reaches the screen in the
+ * command's own words. That is the launcher rule working rather than being
+ * worked around.
  */
-export type Launch = (argv: string[], computed?: () => void) => Promise<Renderable>
+export type Launch = (
+  argv: string[],
+  computed?: () => void,
+  replaced?: (answer: Renderable) => boolean,
+) => Promise<Renderable>
 
 /** What every prompt in a session is handed: the keyboard, and where to draw. */
 type Asking = { input: Readable; output: Writable }
@@ -361,16 +466,6 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
 }
 
 /**
- * The way back, spelled once and used by both screens that offer one.
- *
- * A named value rather than a literal because the picker's other entries are
- * Playlists themselves, so this has to be something none of them can be
- * mistaken for; the Playlist screen then takes the same value for the same
- * word, rather than the two screens saying `back` by two different mechanisms.
- */
-const BACK = 'back'
-
-/**
  * What a session is worth to the shell prompt that reads it.
  *
  * Named rather than written as two bare numbers, because there are two of them
@@ -524,13 +619,29 @@ const offer = (playlist: MirroredPlaylist, called: string) => ({
 })
 
 /**
- * One Playlist: its `show`, and the offer to stop tracking it.
+ * One Playlist: the way into its Tracks, the offer to stop tracking it, and the
+ * way back.
  *
- * This is the screen the whole ticket is for. `remove` takes an id that only
- * `list` prints, so running it from a shell means copying a string out of one
- * command's output and into another's arguments -- and mistyping it is how
- * somebody stops tracking the wrong Playlist. Here it is the Playlist already
- * on the screen, and there is no id to get wrong.
+ * `remove` takes an id that only `list` prints, so running it from a shell means
+ * copying a string out of one command's output and into another's arguments --
+ * and mistyping it is how somebody stops tracking the wrong Playlist. Here it is
+ * the Playlist already on the screen, and there is no id to get wrong. That was
+ * #56's whole reason for this screen and it is untouched.
+ *
+ * **What changed in #108: this screen no longer prints the table.** It used to
+ * launch `show` and let its output land, which put forty rows of columns in
+ * front of somebody who wanted one Track out of them -- a table built to be read
+ * where what was wanted was something to press. `show` still runs, because the
+ * Tracks below have to come out of the answer a command gave rather than out of
+ * a second read of the Mirror, and `replaced` says the picker is about to put
+ * that answer up in another shape.
+ *
+ * Conditionally, and the condition is the interesting part. A Playlist holding
+ * no Tracks has nothing to build a picker from, so its answer is *not* replaced
+ * and `show`'s own sentence -- "No tracks are recorded for it." -- reaches the
+ * screen in the command's own words. The alternative was a menu with a sentence
+ * of its own for a case a command already has one for, which is the drift
+ * ADR-0007 exists to prevent.
  *
  * Confirmed first, which is the one thing this screen does that the command
  * does not. `remove.ts` says why it has no prompt of its own: what it deletes
@@ -550,31 +661,74 @@ const inspect = async (
   launch: Launch,
   asking: Asking,
 ): Promise<Next | 'picker'> => {
-  const shown = await launch(['show', playlist.id])
+  const shown = await launch(
+    ['show', playlist.id],
+    undefined,
+    // Asked after the answer is in, which is the whole reason this is a
+    // predicate. Whether there is a picker to put up is a property of what
+    // `show` found, and nothing out here knows it beforehand.
+    (answer) => tracksIn(answer).length > 0,
+  )
 
   // It has said why -- the Mirror would not open, or another terminal stopped
   // tracking this one between the `list` above and the return that picked it.
   // Either way there is nothing on the screen to act on, and offering to stop
   // tracking a Playlist that would not show is offering to do the thing that
-  // has just failed.
+  // has just failed. `render` never replaces a failure, so the message did
+  // reach the screen.
   if (!shown.outcome.ok) return 'picker'
 
-  const action = await select<typeof BACK | 'remove'>({
-    message: FOR_THIS_PLAYLIST,
-    options: [
-      { value: BACK, label: 'back', hint: 'Choose another playlist' },
-      { value: 'remove', label: 'remove', hint: 'Stop tracking it on this machine' },
-    ],
-    ...asking,
-  })
+  // A loop, because the Track picker comes back here rather than to the
+  // Playlist picker: a person who walked down two screens and pressed `back`
+  // has asked to go up one, not two.
+  for (;;) {
+    const action = await select<PlaylistAction>({
+      message: FOR_THIS_PLAYLIST,
+      options: playlistActions(tracksIn(shown).length),
+      ...asking,
+    })
 
-  if (isCancel(action)) return 'quit'
-  if (action === BACK) return 'picker'
+    if (isCancel(action)) return 'quit'
+    if (action === BACK) return 'picker'
 
-  // No by default, and `back` sitting above `remove` for the same reason:
-  // return is the key a person presses to move through a menu, and both screens
-  // between this one and the top are answered with it. Nothing irreversible
-  // should be what one more press lands on.
+    if (action === 'tracks') {
+      const next = await browseTracks(playlist, shown, launch, asking)
+      if (next !== 'inspect') return next
+      continue
+    }
+
+    return await stopTracking(playlist, launch, asking)
+  }
+}
+
+/**
+ * The confirmation and the `remove` behind it, lifted out of `inspect` when that
+ * screen grew a loop.
+ *
+ * Confirmed first, which is the one thing this screen does that the command does
+ * not. `remove.ts` says why it has no prompt of its own: what it deletes can be
+ * asked for again, and a prompt would have been a second thing writing to the
+ * terminal. Neither argument reaches here -- a menu is already prompting on a
+ * stream that is already not stdout, and a person who arrived by pressing return
+ * would otherwise be one press from deleting something they were only reading
+ * about.
+ *
+ * The confirmation asks and says nothing else. What stopping costs is on the
+ * screen the person came through; what it leaves untouched is in the note
+ * `remove` prints afterwards. A third version written here would be the copy
+ * that drifts.
+ */
+const stopTracking = async (
+  playlist: MirroredPlaylist,
+  launch: Launch,
+  asking: Asking,
+): Promise<Next | 'picker'> => {
+  // No by default: return is the key a person presses to move through a menu,
+  // and every screen between this one and the top is answered with it, so
+  // nothing irreversible may be what one more press lands on. `back` used to
+  // sit above `remove` for the same reason and now sits below it -- see
+  // `PLAYLIST_ENTRIES` for why that costs the invariant nothing, and note that
+  // this default is the half of it that actually guards the deletion.
   const sure = await confirm({
     message: askingToStop(playlist),
     initialValue: false,
@@ -591,6 +745,84 @@ const inspect = async (
   // Offering it again would be the menu showing something no command reported,
   // which is the one thing it may not do. Another `list` is two keystrokes away.
   return 'menu'
+}
+
+/**
+ * The Tracks a `show` reported, and none at all for one that failed.
+ *
+ * `tracked`'s sibling, and the same cast for the same stated reason: `Launch`
+ * hands back a `Renderable` with `data` typed `unknown`, and this is one of the
+ * places that knows what vector produced it.
+ *
+ * `.tracks` and never `.removed`. That split is `reading.ts`'s, made before this
+ * ever sees it, so the picker offers what `show` numbers and cannot come to
+ * disagree with it -- which is what lets the row a person lands on be sent
+ * straight to `open` as a number. A Removed Track keeps its row and its place
+ * under `show`'s own heading, where it says what it is; it is not something to
+ * press, because there is no number that reaches it.
+ */
+const tracksIn = ({ outcome }: Renderable): MirroredTrack[] =>
+  outcome.ok ? (outcome.data as ShownPlaylist).tracks : []
+
+/**
+ * Every Track in one Playlist, offered as something to press.
+ *
+ * The screen #108 exists for, and the reason `open` is a command: ADR-0007 is
+ * explicit that anything wanted in the menu becomes a command first, and names
+ * this case -- somebody arriving expecting an audio player finds a command and
+ * an entry that launches it.
+ *
+ * **Every Track, whatever is on disk.** A Track with no audio is offered exactly
+ * like one that has it and looks no different, because this screen cannot tell
+ * the difference and must not try: finding out means reading the Playlist's
+ * folder, and a menu that read the folder would be the second reader of state
+ * ADR-0007 forbids. The disk is consulted once, by `open`, about the one Track
+ * somebody actually pressed. In a release that downloads nothing that is the
+ * common path rather than the sad one, and it is why a row carries no
+ * downloaded marker: there is nothing honest to put in it.
+ *
+ * Everything goes on the label and nothing in a hint, which is `offer`'s reason
+ * one screen up -- the library draws a hint only for the row the cursor is on,
+ * and running an eye down the list is what a person came here to do.
+ *
+ * The number handed to `open` is the row's index plus one, and the menu does not
+ * compute it from anything else. `show` numbers the same array in the same order
+ * with the same expression, so it is the same number by construction -- the
+ * launcher rule holding for an integer rather than for a string.
+ */
+const browseTracks = async (
+  playlist: MirroredPlaylist,
+  shown: Renderable,
+  launch: Launch,
+  asking: Asking,
+): Promise<Next | 'inspect'> => {
+  const tracks = tracksIn(shown)
+
+  for (;;) {
+    const picked = await select<MirroredTrack | typeof BACK>({
+      message: WHICH_TRACK,
+      options: [
+        ...tracks.map((track, at) => ({ value: track, label: `${at + 1}. ${billed(track)}` })),
+        { value: BACK, label: 'back', hint: 'Back to this playlist' },
+      ],
+      ...asking,
+    })
+
+    if (isCancel(picked)) return 'quit'
+
+    // To the Playlist's own screen rather than to the Playlist picker, because
+    // that is the screen this one was opened from. `inspect` returning 'picker'
+    // from here would skip a level a person walked down.
+    if (picked === BACK) return 'inspect'
+
+    await launch(['open', playlist.id, String(tracks.indexOf(picked) + 1)])
+
+    // Stay here. `remove` goes to the top because the Mirror moved underneath
+    // the list that was built from it; `open` changes no local state at all, so
+    // every row on this screen is still exactly what `show` reported. A Track
+    // whose audio is missing has said so and the next one along is one arrow
+    // away, which is the whole shape of browsing a Playlist.
+  }
 }
 
 /**

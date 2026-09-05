@@ -111,7 +111,7 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   // and false when nobody is at the keyboard, which is every case #50 requires
   // to keep failing exactly as it does.
   if (argv.length === 0 && promptsAllowed(mode, io)) {
-    return await menu(io, async (vector, computed) => {
+    return await menu(io, async (vector, computed, replaced) => {
       const answer = await compute(vector, root, session)
 
       // The seam the menu cannot see for itself, and the whole of why `Launch`
@@ -126,7 +126,19 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
       // one command is printed above that command's own output and not again
       // above the next one's. The boot is memoised, so in practice this fires
       // for the first command in a session that touches the network.
-      render(answer, mode, VERSION, io, warnings.splice(0))
+      //
+      // The predicate is asked only about answers that worked, so a screen never
+      // has to handle a shape it cannot read -- `outcome.data` does not exist on
+      // a failure. `render` refuses to replace a failure as well, structurally;
+      // that is the rule and this is only what keeps the question sensible.
+      render(
+        answer,
+        mode,
+        VERSION,
+        io,
+        warnings.splice(0),
+        answer.outcome.ok && (replaced?.(answer) ?? false),
+      )
 
       return answer
     })
