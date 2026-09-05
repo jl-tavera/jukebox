@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { CLI_COMMANDS, HOST, type CliCommand } from '../lib/content'
 import { ARROW, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
+import { EXAMPLES, giving } from '../lib/session/donate'
 import { commandFor, copying, PICKER } from '../lib/session/install'
 import { spoken, text, type Line } from '../lib/session/lines'
 
@@ -112,13 +113,18 @@ describe('help', () => {
     )
   })
 
-  it('covers all seven of the binary and all three of the page', () => {
+  it('covers all seven of the binary and all four of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(7)
+    // The order is the order `help` lists them in, and it is not alphabetical:
+    // `help` first because it is how somebody arrives at the rest, then what
+    // the page can actually do, then `clear`, which is the way out of a screen
+    // rather than a thing to do on one.
     expect(
       COMMANDS.filter((command) => command.voice === 'site').map((command) => command.name),
     ).toEqual([
       'help',
       'install',
+      'donate',
       'clear',
     ])
   })
@@ -451,5 +457,27 @@ describe('the copy rules', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toEqual(
       CLI_COMMANDS.map((command) => ({ ...command, voice: 'binary' })),
     )
+  })
+})
+
+describe('donate', () => {
+  it('prints the rows into a scrollback, at the prompt the page owns', () => {
+    const printed = run('donate')
+
+    expect(text(printed.echo)).toBe(`${PROMPTS.site}donate`)
+    expect(rows(printed.body)[0]).toBe(`# ${EXAMPLES}`)
+    expect(rows(printed.body)).toEqual(rows(giving()))
+  })
+
+  it('puts nothing on a clipboard for having drawn them', () => {
+    // A declared intent is performed the moment it reaches the component, so
+    // four of them would be four addresses written to the clipboard by the act
+    // of printing the block. The controls are on the rows and fire when one is
+    // used, which is what #91 built `Span.copies` for.
+    expect(run('donate').intents).toBeUndefined()
+  })
+
+  it('takes no argument and says so when handed one', () => {
+    expect(rows(run('donate now').body).at(-1)).toBe(LEFTOVERS)
   })
 })

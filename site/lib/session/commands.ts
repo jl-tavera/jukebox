@@ -1,4 +1,5 @@
 import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
+import { DONATE, giving } from './donate'
 import { copying, INSTALL, isSystem, offering, PICKER } from './install'
 import {
   blank,
@@ -85,10 +86,11 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Three today.
+ * The page's own verbs. Four today.
  *
- * #88 adds `donate` and `theme` and #90 adds `demo` -- each one entry here and
- * one branch in `run` below, which is the whole of what #91's `install` cost.
+ * #88 adds `theme` alongside the `donate` below and #90 adds `demo` -- each one
+ * entry here and one branch in `run` below, which is the whole of what #91's
+ * `install` cost.
  * They are deliberately not in `MENU_ENTRIES`: the menu carries the binary's
  * five and nothing else, because putting a site verb there would be the site
  * speaking in the binary's voice.
@@ -106,6 +108,7 @@ const VERBS: readonly Command[] = [
     voice: 'site',
     takesArgument: true,
   },
+  { name: DONATE, summary: 'Every wallet address, and a control that copies one.', voice: 'site' },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -430,6 +433,16 @@ export const run = (buffer: string): Printed => {
       body: [...offering(system), row(prose(COPIED)), ...(spare.length > 0 ? noArguments() : [])],
       intents: [copying(system)],
     }
+  }
+
+  // The rows, and no intent among them. Every declared intent is performed the
+  // moment it reaches the component, so four of them would put four addresses
+  // on a clipboard for the act of printing the block. The controls live on the
+  // rows and fire when one is used, which is what `Span.copies` is for -- and
+  // a row that is not configured carries none, so there is nothing on this
+  // page that can put a placeholder on a clipboard.
+  if (command.name === DONATE) {
+    return { echo, body: [...giving(), ...(rest.length > 0 ? noArguments() : [])] }
   }
 
   return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }
