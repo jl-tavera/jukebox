@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { CLI_VERSION, MENU_ENTRIES, WHAT_NEXT } from '../lib/content'
 import { replay } from '../lib/session/boot'
+import { ASIDE } from '../lib/session/demo'
 import { COMMANDS, EMPTIED, PROMPTS, run } from '../lib/session/commands'
 import { versionLine } from '../lib/session/header'
 import { finished } from '../lib/session'
@@ -240,10 +241,25 @@ describe('completion', () => {
     expect(after(typing(start(), 'help don'), { kind: 'completed' }).buffer).toBe('help donate')
   })
 
-  it('finishes the two verbs #88 added, and gives a space to only one', () => {
-    // `d` and `t` start nothing else, so both arrive unambiguous. Only `theme`
-    // has a word to type after it.
-    expect(after(typing(start(), 'd'), { kind: 'completed' }).buffer).toBe('donate')
+  it('asks a second letter for `donate` since #90, and gives a space to only one', () => {
+    // **`d` was unambiguous until this ticket, and the note here said so.** #88
+    // wrote *`d` and `t` start nothing else*, which was true for exactly as long
+    // as it was: `demo` is a second `d`, so the prefix now answers to two
+    // commands and completes to neither.
+    //
+    // That is #85's criterion doing what it says rather than a regression, and
+    // it is the case its docblock admits costs something -- a prefix somebody
+    // has been typing for four tickets going quiet. The whole of the cost is one
+    // keystroke, and the alternative is bash's longest-common-prefix, which #85
+    // considered and rejected in as many words.
+    const ambiguous = typing(start(), 'd')
+    expect(after(ambiguous, { kind: 'completed' })).toBe(ambiguous)
+
+    expect(after(typing(start(), 'do'), { kind: 'completed' }).buffer).toBe('donate')
+    expect(after(typing(start(), 'de'), { kind: 'completed' }).buffer).toBe('demo')
+
+    // `t` still starts nothing else, and `theme` is still the only verb here
+    // with a word to type after it -- `demo` takes none, so it gets no space.
     expect(after(typing(start(), 't'), { kind: 'completed' }).buffer).toBe('theme ')
   })
 
@@ -1021,5 +1037,129 @@ describe('the theme, which this module is told rather than asks', () => {
   it('is not a keystroke, and the keymap does not name it', () => {
     expect(Object.values(KEYS)).not.toContain('preferred')
     expect(Object.values(UNFOCUSED)).not.toContain('preferred')
+  })
+})
+
+/**
+ * The recording, as the reducer drives it -- #90.
+ *
+ * What the transcript *says* is `test/demo.test.ts`; this is the half that is
+ * about the machine around it. The two do not overlap: nothing here reads a row
+ * of the recording for its content, and nothing there knows a reel exists.
+ */
+describe('the recording', () => {
+  /** A visitor who did not ask for less motion. `booted` rests at the other answer. */
+  const moving = (terminal: Terminal): Terminal =>
+    after(terminal, { kind: 'motion', motion: 'full' })
+
+  const played = (): Terminal => running(moving(free()), 'demo')
+
+  it('starts wound back to its first frame', () => {
+    const terminal = played()
+
+    // One row of the recording on screen, under the echo that asked for it --
+    // the frames arrive relative to what the command printed and leave relative
+    // to the page, which is the whole of what `rolled` does.
+    expect(rows(terminal.session.lines).at(-1)).toBe(
+      '# A recording of a session. Nothing on this page is running.',
+    )
+    expect(rows(terminal.session.lines).at(-2)).toBe(`${PROMPTS.site}demo`)
+  })
+
+  it('schedules the first frame, so the component has something to hold', () => {
+    expect(pause(played())).toBe(ASIDE)
+  })
+
+  it('reaches the whole transcript on its own', () => {
+    let terminal = played()
+    while (pause(terminal) !== undefined) terminal = after(terminal, { kind: 'advanced' })
+
+    expect(rows(terminal.session.lines)).toContain('"Late Shift": nothing changed.')
+    expect(rows(terminal.session.lines).at(-1)).toBe('# The recording ends here.')
+  })
+
+  it('ends on the very array the session was given', () => {
+    // `boot.test.ts` pins this of the boot and the reasoning carries: a replay
+    // that ran to its end leaves the renderer holding the rows it would have
+    // held anyway, rather than a copy that resembles them. **`toBe`, not
+    // `toEqual`.**
+    const printed = run('demo', RESTING)
+    let terminal = played()
+
+    while (pause(terminal) !== undefined) terminal = after(terminal, { kind: 'advanced' })
+
+    expect(rows(terminal.session.lines).slice(-printed.body.length)).toEqual(rows(printed.body))
+    expect(terminal.reel).toBeUndefined()
+  })
+
+  it('is skipped whole by any keypress', () => {
+    // #84's skip, inherited rather than reimplemented: `after` collapses
+    // whatever is in flight ahead of every input but its own timer's, so this
+    // needed no second mechanism when #90 added a second thing to collapse.
+    const terminal = after(played(), { kind: 'skipped' })
+
+    expect(pause(terminal)).toBeUndefined()
+    expect(rows(terminal.session.lines).at(-1)).toBe('# The recording ends here.')
+  })
+
+  it('is skipped by a word that was clicked, not only by a key', () => {
+    // The case a listener in the component could not have covered, which is why
+    // the collapse lives in the reducer.
+    const terminal = after(played(), { kind: 'chosen', command: 'clear' })
+
+    expect(pause(terminal)).toBeUndefined()
+    expect(terminal.session.lines).toEqual([])
+  })
+
+  it('prints whole for a visitor who asked for less motion, and animates nothing', () => {
+    // **The transcript is the content and the playing is the enhancement**, so
+    // declining the animation costs no row -- the trade #84 made for the boot,
+    // arrived at from the other side.
+    const terminal = running(free(), 'demo')
+
+    expect(pause(terminal)).toBeUndefined()
+    expect(terminal.reel).toBeUndefined()
+    expect(rows(terminal.session.lines).at(-1)).toBe('# The recording ends here.')
+    expect(rows(terminal.session.lines)).toContain('"Late Shift": nothing changed.')
+  })
+
+  it('says the whole transcript to a screen reader when it runs, not as it arrives', () => {
+    // The announcement is derived from what was printed rather than from what is
+    // on screen, so somebody listening is handed the recording at once instead
+    // of three seconds of it arriving a row at a time. `donate` already carries
+    // the cost of a long announcement and records it.
+    expect(played().announcement).toContain('nothing changed.')
+  })
+})
+
+describe('what the visitor asked about motion', () => {
+  it('does not skip the boot, which is the whole reason it is exempt', () => {
+    // It arrives from the mount effect one dispatch ahead of `replayed`, so a
+    // collapse here would skip the boot for every visitor, every time -- the
+    // whole animation rather than an edge of it. `preferred` is exempt for the
+    // same reason and this is the sharper case.
+    const booting = after(start(), { kind: 'replayed' })
+    const asked = after(booting, { kind: 'motion', motion: 'full' })
+
+    expect(pause(asked)).toBe(pause(booting))
+    expect(asked.session.lines).toBe(booting.session.lines)
+  })
+
+  it('changes nothing when it says what the terminal already held', () => {
+    // Dispatched from an effect, so the no-op is the common case.
+    const terminal = free()
+
+    expect(after(terminal, { kind: 'motion', motion: 'reduced' })).toBe(terminal)
+  })
+
+  it('rests at the answer that keeps every row', () => {
+    // A page that has run no effect yet does not know what was asked for, and
+    // `components/live.tsx` reads a missing `matchMedia` the same way.
+    expect(start().motion).toBe('reduced')
+  })
+
+  it('is not a keystroke, and the keymap does not name it', () => {
+    expect(Object.values(KEYS)).not.toContain('motion')
+    expect(Object.values(UNFOCUSED)).not.toContain('motion')
   })
 })

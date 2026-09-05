@@ -258,27 +258,31 @@ describe('the renderer on its own', () => {
   })
 })
 
-describe('the boot replay', () => {
-  /**
-   * Mounted with one answer to the motion query, and the answer put back
-   * afterwards -- this file shares one jsdom, so a preference left set would
-   * follow every case below it.
-   */
-  const asking = async (
-    preference: 'reduce' | 'no-preference',
-    check: (page: Mounted) => Promise<void> | void,
-  ): Promise<void> => {
-    prefers(preference)
-    const page = await live()
+/**
+ * Mounted with one answer to the motion query, and the answer put back
+ * afterwards -- this file shares one jsdom, so a preference left set would
+ * follow every case below it.
+ *
+ * At module scope rather than inside `the boot replay`, where #84 wrote it,
+ * because #90's recording is a second thing the same query decides and a second
+ * copy of this is a second place for the cleanup to be forgotten.
+ */
+const asking = async (
+  preference: 'reduce' | 'no-preference',
+  check: (page: Mounted) => Promise<void> | void,
+): Promise<void> => {
+  prefers(preference)
+  const page = await live()
 
-    try {
-      await check(page)
-    } finally {
-      await page.unmount()
-      prefers('reduce')
-    }
+  try {
+    await check(page)
+  } finally {
+    await page.unmount()
+    prefers('reduce')
   }
+}
 
+describe('the boot replay', () => {
   const rowsWhenFinished = (): number => finished(CLI_VERSION).lines.length
   const rowsInFirstFrame = (): number => replay(finished(CLI_VERSION))[0]!.lines.length
 
@@ -782,5 +786,97 @@ describe('what was printed, followed down the page', () => {
     expect(scrolled()).toEqual([])
 
     await page.unmount()
+  })
+})
+
+/**
+ * The recording, as the component drives it -- #90.
+ *
+ * Wiring only. What the transcript says is `test/demo.test.ts` and how the reel
+ * moves is `test/terminal.test.ts`; what is left here is the half that needs a
+ * component to exist at all -- a media query read at mount, a window listener
+ * armed while something is playing, and a scroll that has to follow rows
+ * arriving over three seconds rather than all at once.
+ */
+describe('the recording', () => {
+  const CLOSING_ROW = '# The recording ends here.'
+
+  /**
+   * Run it the way #89 says a visitor on a phone does: by tapping the chip.
+   *
+   * **Deliberately the chip rather than the field, and the reason is a
+   * property of this harness rather than of the page.** `press` dispatches a
+   * key at the field without focusing it, so `document.activeElement` stays
+   * `body` -- and the window listener that answers a page nobody has clicked on
+   * then handles the same bubbling Enter that the field's own handler just
+   * handled. One keypress, two `entered` dispatches, which no browser produces:
+   * an event originating at a field means the field is focused, and that
+   * listener's first guard is exactly that.
+   *
+   * It went unnoticed until now because the second dispatch was a no-op --
+   * empty buffer, no open question, same terminal handed back. It stopped being
+   * one when a recording became something an input collapses. A tap is one
+   * gesture and one dispatch, and it is also the path the chip row exists for.
+   */
+  const playing = async (page: Mounted): Promise<void> => {
+    await page.click(chips(page).find((chip) => chip.textContent === 'demo')!)
+  }
+
+  it('prints whole at once for a visitor who asked for reduced motion', async () => {
+    // The same criterion the boot answers by doing nothing, arrived at from the
+    // other side: here the command has already run, so the rows have to land
+    // either way and only the animation is declined.
+    await asking('reduce', async (page) => {
+      await playing(page)
+
+      expect(page.container.textContent).toContain(CLOSING_ROW)
+    })
+  })
+
+  it('arrives a row at a time for everyone else', async () => {
+    await asking('no-preference', async (page) => {
+      // The boot is skipped by the typing itself, which is what leaves the
+      // recording as the only thing playing.
+      await playing(page)
+
+      expect(page.container.textContent).toContain('A recording of a session.')
+      expect(page.container.textContent).not.toContain(CLOSING_ROW)
+    })
+  })
+
+  it('is skipped by a key pressed with nothing focused, as the boot is', async () => {
+    // **The listener has to be armed for a recording too**, and only this seam
+    // can see that it is: `components/live.tsx` guards it on `pause`, which
+    // answers for whatever is playing rather than for the boot specifically. A
+    // guard written against a boot flag would pass every other case in this file
+    // and fail here.
+    await asking('no-preference', async (page) => {
+      await playing(page)
+      await pressed('a')
+
+      expect(page.container.textContent).toContain(CLOSING_ROW)
+    })
+  })
+
+  it('follows the rows down the page as they arrive', async () => {
+    // **#90's addition to the scroll effect, and the only seam that can watch
+    // it.** The effect was keyed on the command count alone, which fires once --
+    // so a recording would scroll to the bottom while one row was on screen and
+    // leave the other twenty-eight below the fold. Keying the frame position
+    // alongside it is what makes the page keep up, and a skip moves that
+    // position exactly as a timer would.
+    await asking('no-preference', async (page) => {
+      forgetScrolling()
+
+      await playing(page)
+      const started = scrolled().length
+
+      await pressed('a')
+
+      expect(started).toBeGreaterThan(0)
+      expect(scrolled().length).toBeGreaterThan(started)
+    })
+
+    forgetScrolling()
   })
 })

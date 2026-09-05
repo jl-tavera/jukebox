@@ -102,7 +102,16 @@ export const Live = ({ initial }: { initial: Session }) => {
   useLayoutEffect(() => {
     dispatch({ kind: 'detected', agent: navigator.userAgent })
 
-    if (window.matchMedia?.(REDUCED_MOTION).matches ?? true) return
+    const reduced = window.matchMedia?.(REDUCED_MOTION).matches ?? true
+
+    // Asked once and answered twice, which is what #90 needed and what keeps
+    // the question from being asked in two places that could read it
+    // differently. The boot consumes it here, by returning; the recording
+    // consumes it in the reducer, because by the time `demo` runs the command
+    // has already printed and only the animation is still in question.
+    dispatch({ kind: 'motion', motion: reduced ? 'reduced' : 'full' })
+
+    if (reduced) return
 
     dispatch({ kind: 'replayed' })
   }, [])
@@ -196,10 +205,21 @@ export const Live = ({ initial }: { initial: Session }) => {
    * works on a phone.
    *
    * Keyed on `printed`, which is a count of commands rather than of renders --
-   * so a keystroke does not scroll, and neither does a boot frame: `printed` is
-   * zero through the whole replay, which is what the guard reads. It is the
-   * same counter the live region is keyed on, and for the matching reason:
-   * running `help` twice has to move the page twice.
+   * so a keystroke does not scroll. It is the same counter the live region is
+   * keyed on, and for the matching reason: running `help` twice has to move the
+   * page twice.
+   *
+   * **The frame position is the second key, and #90 is what needed it.** A
+   * recording prints once and then arrives over three seconds, so a single
+   * scroll at the moment it starts would follow one row and leave the other
+   * twenty-eight below the fold -- the same "the page looks like it did nothing"
+   * this effect exists to prevent, stretched over time.
+   *
+   * **The boot is still not scrolled, and the `printed` guard is what holds
+   * that.** It is zero through the whole replay, so a boot frame moving the reel
+   * fires this and returns immediately -- which is right, because the boot draws
+   * from the top of an empty page and following it would scroll away the
+   * wordmark it is drawing.
    *
    * No `behavior`, so it jumps. Output on this page appears rather than
    * arriving, and a smooth scroll would be the one animation ADR-0010 did not
@@ -209,7 +229,7 @@ export const Live = ({ initial }: { initial: Session }) => {
     if (terminal.printed === 0) return
 
     window.scrollTo({ top: document.documentElement.scrollHeight })
-  }, [terminal.printed])
+  }, [terminal.printed, terminal.reel?.at])
 
   /**
    * Any keypress reaches the end of it.
@@ -247,15 +267,14 @@ export const Live = ({ initial }: { initial: Session }) => {
     // already collapses one ahead of itself, so the `skipped` behind it landed
     // on a terminal with nothing left to skip and changed nothing.
     //
-    // #90's `demo` is a command that starts one. Bubbling, Enter ran the
-    // recording and then skipped it inside the same keystroke, and the page
-    // printed the whole transcript at once at every viewport -- with every
-    // seam-one and seam-two case still green, because neither has a real event
-    // order to get wrong.
+    // `demo` is a command that starts one. Bubbling, Enter ran the recording and
+    // then skipped it inside the same keystroke, and the page printed the whole
+    // transcript at once at every viewport -- with every seam-one and seam-two
+    // case still green, because neither has a real event order to get wrong.
     //
     // Capturing, the question is asked before the event reaches React at all,
     // which is the honest reading of what this listener is for: **a keypress
-    // skips what was already playing when it was pressed.** A replay that
+    // skips what was already playing when it was pressed.** A recording that
     // keystroke went on to start is not that, and a stray `skipped` ahead of
     // `entered` is the no-op it always was -- so the same listener that was
     // wrong afterwards is right in front.
