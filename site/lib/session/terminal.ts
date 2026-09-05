@@ -31,31 +31,42 @@ import { abandoned, active, answered, asking, height, moved, named } from './sel
  */
 
 /**
- * Where the boot replay stands, while one is running.
+ * Where a replay in flight stands: the frames, and which one is on screen.
  *
- * The frames are carried rather than recomputed, because `replay` deconstructs
- * a whole session and the timer would otherwise redo that work on every tick.
- * They are cheap to hold: each frame's `lines` is a fresh array over the same
- * `Line` objects the session already had.
+ * **Called `Boot` until #90, and the name only ever recorded which consumer
+ * arrived first.** Nothing about it is about booting: a list of frames and a
+ * cursor into it describes a recording exactly as well as it describes a
+ * startup, and #90 is about to bring the second one. A field called `boot`
+ * holding a demo would be a lie in the one place a reader looks to find out
+ * what is moving.
+ *
+ * One field rather than two, because only one reel can be turning: `after`
+ * collapses whatever is in flight ahead of every input but its own timer's, so
+ * a second replay started during a first is unreachable rather than handled.
+ *
+ * The frames are carried rather than recomputed, because deconstructing a whole
+ * session on every tick is work nobody asked for. They are cheap to hold: each
+ * frame's `lines` is a fresh array over the same `Line` objects the session
+ * already had.
  */
-type Boot = { readonly frames: readonly Frame[]; readonly at: number }
+type Reel = { readonly frames: readonly Frame[]; readonly at: number }
 
 export type Terminal = {
   /** What is on screen. Handed to the renderer unchanged, already capped. */
   readonly session: Session
 
   /**
-   * The boot replay, while one is running, and `undefined` otherwise.
+   * The replay in flight, and `undefined` otherwise.
    *
    * **`undefined` means both *not started yet* and *finished*, and the two do
-   * not need telling apart.** In either the session is the one the page was
-   * served with, nothing is scheduled and nothing is pending -- which is the
+   * not need telling apart.** In either nothing is scheduled and nothing is
+   * pending, and the session is whatever the last frame left -- which is the
    * whole of what anything downstream asks. The component dispatches
    * `replayed` exactly once, from a mount effect, so "not started" is a state
    * that lasts one render and answers every question the same way "finished"
    * does.
    */
-  readonly boot: Boot | undefined
+  readonly reel: Reel | undefined
 
   /** What is typed at the prompt and not yet entered. */
   readonly buffer: string
@@ -225,7 +236,7 @@ export const booted = (session: Session): Terminal => ({
   // was served with, which is what a crawler, a browser whose JavaScript failed
   // and a visitor who asked for reduced motion all get -- and what #84's replay
   // is an enhancement over rather than a replacement for.
-  boot: undefined,
+  reel: undefined,
   buffer: '',
   history: [],
   recall: 0,
@@ -393,7 +404,7 @@ const entered = (terminal: Terminal): Terminal => {
     // boot ahead of every input but its own timer's, so a command is only ever
     // entered against the finished session. Spelled rather than carried, so
     // this stays true by statement rather than by inheritance.
-    boot: undefined,
+    reel: undefined,
 
     // **`intents` is replaced rather than carried, and #91 is what settled
     // that.** An intent lives for exactly the transition that declared it. The
@@ -643,7 +654,7 @@ const later = (terminal: Terminal): Terminal => {
  * The boot replay, one frame at a time.
  *
  * `showing` is the only thing that moves it. Reaching the last frame puts
- * `boot` back to `undefined` rather than leaving it parked on the end, so
+ * `reel` back to `undefined` rather than leaving it parked on the end, so
  * "is anything still replaying" is one comparison and there is no terminal
  * frame to remember not to schedule after.
  *
@@ -662,29 +673,29 @@ const later = (terminal: Terminal): Terminal => {
 const showing = (terminal: Terminal, frames: readonly Frame[], at: number): Terminal => ({
   ...terminal,
   session: { ...terminal.session, lines: frames[at]!.lines },
-  boot: at === frames.length - 1 ? undefined : { frames, at },
+  reel: at === frames.length - 1 ? undefined : { frames, at },
 })
 
 /**
  * How long the frame on screen is held before the next one, and `undefined`
  * when nothing is replaying.
  *
- * The whole of what the component needs to drive the boot, so `Boot` itself
+ * The whole of what the component needs to drive a replay, so `Reel` itself
  * stays private: the effect schedules one number and asks nothing about where
  * the replay is or how many frames are left.
  */
 export const pause = (terminal: Terminal): number | undefined =>
-  terminal.boot === undefined ? undefined : terminal.boot.frames[terminal.boot.at]!.hold
+  terminal.reel === undefined ? undefined : terminal.reel.frames[terminal.reel.at]!.hold
 
 const skipped = (terminal: Terminal): Terminal =>
-  terminal.boot === undefined
+  terminal.reel === undefined
     ? terminal
-    : showing(terminal, terminal.boot.frames, terminal.boot.frames.length - 1)
+    : showing(terminal, terminal.reel.frames, terminal.reel.frames.length - 1)
 
 const advanced = (terminal: Terminal): Terminal =>
-  terminal.boot === undefined
+  terminal.reel === undefined
     ? terminal
-    : showing(terminal, terminal.boot.frames, terminal.boot.at + 1)
+    : showing(terminal, terminal.reel.frames, terminal.reel.at + 1)
 
 /**
  * One input, applied.
@@ -704,14 +715,14 @@ const advanced = (terminal: Terminal): Terminal =>
  * overwrite what it printed. Collapsing here makes that unreachable instead of
  * handled, and makes "any keypress skips" a fact `bun test` can read.
  *
- * The `boot === undefined` half of the guard is not an optimisation either: it
+ * The `reel === undefined` half of the guard is not an optimisation either: it
  * is what keeps the paragraph above true once a collapse runs ahead of every
  * input. With nothing replaying, `settled` *is* `terminal`, and every no-op
  * branch still hands back the object it was given.
  */
 export const after = (terminal: Terminal, input: Input): Terminal => {
   const settled =
-    input.kind === 'advanced' || input.kind === 'preferred' || terminal.boot === undefined
+    input.kind === 'advanced' || input.kind === 'preferred' || terminal.reel === undefined
       ? terminal
       : skipped(terminal)
 
