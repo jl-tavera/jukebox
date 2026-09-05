@@ -8,9 +8,10 @@ import type { Configured, SettingKey } from './config'
 import { header } from './header'
 import type { Io } from './io'
 import type { Renderable } from './outcome'
-import { held, labels, named } from './phrasing'
+import { askingToStop, held, labels } from './phrasing'
 import { pinning } from './pinned'
 import type { MirroredPlaylist } from './reading'
+import type { Ask } from './session'
 import { spinning } from './spinner'
 import { VERSION } from './version'
 
@@ -159,18 +160,6 @@ export const WORKING: Record<Reaching, string> = {
 }
 
 /**
- * What is asked before anything is deleted.
- *
- * `named`, which is what every line on this screen now uses. The id used to be
- * on the label above and is not: `labels` prints one only where a name has
- * stopped identifying a Playlist, and on this screen there is no command for
- * anybody to type it into anyway. The Playlist was picked from a list a moment
- * ago and its `show` is still above the question.
- */
-export const askingToStop = (playlist: MirroredPlaylist): string =>
-  `Stop tracking ${named(playlist.title, playlist.id)}?`
-
-/**
  * What the settings screen asks, exported for the reason the two questions
  * further up are: a test pins the words rather than a paraphrase of them.
  *
@@ -235,6 +224,36 @@ const writingTo = (io: Io): Writable =>
       done()
     },
   })
+
+/**
+ * A command's way of asking a question, on the streams the menu asks its own on.
+ *
+ * Here rather than in `main` because this is the file that already owns the
+ * prompt library and the writable that carries it to stderr, and a second
+ * construction of the same thing is how two questions in one binary come to
+ * behave differently. `main` decides *whether* anybody may be asked -- that is
+ * `promptsAllowed`, and it is not this file's call -- and hands the result to
+ * the session.
+ *
+ * `initialValue: false` for `inspect`'s reason, which holds wherever this is
+ * used: return is the key a person presses to get through a terminal, and
+ * nothing irreversible should be what one more press lands on.
+ *
+ * A cancel is a no. Ctrl-C means leave everywhere else in this program, and the
+ * one thing leaving must not do is the thing that was being confirmed.
+ */
+export const confirming = (io: Io): Ask => ({
+  confirm: async (message) => {
+    const answer = await confirm({
+      message,
+      initialValue: false,
+      input: io.in,
+      output: writingTo(io),
+    })
+
+    return !isCancel(answer) && answer
+  },
+})
 
 /**
  * Runs until the person quits, and answers with the session's exit code.
@@ -475,6 +494,11 @@ const tracked = ({ outcome }: Renderable): MirroredPlaylist[] =>
  * counts coming for free, and it is why nothing here can disagree with the
  * table printed a line above.
  *
+ * What it is called is handed in rather than computed here, because `labels`
+ * decides it over the whole set: an id appears only where a name has stopped
+ * telling two Playlists apart. Computing it per row would be this screen
+ * quietly answering that question differently from the table above it.
+ *
  * All of it on the label, and none of it in a hint. The library draws a hint
  * only for the entry a person is standing on, so a hint is invisible for every
  * Playlist but one -- and what a person came to this screen to do is compare
@@ -490,11 +514,6 @@ const tracked = ({ outcome }: Renderable): MirroredPlaylist[] =>
  * further reason: colour is gone under `NO_COLOR`, gone in a redirected stream
  * and gone on a terminal that has none, and those three statuses have to read
  * differently in all of them.
- *
- * What it is called is handed in rather than computed here, because `labels`
- * decides it over the whole set: an id appears only where a name has stopped
- * telling two Playlists apart. Computing it per row would be this screen quietly
- * answering that question differently from the table above it.
  *
  * The one column left behind is when the Mirror's copy last moved, which is the
  * table's to say. It answers nothing about which Playlist to pick.

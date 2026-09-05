@@ -32,8 +32,8 @@ export const counted = (n: number, one: string, many: string): string =>
  *
  * The structural shape rather than a `MirroredPlaylist`, so that the file every
  * command borrows its words from does not come to depend on the file that reads
- * the Mirror. It was written out twice before it was named -- in `labels` and
- * `ambiguous` -- which is a type asking to be born.
+ * the Mirror. It was written out three times before it was named -- in `labels`,
+ * `ambiguous` and `askingToStop` -- which is a type asking to be born.
  */
 export type Titled = { id: PlaylistId; title: string | null }
 
@@ -147,6 +147,23 @@ export const notTracked = (reference: string): string =>
  */
 export const identified = (title: string | null, id: PlaylistId): string =>
   title === null ? id : `${named(title, id)} (${id})`
+
+/**
+ * What is asked before anything is deleted.
+ *
+ * `named`, which is what every screen printing a Playlist now uses. The id used
+ * to sit beside it and does not: `labels` prints one only where a name has
+ * stopped identifying a Playlist.
+ *
+ * Here rather than in `menu.ts`, which owned it alone, because two things now
+ * ask it. The menu asks before launching `remove` on a Playlist somebody
+ * picked; `remove` asks for itself when it was given a title rather than a
+ * handle. A second spelling of the same question is exactly the drift the top of
+ * this file exists to prevent -- and worse here than anywhere, because the two
+ * would be asked one screen apart about the same deletion.
+ */
+export const askingToStop = (playlist: Titled): string =>
+  `Stop tracking ${named(playlist.title, playlist.id)}?`
 
 /**
  * Two titles reduced to the one thing that decides whether they are the same
