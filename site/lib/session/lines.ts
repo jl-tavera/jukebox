@@ -278,13 +278,25 @@ export const decoration = (text: string): Span => ({ text, tone: 'dim', hidden: 
 export const struck = (text: string): Span => ({ text, tone: 'dim', struck: true })
 
 /**
+ * A span whose command is known to be there.
+ *
+ * `Span.runs` is optional, because most spans are text and run nothing. A
+ * *control* always has one, and a caller handed a bare `Span` has to cope with
+ * the case where it does not -- which for `components/chips.tsx` meant a
+ * fallback standing under a comment explaining that it could never be reached.
+ * A fallback defending nothing is worse than the type being right, so the type
+ * says it instead.
+ */
+export type Landing = Span & { runs: string }
+
+/**
  * A word the cursor can land on, and what it runs when it does.
  *
  * The page has no buttons, so this is what a control looks like here: a bare
  * word that inverts under focus and washes under hover, with a tap target
  * around it that nobody can see. #85 draws the first ones -- the command names
  * in `help` -- and #88's copy controls and #89's chips are the same word
- * wearing the same class.
+ * wearing the same class. `chip` below is the one that wears a second one.
  *
  * **The menu's rows are deliberately not among them, and #86 is where that was
  * decided rather than overlooked.** The tap target is real padding on the row,
@@ -308,8 +320,36 @@ export const struck = (text: string): Span => ({ text, tone: 'dim', struck: true
  * do it with -- so the wash is only ever laid under a word, and a word is only
  * ever the page's own colour. A dim landable word is the day that row of the
  * floor becomes a real constraint rather than a satisfied one.
+ *
+ * **#89 was named as the day that would arrive, and it did not.** The note
+ * below is what happened instead: a chip is `prose`, which moves the typeface
+ * and leaves the colour where it was, so the wash is still only ever laid
+ * under ink and the floor is still satisfied by construction.
  */
 export const word = (text: string): Span => ({ text, tone: 'ink', runs: text })
+
+/**
+ * A word on the status line -- #89's chips.
+ *
+ * The same control as `word` above and deliberately not a new one: the same
+ * class, the same invisible tap target, the same inversion under focus. What
+ * differs is the voice. ADR-0010 gives Monaspace Argon to the lede, the hints
+ * and the verbs only the page has, and names the chips among them -- so a chip
+ * is `prose` where a word in the scrollback is `ink`, and the row reads as the
+ * page talking rather than as something the binary printed.
+ *
+ * **That is a face and not a colour, which is the whole of why this is
+ * allowed.** `word` a screen up records that the hover wash is mixed for ink
+ * alone, and names this ticket as where a dim landable word would first land.
+ * `prose` resolves to Argon at the page's own colour, so nothing about the
+ * wash, the contrast or the floor moves.
+ *
+ * It is not a `Line` and never becomes one. The status line survives `clear`,
+ * which is the whole of why it is pinned, so it cannot be a row of a
+ * scrollback that `clear` empties -- `components/chips.tsx` draws these, and
+ * `components/screen.tsx` never sees them.
+ */
+export const chip = (text: string): Landing => ({ text, tone: 'prose', runs: text })
 
 /**
  * The one control the page has that is not a command.

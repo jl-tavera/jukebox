@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import {
   blank,
+  chip,
   copy,
   decoration,
   dim,
@@ -39,6 +40,31 @@ describe('word', () => {
     // construction rather than by measurement: the only thing the wash ever
     // paints is a word, and a word is always the page's own colour.
     expect(word('help').tone).toBe('ink')
+  })
+})
+
+describe('chip', () => {
+  it('is a landable word like any other', () => {
+    // #89's status line is not a new control. It is the one the page already
+    // has -- the same class, the same invisible tap target, the same inversion
+    // under focus -- so a chip runs what it reads, exactly as `word` does.
+    expect(chip('help').runs).toBe('help')
+  })
+
+  it('is prose, because the status line is the page talking and not the binary', () => {
+    // ADR-0010 gives Argon to the lede, the hints and the site's own verbs, and
+    // names the chips among them. Neon is what the binary printed; the status
+    // line is not.
+    expect(chip('help').tone).toBe('prose')
+  })
+
+  it('is not dim, so the wash is still only ever laid under ink', () => {
+    // The constraint `word` states one screen up, restated here because this is
+    // the ticket its own note predicted would break it. ADR-0010 asks `--dim`
+    // to clear 4.5:1 over the hover wash and the light theme has no headroom
+    // for it -- but `prose` changes the typeface and not the colour, so the
+    // day a landable word is dim is still ahead rather than here.
+    expect(chip('help').tone).not.toBe('dim')
   })
 })
 

@@ -3,6 +3,7 @@ import { DONATE, giving } from './donate'
 import { copying, INSTALL, isSystem, offering, PICKER, SYSTEMS } from './install'
 import {
   blank,
+  chip,
   decoration,
   dim,
   GUTTER,
@@ -14,6 +15,7 @@ import {
   TYPED,
   word,
   type Intent,
+  type Landing,
   type Line,
   type Open,
   type Span,
@@ -125,6 +127,11 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
  * ADR-0010 deleted the corner toggle and left this list and #89's chip row as
  * the whole of how a visitor finds out the control exists -- so a `theme` that
  * `help` does not list is a theme control nobody can reach.
+ *
+ * Since #89 that is two consequences rather than one. `CHIPS` below is this
+ * list, so a verb added here arrives on the status line without anybody
+ * writing it down twice -- and a verb *removed* here leaves the row as well as
+ * the listing, which for `theme` would be the control disappearing outright.
  */
 const VERBS: readonly Command[] = [
   { name: 'help', summary: 'List everything you can type.', voice: 'site', takesArgument: true },
@@ -162,6 +169,38 @@ export const COMMANDS: readonly Command[] = [
 
 export const find = (name: string): Command | undefined =>
   COMMANDS.find((command) => command.name === name)
+
+/**
+ * Everything spoken in one of the two voices.
+ *
+ * Written once because three callers ask it: `listing` draws a section per
+ * voice, and `CHIPS` below is the site's half on its own. It was the same
+ * predicate inline twice before #89 was about to make it three, which is three
+ * places for one rule to stop agreeing.
+ */
+const voiced = (voice: Voice): readonly Command[] =>
+  COMMANDS.filter((command) => command.voice === voice)
+
+/**
+ * The status line -- #89.
+ *
+ * **Every verb the page owns, and nothing the binary owns, by construction
+ * rather than by review.** That is the whole of the ticket's rule about the
+ * row, and deriving it from `voiced` is what makes it unfalsifiable here: a
+ * binary command cannot reach the status line without first claiming to be one
+ * of the page's own, which is a change somebody would have to make in `VERBS`
+ * on purpose.
+ *
+ * It is `ARGUED`'s arrangement one screen down and for its reason: a list
+ * written out here would be a second copy of `VERBS`, and a second copy is
+ * what goes stale. #90's `demo` arrives on this row by adding one entry to
+ * `VERBS`, and nothing else.
+ *
+ * Spans rather than names, because the module is what decides how a chip is
+ * drawn -- the same landable word as everything else on the page, in the voice
+ * the page speaks in. `components/chips.tsx` renders them and chooses nothing.
+ */
+export const CHIPS: readonly Landing[] = voiced('site').map((command) => chip(command.name))
 
 /** Everything typeable as a first word, which is also what `help` takes as a second. */
 export const NAMES: readonly string[] = COMMANDS.map((command) => command.name)
@@ -293,9 +332,9 @@ const section = (heading: string, commands: readonly Command[]): Line[] => [
 ]
 
 const listing = (): Line[] => [
-  ...section("The binary's commands.", COMMANDS.filter((command) => command.voice === 'binary')),
+  ...section("The binary's commands.", voiced('binary')),
   blank(),
-  ...section("The page's own verbs.", COMMANDS.filter((command) => command.voice === 'site')),
+  ...section("The page's own verbs.", voiced('site')),
 ]
 
 /**
