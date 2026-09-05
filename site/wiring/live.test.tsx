@@ -1,14 +1,25 @@
 import { describe, expect, it } from 'bun:test'
+import { ThemeProvider } from 'next-themes'
 import { Live } from '@/components/live'
 import { Screen } from '@/components/screen'
-import { CLI_COMMANDS, CLI_VERSION, MENU_ENTRIES } from '@/lib/content'
+import { CLI_COMMANDS, CLI_VERSION, donations, MENU_ENTRIES } from '@/lib/content'
 import { run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
 import { versionLine } from '@/lib/session/header'
 import { commandFor } from '@/lib/session/install'
 import { RESTING } from '@/lib/session/theme'
-import { forget, mounted, prefers, pressed, pretending, written, type Mounted } from './dom'
+import {
+  forget,
+  forgetTheme,
+  mounted,
+  prefers,
+  pressed,
+  pretending,
+  schemed,
+  written,
+  type Mounted,
+} from './dom'
 
 /**
  * Seam two: what the component does with what the module computed.
@@ -438,6 +449,176 @@ describe('the clipboard, which only this seam can watch', () => {
     expect(control.getAttribute('aria-label')).toBe('copy the install command')
 
     await page.unmount()
+  })
+})
+
+describe('the donation controls, which are four of one word', () => {
+  const controls = (page: Mounted): HTMLElement[] =>
+    page.all('.u-word').filter((element) => element.textContent === 'copy')
+
+  it('writes nothing for having drawn the rows', async () => {
+    // Printing the block is not copying it. A page that put four addresses on
+    // a clipboard because somebody typed `donate` would be doing the most
+    // damage this page is capable of, unasked.
+    forget()
+    const page = await live()
+
+    await page.type('donate')
+    await page.press('Enter')
+
+    expect(written()).toEqual([])
+
+    await page.unmount()
+  })
+
+  it('writes the whole address when a control is used', async () => {
+    // `SITE.md` 06 asks for exactly this and says how: capture the argument to
+    // `clipboard.writeText` rather than reading the row. The module declares
+    // the value and this is the only seam where it reaches a clipboard API.
+    forget()
+    const page = await live()
+
+    await page.type('donate')
+    await page.press('Enter')
+
+    await page.click(controls(page).at(-1)!)
+
+    expect(written()).toEqual([donations.at(-1)!.address])
+
+    await page.unmount()
+  })
+
+  it('names each control for somebody who cannot see which row it is on', async () => {
+    // One `copy` was unambiguous. Five are not, which is the case
+    // `screen.tsx` was already written for and named this ticket in.
+    const page = await live()
+
+    await page.type('donate')
+    await page.press('Enter')
+
+    expect(controls(page).map((element) => element.getAttribute('aria-label'))).toEqual([
+      'copy the install command',
+      ...donations.map((donation) => `copy the ${donation.label} address`),
+    ])
+
+    await page.unmount()
+  })
+})
+
+describe('the theme, which this seam performs and hands back', () => {
+  /** The page inside the provider that actually owns the theme. */
+  const themed = (): Promise<Mounted> =>
+    mounted(
+      <ThemeProvider attribute="class" defaultTheme={RESTING.theme} enableSystem>
+        <Live initial={finished(CLI_VERSION)} />
+      </ThemeProvider>,
+    )
+
+  it('performs the switch the module only asked for', async () => {
+    try {
+      const page = await themed()
+
+      await page.type('theme dark')
+      await page.press('Enter')
+
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+
+      await page.unmount()
+    } finally {
+      forgetTheme()
+    }
+  })
+
+  it('feeds the answer back in, so a bare theme reports it', async () => {
+    // **The whole round trip, in one assertion.** The module declared an
+    // intent, this file performed it with `setTheme`, the provider answered,
+    // the effect dispatched that answer back, and the reducer reported it.
+    // Broken anywhere along that path and the bare `theme` still says system.
+    try {
+      const page = await themed()
+
+      await page.type('theme dark')
+      await page.press('Enter')
+      await page.type('theme')
+      await page.press('Enter')
+
+      expect(page.container.textContent).toContain('Dark.')
+      // The half that discriminates. `theme dark` prints `Dark.` on its own,
+      // so the first assertion above passes whether or not anything came
+      // back; a round trip that never closed would leave the bare `theme`
+      // reporting the system it started on, and that sentence would be here.
+      expect(page.container.textContent).not.toContain('Following your system,')
+
+      await page.unmount()
+    } finally {
+      forgetTheme()
+    }
+  })
+
+  it('reads the machine underneath, and reports what it says', async () => {
+    // The half of a preference no visitor sets: `systemTheme` off the
+    // provider, narrowed by `theme.ts` rather than asserted into shape.
+    schemed('dark')
+
+    try {
+      const page = await themed()
+
+      await page.type('theme')
+      await page.press('Enter')
+
+      expect(page.container.textContent).toContain('Following your system, which is dark.')
+
+      await page.unmount()
+    } finally {
+      forgetTheme()
+    }
+  })
+
+  it('gets back to following the system after a switch', async () => {
+    // ADR-0010 asks for this by name, and this is the seam where the getting
+    // back actually happens rather than being described.
+    try {
+      const page = await themed()
+
+      await page.type('theme light')
+      await page.press('Enter')
+      await page.type('theme system')
+      await page.press('Enter')
+      await page.type('theme')
+      await page.press('Enter')
+
+      // The class rather than the row, for the reason above: `theme system`
+      // prints its own report, and only the provider can say the page went
+      // back to resolving the machine underneath it.
+      expect(document.documentElement.classList.contains('light')).toBe(true)
+      expect(document.documentElement.classList.contains('dark')).toBe(false)
+      expect(page.container.textContent).toContain('Following your system, which is light.')
+
+      await page.unmount()
+    } finally {
+      forgetTheme()
+    }
+  })
+
+  it('puts nothing on a clipboard on the way', async () => {
+    // Both intents share one array and one effect, so the kind has to be read
+    // before either payload is. A theme name reaching `clipboard.writeText` is
+    // what two payloads both called `value` would have type-checked, and this
+    // is the case that would have caught it.
+    forget()
+
+    try {
+      const page = await themed()
+
+      await page.type('theme dark')
+      await page.press('Enter')
+
+      expect(written()).toEqual([])
+
+      await page.unmount()
+    } finally {
+      forgetTheme()
+    }
   })
 })
 
