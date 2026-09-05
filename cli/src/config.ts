@@ -49,6 +49,13 @@ export const DEFAULT_INTERVAL_HOURS = 24
  * word interval concludes that something happens daily, and they are wrong. It
  * covers the Library path for the same reason -- ADR-0004's layout is decided,
  * and this release still puts no file in it.
+ *
+ * `phrasing.NOTHING_FETCHED` says the same fact and is not this sentence. #108
+ * gave `open` a reason to say it to somebody who picked a Track and got nothing,
+ * which is a person mid-task rather than a person reading a settings report --
+ * so it names the folder they were looking in and says nothing about a
+ * schedule. Two sentences about one fact, on purpose. Both go when Fetching
+ * lands.
  */
 export const NOTE =
   'Nothing acts on these yet. This release records them: no Library folder is created, ' +

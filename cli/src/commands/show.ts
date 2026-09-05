@@ -2,7 +2,16 @@ import { defineCommand } from 'citty'
 import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
 import { fitted, type Move } from '../fitting'
-import { ambiguous, counted, named, notTracked, skippedly, stamp } from '../phrasing'
+import {
+  ambiguous,
+  counted,
+  named,
+  notTracked,
+  performers,
+  skippedly,
+  stamp,
+  UNKNOWN,
+} from '../phrasing'
 import {
   mirroredTracks,
   playlistNamed,
@@ -211,19 +220,6 @@ const row = (track: MirroredTrack, mark: string): string[] => [
   duration(track.durationMs),
   track.removedAt === null ? '' : `left ${stamp(track.removedAt)}`,
 ]
-
-/**
- * What a Source did not say, marked rather than filled in.
- *
- * `CONTEXT.md`'s rule about an absent title generalises to every field it lists:
- * a placeholder is worse than a gap, because nobody downstream can tell one from
- * a real value. An album nobody named must not read as an album called nothing,
- * and a missing duration must not read as `0:00`.
- */
-const UNKNOWN = '--'
-
-const performers = (artists: string[]): string =>
-  artists.length === 0 ? UNKNOWN : artists.join(', ')
 
 /** `m:ss`, and `h:mm:ss` for the long recordings a classical Catalog is full of. */
 const duration = (ms: number | null): string => {
