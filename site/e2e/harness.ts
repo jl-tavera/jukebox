@@ -183,6 +183,20 @@ export const FIELD = 'input.u-input'
 /** A word the cursor can land on. */
 export const WORD = '.u-word'
 
+/** The pinned block: the prompt, and the chip row under it. */
+export const STATUS = '.u-status'
+
+/**
+ * One chip.
+ *
+ * A `.u-word` inside the row rather than a class of its own, which is what
+ * `globals.css` styles it as. The page has one landable control and #89 did not
+ * add a second -- a chip is that word with a face and a box of its own, so a
+ * selector naming a new class here would claim a distinction the stylesheet
+ * does not make.
+ */
+export const CHIP = '.u-chips .u-word'
+
 /**
  * One row of the session, and the only thing on the page that is visible
  * content rather than frame.
@@ -301,6 +315,42 @@ export const undersized = (page: Page, selector: string, size = TARGET): Promise
       return failures
     },
     { selector, size },
+  )
+
+/**
+ * Whether an element is inside the viewport, top and bottom.
+ *
+ * **Read with `getBoundingClientRect` in the page rather than with Playwright's
+ * `boundingBox()`**, which answers in the main frame's coordinates -- the
+ * question here is where something sits relative to what is on screen right
+ * now, which is the one thing a scroll offset changes and the other reading
+ * does not.
+ *
+ * #89 asks that the chip row be visible *at every scroll position*, which is a
+ * claim about the pinned block rather than about the page, and this is the
+ * measurement behind it.
+ */
+export const onScreen = (page: Page, selector: string): Promise<boolean> =>
+  page.evaluate((match) => {
+    const element = document.querySelector(match)
+    if (element === null) throw new Error(`nothing matches ${match} on the page`)
+
+    const box = element.getBoundingClientRect()
+
+    return box.top >= 0 && box.bottom <= window.innerHeight && box.height > 0
+  }, selector)
+
+/**
+ * Whether the page has anything to scroll at all.
+ *
+ * The guard every case about scrolling needs, and for `artFontSize`'s reason:
+ * a document that fits its viewport holds a pinned row on screen without
+ * pinning anything, so an assertion taken against one would pass while
+ * measuring nothing.
+ */
+export const scrollable = (page: Page): Promise<boolean> =>
+  page.evaluate(
+    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
   )
 
 /** A colour as the browser resolved it. */
