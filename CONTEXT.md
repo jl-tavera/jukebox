@@ -40,6 +40,10 @@ _Avoid_: Provider, platform, service
 An entry in a playlist as the source describes it: title, artists, album, duration, ISRC, cover image, position. A track is metadata, never a file.
 _Avoid_: Song, item, entry
 
+**Track number**:
+Where a track sits among the ones a playlist still holds, counted from one. What `jukebox show` prints in its `#` column and what `jukebox open` takes. Distinct from **position**, which is the source's own index and carries gaps wherever an entry was Skipped or a track has left. A number describes the tracks on screen now, so it moves when membership does; a position does not. A Removed track has a position and no number.
+_Avoid_: Index, position (that is the source's), track id
+
 **Skipped**:
 How many entries a source offered that never became tracks — podcast episodes, local files, entries the source will no longer serve. Counted rather than dropped silently, so a list shorter than the source's does not read as data loss. Position keeps the source's own index, so a skip leaves a visible gap rather than renumbering what follows.
 _Avoid_: Dropped, filtered, ignored; and the client's per-track `skipped` state (that is a track whose match has tier `none` — this is an entry that never became one)
@@ -64,7 +68,7 @@ How much a match can be trusted — `exact`, `probable`, `weak`, or `none`. `non
 _Avoid_: Confidence, quality, rating
 
 **Library**:
-The user's local folder of downloaded audio. It belongs to the user: Jukebox flags files, and only ever deletes them on an explicit command.
+The user's local folder of downloaded audio. It belongs to the user: Jukebox flags files, and only ever deletes them on an explicit command. Nothing writes to it yet; `jukebox open` reads it, and reading is all it does — it looks in one playlist's folder for a file whose name holds a track's title and hands that file to the operating system.
 _Avoid_: Collection, catalog (a catalog is upstream and open; a library is local and the user's)
 
 **Mirror**:

@@ -31,7 +31,7 @@ jukebox add https://open.spotify.com/playlist/...
 jukebox sync
 ```
 
-Or run `jukebox` on its own. At a terminal that opens a menu, so there is nothing to memorise to get started. **Every entry works** — `add` asks for a playlist address and tracks it, `sync` reports what changed with a spinner over the wait, `list` shows every playlist you track and picking one of those shows it and offers to stop tracking it, so the id nobody memorises is never asked for, and `config` shows every setting with where its value came from and offers to change one. Every entry runs a command that already exists and prints the same output the flags would have; nothing is reachable in the menu that a flag cannot reach. In a pipe, a redirect or a script, bare `jukebox` is unchanged — see [Scripting and agents](#scripting-and-agents).
+Or run `jukebox` on its own. At a terminal that opens a menu, so there is nothing to memorise to get started. **Every entry works** — `add` asks for a playlist address and tracks it, `sync` reports what changed with a spinner over the wait, `list` shows every playlist you track and picking one offers its tracks, one per row, so you can arrow to the one you want and press return to open it — and offers to stop tracking the playlist from the same screen, so the id nobody memorises is never asked for. `config` shows every setting with where its value came from and offers to change one. Every entry runs a command that already exists and prints the same output the flags would have; nothing is reachable in the menu that a flag cannot reach. In a pipe, a redirect or a script, bare `jukebox` is unchanged — see [Scripting and agents](#scripting-and-agents).
 
 Both installers put a single self-contained binary in a per-user folder and add that folder to your PATH. Nothing is compiled, and neither one needs root or an administrator.
 
@@ -80,6 +80,8 @@ A failure carries a stable machine-readable code beside the human message, in on
 
 A non-zero exit means the command genuinely failed. Every answer the backend can give — including *nothing changed*, *still resolving* and *that playlist is gone* — is a success, so a scheduled sync reports a failure only when there was one.
 
+One command exits non-zero routinely in this release, and it is the honest code rather than an exception to the rule: `open` fails when a track has no file, which is every track until fetching lands. It is a failure because `jukebox open … && …` must not run the second half on a file nothing opened. Nothing schedules `open`, so no cron entry is made noisy by it.
+
 In a pipe or a CI job there are no prompts and no spinners: nothing can hang waiting for an answer nobody is there to give.
 
 **The JSON shape is unstable before 1.0.** It can change in any release, with no notice beyond the release notes, and it freezes at 1.0. The `version` field in every object is what to pin or branch on. See [ADR-0005](docs/adr/0005-json-output-is-unstable-before-1-0.md).
@@ -88,12 +90,13 @@ In a pipe or a CI job there are no prompts and no spinners: nothing can hang wai
 
 ## Reading your mirror
 
-Three commands read the local record back. None of them touches the network, so they work on a train, during an outage, and with the Wi-Fi off.
+Four commands work off the local record. None of them touches the network, so they work on a train, during an outage, and with the Wi-Fi off. Three of them only read; the fourth reads and then asks your machine to open a file.
 
 | Command | What it does |
 |---|---|
 | `jukebox list` | Every playlist you track |
 | `jukebox show <playlist>` | One playlist and the tracks recorded for it |
+| `jukebox open <playlist> <n>` | Open one track's file with whatever plays it here |
 | `jukebox remove <playlist>` | Stop tracking one, on this machine |
 
 `list` gives a line per playlist — its status, what it holds, and when your copy last changed:
@@ -124,6 +127,18 @@ Removed, and still recorded here:
 A name is matched loosely — case is ignored, and the quotes the table prints around it are optional — because it is read off a screen and typed back by hand. Numbers count the tracks on screen rather than the source's own positions, which have gaps in them wherever an entry was skipped or a track has left.
 
 The table fits the terminal it is drawn on. Where it cannot, columns give way in a fixed order: the date a track left goes first, then the album, then the artists are shortened, and the title is cut last and only if nothing else was enough. Anything you want whole and unabridged is in `--json`.
+
+`open` takes that number and asks your machine to open the track's file with whatever it plays audio with:
+
+```
+jukebox open "Rain / Shine" 1
+```
+
+It looks in one place, built out of three answers you can each see for yourself: your `library_path` setting, the folder that playlist was given inside it, and a file in that folder whose name holds the track's title. So a file you put there yourself is found whatever you called it, as long as the title is in the name.
+
+Only tracks still in the playlist have a number, so a removed track — the `-` rows above — is not something `open` reaches. Its file, if you have one, is where it always was: nothing here deletes anything.
+
+**In this release it will almost always tell you the file is not there, and that is not a fault.** Jukebox does not download anything yet, and does not create the library folder either, so unless you have put audio in it yourself there is none to open. The message says which folder it searched, so you can see exactly where a file would have to go.
 
 **A track that leaves a playlist is kept, not deleted.** Its row stays, with the date it left. That is what lets `sync` tell you what changed instead of printing one number and then another, and it is why your copy can tell you what a playlist used to hold — the server stores what a playlist contains now, and nothing else remembers the rest.
 
@@ -174,7 +189,7 @@ The environment wins over the file, and the file wins over the default. `jukebox
 
 Setting a value whose variable is exported writes it and then tells you the variable still wins, so a change that cannot take effect never looks like it did. Moving `library_path` tells you that anything already downloaded stays in the old folder: Jukebox never moves your files, and it will not look there again.
 
-**Nothing acts on either setting yet.** There is no scheduler and no daemon in this release, so `sync_interval_hours` is recorded and never read. Fetching does not exist either, so no file is written to `library_path` and no folder is created there — not even by setting it. Both are real settings governing decided behaviour ([ADR-0004](docs/adr/0004-a-folder-per-playlist.md) is the Library's layout), and they take effect when the features that read them land.
+**Nothing writes to either setting's world yet.** There is no scheduler and no daemon in this release, so `sync_interval_hours` is recorded and never read at all. `library_path` has one reader: `jukebox open` looks inside it for a track's file. Nothing writes there — fetching does not exist, so no file is ever put in that folder and the folder is not created, not even by setting the path. Both are real settings governing decided behaviour ([ADR-0004](docs/adr/0004-a-folder-per-playlist.md) is the Library's layout), and they take full effect when the features that write to them land.
 
 There is deliberately no first-run prompt asking where your Library should live. Asking you to choose a folder for files that cannot yet arrive is a promise this release does not keep.
 
