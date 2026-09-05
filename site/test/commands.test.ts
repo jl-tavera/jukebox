@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { CLI_COMMANDS, HOST, type CliCommand } from '../lib/content'
-import { ARROW, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
+import { ARROW, CHIPS, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
 import { EXAMPLES, giving } from '../lib/session/donate'
 import { commandFor, copying, PICKER } from '../lib/session/install'
 import { spoken, text, type Line } from '../lib/session/lines'
@@ -541,5 +541,55 @@ describe('theme', () => {
 
   it('takes one theme and says so when handed more', () => {
     expect(rows(run('theme dark please', following).body).at(-1)).toBe(LEFTOVERS)
+  })
+})
+
+describe('the chip row', () => {
+  /**
+   * The row, written out rather than derived.
+   *
+   * `LEFTOVERS` a screen up is pinned by hand for this reason and this is the
+   * same one: the site's verbs are the page's own words rather than a
+   * quotation of the binary, so the literal is the acceptance criterion.
+   * Recomputing it the way `commands.ts` does would be a test that cannot
+   * disagree with the code.
+   *
+   * **Five rather than the ticket's six.** #89 lists `demo` and #90 is what
+   * adds it. A chip that printed `command not found` would be worse than a row
+   * that grows when the verb behind it exists, so this is the line #90 edits.
+   */
+  const ROW = ['help', 'install', 'donate', 'theme', 'clear']
+
+  const named = (): string[] => CHIPS.map((chip) => chip.text)
+
+  it('carries every verb the page owns, in the order `help` lists them', () => {
+    expect(named()).toEqual(ROW)
+  })
+
+  it('carries nothing the binary owns', () => {
+    // Against the generated list rather than against `voice`, which is what
+    // `commands.ts` already filtered on -- so this can disagree with it. The
+    // menu carries the binary's five and the row carries the page's; keeping
+    // the split is what makes each surface say something.
+    const binary = CLI_COMMANDS.map((command) => command.name)
+
+    expect(named().filter((name) => binary.includes(name))).toEqual([])
+  })
+
+  it('names only words the page can actually run', () => {
+    // A chip is a word the cursor lands on and Enter runs, so every one of them
+    // has to resolve -- and resolve in the page's own voice, which is the half
+    // that would catch a binary command reaching the row by another door.
+    for (const name of named()) {
+      expect(find(name)?.voice, `\`${name}\` is not a verb this page owns`).toBe('site')
+      expect(text(run(name, RESTING).echo)).toBe(`${PROMPTS.site}${name}`)
+    }
+  })
+
+  it('draws each of them as a landable word in the voice the page speaks in', () => {
+    for (const chip of CHIPS) {
+      expect(chip.runs, `\`${chip.text}\` runs nothing`).toBe(chip.text)
+      expect(chip.tone, `\`${chip.text}\` is not the page's own voice`).toBe('prose')
+    }
   })
 })
