@@ -1,6 +1,6 @@
 import { CLI_VERSION } from '../content'
 import { replay, type Frame } from './boot'
-import { COMMANDS, find, run } from './commands'
+import { find, NAMES, run } from './commands'
 import { finished } from './index'
 import { guessed } from './install'
 import { blank, spoken, type Copying, type Line, type Open, type Session } from './lines'
@@ -433,8 +433,20 @@ const FIRST = /^(\s*)(\S*)$/
 /** On the second: a first word, the gap after it, then the prefix. */
 const SECOND = /^(\s*)(\S+)(\s+)(\S*)$/
 
-/** What Tab has to work with, or nothing where there is nothing to complete. */
-type Completing = { readonly before: string; readonly prefix: string; readonly first: boolean }
+/**
+ * What Tab has to work with, or nothing where there is nothing to complete.
+ *
+ * `words` is the vocabulary the prefix is measured against, and it is carried
+ * rather than looked up below because the two positions do not share one: a
+ * first word is always a command name, and a second is whatever the verb in
+ * front of it says it takes.
+ */
+type Completing = {
+  readonly before: string
+  readonly prefix: string
+  readonly words: readonly string[]
+  readonly first: boolean
+}
 
 /**
  * Which word the caret is on, and whether anything may be completed there.
@@ -449,16 +461,20 @@ const completing = (buffer: string): Completing | undefined => {
 
   if (first !== null) {
     const [, lead = '', prefix = ''] = first
-    return prefix === '' ? undefined : { before: lead, prefix, first: true }
+    return prefix === '' ? undefined : { before: lead, prefix, words: NAMES, first: true }
   }
 
   const second = SECOND.exec(buffer)
   if (second === null) return undefined
 
   const [, lead = '', name = '', gap = '', prefix = ''] = second
-  if (find(name)?.takesArgument !== true) return undefined
+  const command = find(name)
+  if (command?.takesArgument !== true) return undefined
 
-  return prefix === '' ? undefined : { before: lead + name + gap, prefix, first: false }
+  return prefix === ''
+    ? undefined
+    : // Absent means a command name, which is what `help` takes.
+      { before: lead + name + gap, prefix, words: command.takes ?? NAMES, first: false }
 }
 
 /**
@@ -484,11 +500,11 @@ const completed = (terminal: Terminal): Terminal => {
   const asked = completing(terminal.buffer)
   if (asked === undefined) return terminal
 
-  const matches = COMMANDS.filter((command) => command.name.startsWith(asked.prefix))
+  const matches = asked.words.filter((word) => word.startsWith(asked.prefix))
   const only = matches.length === 1 ? matches[0] : undefined
   if (only === undefined) return terminal
 
-  const filled = asked.first && only.takesArgument === true ? `${only.name} ` : only.name
+  const filled = asked.first && find(only)?.takesArgument === true ? `${only} ` : only
 
   return { ...terminal, buffer: asked.before + filled }
 }

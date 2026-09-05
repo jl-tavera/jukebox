@@ -1,6 +1,6 @@
 import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
 import { DONATE, giving } from './donate'
-import { copying, INSTALL, isSystem, offering, PICKER } from './install'
+import { copying, INSTALL, isSystem, offering, PICKER, SYSTEMS } from './install'
 import {
   blank,
   decoration,
@@ -18,7 +18,15 @@ import {
   type Open,
   type Span,
 } from './lines'
-import { choosing, isTheme, naming, reporting, THEME, type Preference } from './theme'
+import {
+  choosing,
+  isTheme,
+  naming,
+  reporting,
+  THEME,
+  THEMES,
+  type Preference,
+} from './theme'
 
 /**
  * What can be typed, and whose word it is.
@@ -66,6 +74,19 @@ export type Command = {
    * way it did.
    */
   readonly takesArgument?: true
+
+  /**
+   * The words that may follow, when they are a fixed list.
+   *
+   * **Absent means *a command name*,** which is what `help` takes and what Tab
+   * has always filled a second word in from. It is written down now because
+   * #88 made the old behaviour reachable: every second word was completed
+   * against the command registry, so `theme l` completed to `theme list` --
+   * `list` being a command, and `light` being in no list this module could
+   * see. `install v` had the same shape from the day it landed and survived
+   * only because nobody types it.
+   */
+  readonly takes?: readonly string[]
 }
 
 /**
@@ -112,6 +133,7 @@ const VERBS: readonly Command[] = [
     summary: 'Copy the install command for your system.',
     voice: 'site',
     takesArgument: true,
+    takes: SYSTEMS,
   },
   { name: DONATE, summary: 'Every wallet address, and a control that copies one.', voice: 'site' },
   {
@@ -119,6 +141,7 @@ const VERBS: readonly Command[] = [
     summary: 'Move between light, dark and following your system.',
     voice: 'site',
     takesArgument: true,
+    takes: THEMES,
   },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
@@ -139,6 +162,9 @@ export const COMMANDS: readonly Command[] = [
 
 export const find = (name: string): Command | undefined =>
   COMMANDS.find((command) => command.name === name)
+
+/** Everything typeable as a first word, which is also what `help` takes as a second. */
+export const NAMES: readonly string[] = COMMANDS.map((command) => command.name)
 
 /**
  * What one entered line puts on the screen.

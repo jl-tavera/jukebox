@@ -200,6 +200,33 @@ describe('completion', () => {
     expect(after(typing(start(), 'help co'), { kind: 'completed' }).buffer).toBe('help config')
   })
 
+  it('completes what the verb actually takes, rather than a command name', () => {
+    // **The defect #88 made reachable, and the reason `takes` exists.** Every
+    // second word was completed against the command registry, because `help`
+    // was the only verb taking an argument and a command name is what it
+    // takes. `install v` had the same shape and nobody ever typed it; `theme
+    // l` is what somebody types on the way to `theme light`, and it completed
+    // to `theme list` -- a line that runs, and does something else.
+    expect(after(typing(start(), 'theme l'), { kind: 'completed' }).buffer).toBe('theme light')
+    expect(after(typing(start(), 'theme d'), { kind: 'completed' }).buffer).toBe('theme dark')
+    expect(after(typing(start(), 'theme s'), { kind: 'completed' }).buffer).toBe('theme system')
+    expect(after(typing(start(), 'install m'), { kind: 'completed' }).buffer).toBe('install macos')
+    expect(after(typing(start(), 'install l'), { kind: 'completed' }).buffer).toBe('install linux')
+  })
+
+  it('still completes a command name after the one verb that takes one', () => {
+    // `help` carries no list, and the absence is what means *a command name*.
+    expect(after(typing(start(), 'help ver'), { kind: 'completed' }).buffer).toBe('help version')
+    expect(after(typing(start(), 'help don'), { kind: 'completed' }).buffer).toBe('help donate')
+  })
+
+  it('finishes the two verbs #88 added, and gives a space to only one', () => {
+    // `d` and `t` start nothing else, so both arrive unambiguous. Only `theme`
+    // has a word to type after it.
+    expect(after(typing(start(), 'd'), { kind: 'completed' }).buffer).toBe('donate')
+    expect(after(typing(start(), 't'), { kind: 'completed' }).buffer).toBe('theme ')
+  })
+
   it('does nothing on a bare `help `, where everything matches', () => {
     // The empty-prompt rule one word along: every command answers to an empty
     // prefix, so none of them is the only one.
