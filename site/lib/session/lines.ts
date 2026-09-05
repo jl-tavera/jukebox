@@ -46,6 +46,23 @@ export const PROMPT = '$'
 export const TYPED = 'jukebox'
 
 /**
+ * The shell and the program together: what a command the binary owns is echoed
+ * at.
+ *
+ * Here rather than in `commands.ts`, where `PROMPTS` pairs it with the page's
+ * own, because #90 is a second consumer and the two files cannot both reach for
+ * it: `commands.ts` imports `demo.ts` for the recording, so `demo.ts` importing
+ * `commands.ts` back for a prompt would be a cycle. It is composed from the two
+ * constants directly above rather than spelled again -- which is the whole of
+ * what `PROMPTS`' own docblock asks, one file over, and it now has one more
+ * caller to ask it of.
+ *
+ * The trailing space is part of it, so an echo is a prefix and what was typed,
+ * joined with nothing.
+ */
+export const BINARY = `${PROMPT} ${TYPED} `
+
+/**
  * The five-step ladder #79 fixes, minus the steps nothing has asked for yet.
  *
  * Hierarchy on this page comes from weight and colour, never from size -- there
