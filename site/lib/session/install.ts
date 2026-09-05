@@ -4,6 +4,7 @@ import {
   copy,
   decoration,
   dim,
+  GUTTER,
   ink,
   prose,
   row,
@@ -86,9 +87,6 @@ export const copying = (system: System): Intent => ({
   value: commandFor(system).command,
   what: 'the install command',
 })
-
-/** The gutter between the command and the control, which is `cli/src/phrasing.ts`'s. */
-const GUTTER = '   '
 
 /**
  * The offer: who the line is for, and the line.

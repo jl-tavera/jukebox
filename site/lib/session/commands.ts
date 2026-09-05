@@ -4,6 +4,8 @@ import {
   blank,
   decoration,
   dim,
+  GUTTER,
+  INDENT,
   ink,
   PROMPT,
   prose,
@@ -246,14 +248,6 @@ const listing = (): Line[] => [
   blank(),
   ...section("The page's own verbs.", COMMANDS.filter((command) => command.voice === 'site')),
 ]
-
-/**
- * Two spaces of indent and three of gutter, which is `cli/src/phrasing.ts`'s
- * `columns` -- the metrics #79 asks a table on this page to reuse rather than
- * invent. The listing above keeps its own narrower column, which #85 set.
- */
-const INDENT = '  '
-const GUTTER = '   '
 
 /**
  * The binary's own help for one command.

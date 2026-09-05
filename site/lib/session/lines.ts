@@ -22,6 +22,20 @@
  * there had to change.
  */
 
+/**
+ * The two measurements every table on this page is built out of.
+ *
+ * `cli/src/phrasing.ts`'s `columns` -- the metrics #79 asks a table here to
+ * reuse rather than invent. They sit at the leaf for the reason the sigils
+ * below do: several modules draw a table, and none of them should have to
+ * reach through another to find out how wide a gutter is. They were two
+ * copies, each with its own docblock claiming to quote the same source, and
+ * #88's two new tables were about to make it four -- which is four places for
+ * one set of metrics to stop agreeing.
+ */
+export const INDENT = '  '
+export const GUTTER = '   '
+
 /** The sigil that says a human wrote this. */
 export const COMMENT = '#'
 
