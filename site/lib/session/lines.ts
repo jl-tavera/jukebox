@@ -103,7 +103,7 @@ export type Span = {
   hidden?: true
   struck?: true
   runs?: string
-  copies?: Intent
+  copies?: Copying
 }
 
 /**
@@ -130,6 +130,24 @@ export type Line =
   | { kind: 'art'; text: string; label: string }
 
 /**
+ * The two palettes, and the three answers a visitor can give about them.
+ *
+ * Here, at the leaf, for the reason `COMMENT` and `Open` are: `Intent` below
+ * names a theme, and `theme.ts` and `terminal.ts` both name one -- so a leaf
+ * reaching back through the module that composes it would be the dependency
+ * pointing the wrong way. This file still imports nothing.
+ *
+ * **`system` is not a third palette.** It is the absence of a choice, which is
+ * why it is a member of `Theme` and not of `Scheme`, and why it has to stay
+ * reachable: ADR-0010 asks that one switch does not permanently opt a visitor
+ * out of following their operating system, and a type where the three are one
+ * flat set is a type that has already forgotten which of them is the default.
+ */
+export type Scheme = 'light' | 'dark'
+
+export type Theme = Scheme | 'system'
+
+/**
  * Something the page must do that this module may not.
  *
  * Writing to a clipboard and moving focus are not expressible as a pure
@@ -149,18 +167,38 @@ export type Line =
  * `boot.ts` puts the duration in the frame instead, and this type stays what it
  * is: effects that are fired and forgotten.
  *
- * One member, because one is what is needed to keep the array widenable: a
- * `readonly never[]` cannot gain a member without editing the type every later
- * ticket depends on. The finished session still declares none of these -- it
- * hands the visitor a command and does not touch their clipboard to do it --
- * and #91 is the first ticket to emit one, from `install` and from every copy
- * control the page draws.
+ * **Two members, and the second is why the first was written as a union at
+ * all.** It said so: one member was what kept the array widenable, because a
+ * `readonly never[]` cannot gain one without editing the type every later
+ * ticket depends on. #91 emitted the clipboard write, from `install` and from
+ * every copy control the page draws; #88 adds the theme, which `next-themes`
+ * owns and this module may not touch. The finished session still declares
+ * neither -- it hands the visitor a command and changes nothing about their
+ * browser to do it.
+ *
+ * They are named apart as well as discriminated, because only one of them can
+ * sit on a row. `Span.copies` is a `Copying`: a word the cursor lands on that
+ * meant *switch the page to dark* would not be the control #91 defined, and
+ * the type is where that is settled rather than in a renderer's `if`.
+ *
+ * **Their payloads are named apart too, and that is the load-bearing half.**
+ * A `Choosing` carries `theme` where a `Copying` carries `value`, so
+ * `intent.value` does not compile until the kind has been asked -- and the one
+ * mistake this split exists to prevent, a theme name written to somebody's
+ * clipboard, stops being a mistake anybody can make. Two fields called `value`
+ * would have type-checked it.
  *
  * `what` is the value named for somebody who cannot see the row it came from:
  * `terminal.ts` announces `Copied ${what}.` when a control is used, so it is a
- * noun phrase rather than a label.
+ * noun phrase rather than a label. A theme carries none, because nothing is
+ * left holding one -- the answer to `theme dark` is the page going dark, and
+ * the row above it already says so.
  */
-export type Intent = { kind: 'copy'; value: string; what: string }
+export type Copying = { kind: 'copy'; value: string; what: string }
+
+export type Choosing = { kind: 'theme'; theme: Theme }
+
+export type Intent = Copying | Choosing
 
 /**
  * One row of a select, and what choosing it types.
@@ -288,7 +326,7 @@ export const word = (text: string): Span => ({ text, tone: 'ink', runs: text })
  */
 export const COPY = 'copy'
 
-export const copy = (intent: Intent): Span => ({ text: COPY, tone: 'ink', copies: intent })
+export const copy = (intent: Copying): Span => ({ text: COPY, tone: 'ink', copies: intent })
 
 /**
  * One line as the terminal would have printed it.

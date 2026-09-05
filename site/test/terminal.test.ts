@@ -6,6 +6,7 @@ import { versionLine } from '../lib/session/header'
 import { finished } from '../lib/session'
 import { spoken, text, type Line, type Open, type Session } from '../lib/session/lines'
 import { commandFor, copying, PICKER } from '../lib/session/install'
+import { RESTING } from '../lib/session/theme'
 import {
   asking,
   BAR,
@@ -78,8 +79,10 @@ describe('booting', () => {
   })
 
   it('asks for nothing to be done', () => {
-    // `help` and `clear` write no clipboard and set no timer, so #85 never
-    // fills this array and the question of draining it stays #88's.
+    // `help` and `clear` write no clipboard and change no theme, so this
+    // array is empty after them however many kinds of intent exist. The
+    // question of draining it never arose: #91 replaced the array on the
+    // transition that declares one instead.
     expect(running(start(), 'help').session.intents).toEqual([])
   })
 
@@ -99,7 +102,7 @@ describe('entering a command', () => {
     // owns is where the two go: the echo above, the body below, however many
     // rows the body turns out to be -- since #87 a binary command answers with a
     // whole generated help block rather than with one line.
-    const body = rows(run('add').body)
+    const body = rows(run('add', RESTING).body)
     const drawn = rows(running(start(), 'add').session.lines)
 
     expect(drawn.at(-body.length - 1)).toBe(`${PROMPTS.binary}add`)
@@ -109,7 +112,7 @@ describe('entering a command', () => {
   it('leaves one blank row between what came before and the echo', () => {
     // The CLI never double-spaces, and neither does this. One row of air
     // between a command and the last one, which is what a terminal shows.
-    const body = rows(run('add').body)
+    const body = rows(run('add', RESTING).body)
     const drawn = rows(running(start(), 'add').session.lines)
 
     expect(drawn.at(-body.length - 2)).toBe('')
@@ -278,7 +281,7 @@ describe('what is announced', () => {
     // them.
     const terminal = running(start(), 'add')
 
-    expect(terminal.announcement).toContain(spoken(run('add').body[0]!))
+    expect(terminal.announcement).toContain(spoken(run('add', RESTING).body[0]!))
     expect(terminal.announcement).not.toContain(PROMPTS.binary)
   })
 
@@ -462,7 +465,8 @@ describe('the boot replay', () => {
   it('asks for nothing to be done, all the way through', () => {
     // The timing is a number in the frame rather than an intent, because a
     // timer is the one effect that has to be cancelled and an intent carries no
-    // handle to cancel. So this array stays #88's to fill.
+    // handle to cancel. A replay is the page redrawing what it was served, so
+    // it asks for nothing that was not already asked for.
     expect(replaying().session.intents).toEqual([])
     expect(throughout(replaying()).session.intents).toEqual([])
   })
@@ -507,7 +511,22 @@ describe('reaching the end of the boot early', () => {
     // The boot arrived whole, and the command printed underneath it rather than
     // into the middle of a mark that was still being drawn.
     expect(drawn).toContain(versionLine(CLI_VERSION))
-    expect(drawn.at(-1)).toBe(text(run('help').body.at(-1)!))
+    expect(drawn.at(-1)).toBe(text(run('help', RESTING).body.at(-1)!))
+  })
+
+  it('is not what the theme arriving does, and that is the exemption', () => {
+    // **The one input that must not reach the end of the boot.** It is not
+    // something a visitor did: the provider publishes it from a mount effect,
+    // before anybody has touched the page -- so a collapse on it would skip
+    // the replay for every visitor who has ever chosen a theme, and for the
+    // rest the moment it settled on following their system. #84's rule is that
+    // *any keypress* skips, and this is not one.
+    const terminal = after(replaying(), {
+      kind: 'preferred',
+      preference: { theme: 'dark', system: 'dark' },
+    })
+
+    expect(pause(terminal)).toBe(pause(replaying()))
   })
 
   it('leaves a terminal that was never replaying exactly as it was', () => {
@@ -575,7 +594,7 @@ describe('answering the menu', () => {
     // command prints, echo and all, so nothing learned here is wrong at a real
     // prompt.
     const drawn = rows(confirming(start()).session.lines)
-    const body = rows(run(MENU_ENTRIES[0]!.runs!).body)
+    const body = rows(run(MENU_ENTRIES[0]!.runs!, RESTING).body)
 
     expect(drawn.at(-body.length - 1)).toBe(`${PROMPTS.binary}${MENU_ENTRIES[0]!.label}`)
     expect(drawn.slice(-body.length)).toEqual(body)
@@ -589,8 +608,8 @@ describe('answering the menu', () => {
     const drawn = rows(confirming(after(start(), { kind: 'later' })).session.lines)
 
     expect(drawn).toContain(`${BAR}  ${MENU_ENTRIES[1]!.label}`)
-    expect(drawn.slice(-1 * rows(run(MENU_ENTRIES[1]!.runs!).body).length)).toEqual(
-      rows(run(MENU_ENTRIES[1]!.runs!).body),
+    expect(drawn.slice(-1 * rows(run(MENU_ENTRIES[1]!.runs!, RESTING).body).length)).toEqual(
+      rows(run(MENU_ENTRIES[1]!.runs!, RESTING).body),
     )
   })
 })
@@ -662,7 +681,7 @@ describe('typing at a prompt with a question above it', () => {
   it('prints what it was asked for underneath', () => {
     const drawn = rows(running(start(), 'help').session.lines)
 
-    expect(drawn.at(-1)).toBe(text(run('help').body.at(-1)!))
+    expect(drawn.at(-1)).toBe(text(run('help', RESTING).body.at(-1)!))
   })
 
   it('leaves the arrows to the history once the question is over', () => {
@@ -727,9 +746,15 @@ describe('clearing a screen with a question on it', () => {
 })
 
 describe('the install picker', () => {
-  /** Every value the session is currently asking to have copied. */
+  /**
+   * Every value the session is currently asking to have copied.
+   *
+   * The kind is asked rather than assumed, and since #88 the compiler insists:
+   * an `Intent` is a clipboard write or a theme, and only one of the two has a
+   * value anybody could paste.
+   */
   const asked = (terminal: Terminal): readonly string[] =>
-    terminal.session.intents.map((intent) => intent.value)
+    terminal.session.intents.flatMap((intent) => (intent.kind === 'copy' ? [intent.value] : []))
 
   /** Every control on screen, by what it would put on a clipboard. */
   const controls = (terminal: Terminal): string[] =>
@@ -869,7 +894,7 @@ describe('a second caller, driven by the same reducer', () => {
     const drawn = rows(after(asked(), { kind: 'entered' }).session.lines)
 
     expect(drawn).toContain(`${STEP_DONE}  Which system?`)
-    expect(drawn.at(-1)).toBe(text(run('help').body.at(-1)!))
+    expect(drawn.at(-1)).toBe(text(run('help', RESTING).body.at(-1)!))
   })
 
   it('answers to a row named at the prompt', () => {
@@ -891,5 +916,63 @@ windows`)
 
     expect(drawn).toContain(`${STEP_LEFT}  Which system?`)
     expect(drawn.some((line) => line.includes(LEGEND))).toBe(false)
+  })
+})
+
+describe('the theme, which this module is told rather than asks', () => {
+  const dark = { theme: 'dark', system: 'light' } as const
+
+  it('rests where the served page already is', () => {
+    expect(start().preference).toBe(RESTING)
+  })
+
+  it('hands back the same terminal when nothing moved', () => {
+    // The common case by a distance: the effect that dispatches this is keyed
+    // on values the provider republishes, and a visitor who has chosen nothing
+    // lands on the value `booted` already set. `components/live.tsx` schedules
+    // the boot's next frame from an effect keyed on the whole terminal, so a
+    // new object here would clear a frame in flight and re-schedule it.
+    const terminal = start()
+
+    expect(after(terminal, { kind: 'preferred', preference: RESTING })).toBe(terminal)
+    expect(
+      after(terminal, { kind: 'preferred', preference: { theme: 'system', system: 'light' } }),
+    ).toBe(terminal)
+  })
+
+  it('changes nothing on screen when it does move', () => {
+    // A theme is two custom properties swapping places in a stylesheet, not a
+    // session redrawn -- which is why this stores an answer where `detected`
+    // rebuilds one.
+    const terminal = start()
+    const told = after(terminal, { kind: 'preferred', preference: dark })
+
+    expect(told.preference).toEqual(dark)
+    expect(told.session).toBe(terminal.session)
+    expect(told.announcement).toBe(terminal.announcement)
+    expect(told.printed).toBe(terminal.printed)
+  })
+
+  it('says nothing to a screen reader, because nobody did anything', () => {
+    // `printed` is what makes a live region read the same sentence twice, and
+    // an operating system moving to dark at sunset is not an event this page
+    // should announce. It is also `detected`'s guard for *a page somebody has
+    // used*, so bumping it here would cost the visitor the system detection.
+    const told = after(start(), { kind: 'preferred', preference: dark })
+
+    expect(after(told, { kind: 'detected', agent: 'Windows' }).session).not.toBe(told.session)
+  })
+
+  it('is what a bare theme reports afterwards', () => {
+    // The round trip, closed at this seam: the reducer was told, and the
+    // command it hands the answer to prints it.
+    const told = after(start(), { kind: 'preferred', preference: dark })
+
+    expect(rows(running(told, 'theme').session.lines)).toContain('Dark.')
+  })
+
+  it('is not a keystroke, and the keymap does not name it', () => {
+    expect(Object.values(KEYS)).not.toContain('preferred')
+    expect(Object.values(UNFOCUSED)).not.toContain('preferred')
   })
 })

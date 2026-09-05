@@ -4,6 +4,7 @@ import { ARROW, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/sessio
 import { EXAMPLES, giving } from '../lib/session/donate'
 import { commandFor, copying, PICKER } from '../lib/session/install'
 import { spoken, text, type Line } from '../lib/session/lines'
+import { choosing, naming, RESTING, type Preference } from '../lib/session/theme'
 
 /**
  * What the page answers, and in whose voice.
@@ -45,7 +46,7 @@ const documented = (name: string): CliCommand => CLI_COMMANDS.find((one) => one.
  * separately -- deriving one from the other would only restate how `noArguments`
  * puts the backticks in.
  */
-const LEFTOVERS = 'Only `help` and `install` take an argument here.'
+const LEFTOVERS = 'Only `help`, `install` and `theme` take an argument here.'
 
 /**
  * The two sentences #91 adds, pinned by hand for the header's reason.
@@ -78,27 +79,27 @@ describe('the prompts', () => {
 
 describe('the echo', () => {
   it('writes a binary command at the binary prompt', () => {
-    expect(text(run('add').echo)).toBe(`${PROMPTS.binary}add`)
+    expect(text(run('add', RESTING).echo)).toBe(`${PROMPTS.binary}add`)
   })
 
   it('writes a site verb at the page prompt', () => {
-    expect(text(run('help').echo)).toBe(`${PROMPTS.site}help`)
+    expect(text(run('help', RESTING).echo)).toBe(`${PROMPTS.site}help`)
   })
 
   it('writes a word it does not know at the page prompt', () => {
     // It belongs to neither vocabulary, and the sentence underneath is the site
     // speaking -- so the site is who echoed it.
-    expect(text(run('foo').echo)).toBe(`${PROMPTS.site}foo`)
+    expect(text(run('foo', RESTING).echo)).toBe(`${PROMPTS.site}foo`)
   })
 
   it('keeps what was typed, arguments and all', () => {
-    expect(text(run('add foo').echo)).toBe(`${PROMPTS.binary}add foo`)
+    expect(text(run('add foo', RESTING).echo)).toBe(`${PROMPTS.binary}add foo`)
   })
 
   it('writes `help add` at the page prompt, because `help` is the page\'s word', () => {
     // The command being described is the binary's; the verb being run is not.
     // The echo answers for what was run.
-    expect(text(run('help add').echo)).toBe(`${PROMPTS.site}help add`)
+    expect(text(run('help add', RESTING).echo)).toBe(`${PROMPTS.site}help add`)
   })
 })
 
@@ -108,12 +109,12 @@ describe('help', () => {
     // keeps it true when #88, #90 and #91 add verbs: a command that exists and
     // is not listed fails here, and so does a listing that names something
     // nobody can type.
-    expect(new Set(landable(run('help').body))).toEqual(
+    expect(new Set(landable(run('help', RESTING).body))).toEqual(
       new Set(COMMANDS.map((command) => command.name)),
     )
   })
 
-  it('covers all seven of the binary and all four of the page', () => {
+  it('covers all seven of the binary and all five of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(7)
     // The order is the order `help` lists them in, and it is not alphabetical:
     // `help` first because it is how somebody arrives at the rest, then what
@@ -125,6 +126,7 @@ describe('help', () => {
       'help',
       'install',
       'donate',
+      'theme',
       'clear',
     ])
   })
@@ -133,7 +135,7 @@ describe('help', () => {
     // `lines.ts` says there must not be one and that a horizontal offset is a
     // space inside the string. That rule arrives here with the first output
     // #82 did not write.
-    const drawn = rows(run('help').body)
+    const drawn = rows(run('help', RESTING).body)
 
     expect(drawn.some((line) => line.includes('\t'))).toBe(false)
     expect(drawn).toContain(`  add      ${documented('add').summary}`)
@@ -145,7 +147,7 @@ describe('help', () => {
     // `cli/test/spawned.test.ts` pins it as what `--help --json` reports. The
     // page's list is the binary's list; #87 is where it stopped being a second
     // ordering somebody chose here.
-    const listed = rows(run('help').body)
+    const listed = rows(run('help', RESTING).body)
       .filter((line) => line.startsWith('  '))
       .map((line) => line.trim().split(/\s{2,}/)[0])
 
@@ -157,7 +159,7 @@ describe('help', () => {
     // decoration: hide them and a screen reader is handed `addStart tracking a
     // public playlist…` Whitespace is what keeps the two readable as two, and
     // an assistive technology collapses the run on its own.
-    const row = run('help').body.find((line) => text(line).startsWith('  add'))!
+    const row = run('help', RESTING).body.find((line) => text(line).startsWith('  add'))!
 
     expect(spoken(row)).toBe(`  add      ${documented('add').summary}`)
   })
@@ -168,7 +170,7 @@ describe('a word the page does not know', () => {
     // Pinned as literals, which is the one place this repo's never-retype-copy
     // rule is correctly broken: here the literal *is* the acceptance criterion,
     // and a test importing the module's own template would assert nothing.
-    const printed = run('foo')
+    const printed = run('foo', RESTING)
 
     expect(rows(printed.body)).toEqual([
       'jukebox.dev: command not found: foo',
@@ -180,16 +182,16 @@ describe('a word the page does not know', () => {
     // Lookup is on the first word, so reporting the whole buffer would name
     // something that was never looked up. A shell names the word too. The echo
     // still carries everything that was typed.
-    expect(text(run('foo bar').echo)).toBe(`${PROMPTS.site}foo bar`)
-    expect(text(run('foo bar').body[0]!)).toBe('jukebox.dev: command not found: foo')
+    expect(text(run('foo bar', RESTING).echo)).toBe(`${PROMPTS.site}foo bar`)
+    expect(text(run('foo bar', RESTING).body[0]!)).toBe('jukebox.dev: command not found: foo')
   })
 
   it('does not read the backticks out', () => {
-    expect(spoken(run('foo').body[1]!)).toBe('Try help.')
+    expect(spoken(run('foo', RESTING).body[1]!)).toBe('Try help.')
   })
 
   it('offers `help` as a word the cursor can land on', () => {
-    expect(landable(run('foo').body)).toEqual(['help'])
+    expect(landable(run('foo', RESTING).body)).toEqual(['help'])
   })
 })
 
@@ -197,7 +199,7 @@ describe('a binary command', () => {
   it('prints its generated description and does not pretend to run', () => {
     // ADR-0010: the page explains, it never simulates. What it prints is the
     // command's own help, which is a description of the command.
-    expect(rows(run('add').body)[0]).toBe(documented('add').summary)
+    expect(rows(run('add', RESTING).body)[0]).toBe(documented('add').summary)
   })
 
   it('prints the binary\'s own usage line under a heading', () => {
@@ -206,7 +208,7 @@ describe('a binary command', () => {
     // the third copy this file's header refuses.
     const url = documented('add').args[0]!
 
-    expect(rows(run('add').body)).toEqual([
+    expect(rows(run('add', RESTING).body)).toEqual([
       documented('add').summary,
       '',
       'usage',
@@ -222,7 +224,7 @@ describe('a binary command', () => {
     // curating the set is what would let the page's help disagree with the
     // binary's.
     for (const command of CLI_COMMANDS) {
-      const drawn = rows(run(command.name).body)
+      const drawn = rows(run(command.name, RESTING).body)
 
       expect(drawn[0]).toBe(command.summary)
       expect(drawn).toContain(`  ${command.usage}`)
@@ -239,7 +241,7 @@ describe('a binary command', () => {
     // `columns` and what #79 asks a table on this page to reuse. `config` is
     // the one command with two arguments of different widths, so it is the only
     // place the padding can be seen at all.
-    const drawn = rows(run('config').body)
+    const drawn = rows(run('config', RESTING).body)
     const [key, value] = documented('config').args
 
     // The padding is spelled out and the copy is not, which is the split that
@@ -251,7 +253,7 @@ describe('a binary command', () => {
   })
 
   it('prints no arguments block for a command that takes none', () => {
-    expect(rows(run('list').body)).toEqual([
+    expect(rows(run('list', RESTING).body)).toEqual([
       documented('list').summary,
       '',
       'usage',
@@ -263,7 +265,7 @@ describe('a binary command', () => {
     // `lines.ts`: every vertical gap is zero or one line, and the CLI never
     // double-spaces. Over all seven, because the block is assembled per command.
     for (const command of CLI_COMMANDS) {
-      const drawn = rows(run(command.name).body)
+      const drawn = rows(run(command.name, RESTING).body)
 
       expect(drawn.at(-1)).not.toBe('')
       expect(drawn.some((line, at) => line === '' && drawn[at + 1] === '')).toBe(false)
@@ -274,14 +276,14 @@ describe('a binary command', () => {
     // `phrasing.columns` trims each line for the reason that applies here too:
     // it is what an editor would strip and a `toBe` would then disagree about.
     for (const command of CLI_COMMANDS) {
-      for (const line of rows(run(command.name).body)) {
+      for (const line of rows(run(command.name, RESTING).body)) {
         expect(line).toBe(line.trimEnd())
       }
     }
   })
 
   it('says so when it is handed an argument it cannot use', () => {
-    expect(rows(run('add foo').body).at(-1)).toBe(LEFTOVERS)
+    expect(rows(run('add foo', RESTING).body).at(-1)).toBe(LEFTOVERS)
   })
 
   it('names every word that does take one', () => {
@@ -296,14 +298,14 @@ describe('a binary command', () => {
   it("puts a row of air between the quotation and the page's own sentence", () => {
     // The block above it is the binary's screen and this is the site speaking.
     // One row, never two -- the CLI does not double-space and neither does this.
-    const drawn = rows(run('add foo').body)
+    const drawn = rows(run('add foo', RESTING).body)
 
     expect(drawn.at(-2)).toBe('')
     expect(drawn.at(-3)).not.toBe('')
   })
 
   it('reads that line out without the backticks', () => {
-    expect(spoken(run('add foo').body.at(-1)!)).toBe(NO_ARGUMENTS)
+    expect(spoken(run('add foo', RESTING).body.at(-1)!)).toBe(NO_ARGUMENTS)
   })
 })
 
@@ -313,7 +315,7 @@ describe('help, given a command', () => {
     // was written with its second argument reserved for this, and #87 is the
     // ticket that gives a second word a meaning.
     for (const command of CLI_COMMANDS) {
-      expect(rows(run(`help ${command.name}`).body)).toEqual(rows(run(command.name).body))
+      expect(rows(run(`help ${command.name}`, RESTING).body)).toEqual(rows(run(command.name, RESTING).body))
     }
   })
 
@@ -323,7 +325,7 @@ describe('help, given a command', () => {
     // because they never run -- and `clear` is where it shows: typing it empties
     // the scrollback, and asking about it must not.
     const clear = COMMANDS.find((one) => one.name === 'clear')!
-    const printed = run('help clear')
+    const printed = run('help clear', RESTING)
 
     expect(rows(printed.body)).toEqual([clear.summary])
     expect(printed.clears).toBeUndefined()
@@ -332,14 +334,14 @@ describe('help, given a command', () => {
   it('answers a word it does not know the way a shell does', () => {
     // The argument is named, not the verb: `help` resolved fine and the word
     // after it did not, so that is the word a shell would report.
-    expect(rows(run('help nonsense').body)).toEqual([
+    expect(rows(run('help nonsense', RESTING).body)).toEqual([
       'jukebox.dev: command not found: nonsense',
       'Try `help`.',
     ])
   })
 
   it('takes one command and says so when handed more', () => {
-    const drawn = rows(run('help add sync').body)
+    const drawn = rows(run('help add sync', RESTING).body)
 
     expect(drawn[0]).toBe(documented('add').summary)
     expect(drawn.at(-1)).toBe(LEFTOVERS)
@@ -351,14 +353,14 @@ describe('install', () => {
     // The rows of the frame belong to `terminal.ts`, because that is also what
     // has to mark the question live. Two descriptions of one widget can
     // disagree; one cannot.
-    const printed = run('install')
+    const printed = run('install', RESTING)
 
     expect(printed.body).toEqual([])
     expect(printed.opens).toBe(PICKER)
   })
 
   it('hands over the whole command for the system it was given', () => {
-    const printed = run('install windows')
+    const printed = run('install windows', RESTING)
 
     expect(rows(printed.body)).toEqual([
       '# windows',
@@ -372,40 +374,42 @@ describe('install', () => {
     // The ticket asks a chosen row to copy immediately, and `terminal.ts` runs
     // a chosen row through the line a visitor could have typed -- so the two
     // are one gesture and this is where it is declared.
-    const printed = run('install macos')
+    const printed = run('install macos', RESTING)
+
+    const [intent] = printed.intents ?? []
 
     expect(printed.intents).toEqual([copying('macos')])
-    expect(printed.intents?.[0]?.value).toBe(commandFor('macos').command)
+    expect(intent?.kind === 'copy' && intent.value).toBe(commandFor('macos').command)
   })
 
   it('gives macos and linux the same line, and says whose it is above it', () => {
-    expect(rows(run('install linux').body)).toEqual(rows(run('install macos').body))
-    expect(rows(run('install macos').body)[0]).toBe('# macos · linux')
+    expect(rows(run('install linux', RESTING).body)).toEqual(rows(run('install macos', RESTING).body))
+    expect(rows(run('install macos', RESTING).body)[0]).toBe('# macos · linux')
   })
 
   it('asks again when the word is not a system it knows', () => {
     // Naming the word rather than the verb, which is what a shell does and what
     // `help nonsense` already does one describe up. The picker follows, because
     // the useful answer to "not that one" is the list of the ones there are.
-    const printed = run('install bsd')
+    const printed = run('install bsd', RESTING)
 
     expect(rows(printed.body)).toEqual([unknown('bsd')])
     expect(printed.opens).toBe(PICKER)
   })
 
   it('puts nothing on a clipboard for a word it did not understand', () => {
-    expect(run('install bsd').intents).toBeUndefined()
+    expect(run('install bsd', RESTING).intents).toBeUndefined()
   })
 
   it('takes one system and says so when handed more', () => {
-    expect(rows(run('install macos sync').body).at(-1)).toBe(LEFTOVERS)
+    expect(rows(run('install macos sync', RESTING).body).at(-1)).toBe(LEFTOVERS)
   })
 
   it('describes itself when asked, rather than doing what it does', () => {
     // `help X` describes X. Across the binary's seven the distinction is
     // invisible, because those describe themselves when typed. Here it is the
     // difference between a sentence and a clipboard write.
-    const printed = run('help install')
+    const printed = run('help install', RESTING)
 
     expect(rows(printed.body)).toEqual([find('install')!.summary])
     expect(printed.opens).toBeUndefined()
@@ -415,7 +419,7 @@ describe('install', () => {
 
 describe('clear', () => {
   it('asks for the scrollback rather than printing into it', () => {
-    const printed = run('clear')
+    const printed = run('clear', RESTING)
 
     expect(printed.clears).toBe(true)
     expect(printed.body).toEqual([])
@@ -423,7 +427,7 @@ describe('clear', () => {
 
   it('announces what it did, because it printed nothing to announce', () => {
     // Silence is indistinguishable from a key that never registered.
-    expect(run('clear').announcement).toBe('The scrollback is empty.')
+    expect(run('clear', RESTING).announcement).toBe('The scrollback is empty.')
   })
 })
 
@@ -462,7 +466,7 @@ describe('the copy rules', () => {
 
 describe('donate', () => {
   it('prints the rows into a scrollback, at the prompt the page owns', () => {
-    const printed = run('donate')
+    const printed = run('donate', RESTING)
 
     expect(text(printed.echo)).toBe(`${PROMPTS.site}donate`)
     expect(rows(printed.body)[0]).toBe(`# ${EXAMPLES}`)
@@ -474,10 +478,68 @@ describe('donate', () => {
     // four of them would be four addresses written to the clipboard by the act
     // of printing the block. The controls are on the rows and fire when one is
     // used, which is what #91 built `Span.copies` for.
-    expect(run('donate').intents).toBeUndefined()
+    expect(run('donate', RESTING).intents).toBeUndefined()
   })
 
   it('takes no argument and says so when handed one', () => {
-    expect(rows(run('donate now').body).at(-1)).toBe(LEFTOVERS)
+    expect(rows(run('donate now', RESTING).body).at(-1)).toBe(LEFTOVERS)
+  })
+})
+
+describe('theme', () => {
+  /** A visitor who has chosen nothing, on a machine that prefers dark. */
+  const following: Preference = { theme: 'system', system: 'dark' }
+
+  it('reports where it stands, and names the three', () => {
+    const printed = run('theme', following)
+
+    expect(rows(printed.body)).toEqual([
+      'Following your system, which is dark.',
+      '',
+      ...rows(naming()),
+    ])
+    expect(printed.intents).toBeUndefined()
+  })
+
+  it('declares the switch rather than performing it', () => {
+    // `next-themes` owns the theme and this module may not touch it. What
+    // leaves here is the request; `components/live.tsx` is what acts.
+    expect(run('theme dark', following).intents).toEqual([choosing('dark')])
+    expect(run('theme light', following).intents).toEqual([choosing('light')])
+    expect(run('theme system', following).intents).toEqual([choosing('system')])
+  })
+
+  it('reports the theme it was just handed rather than the one it was on', () => {
+    // The round trip through the provider has not happened yet, so reporting
+    // the state this module is holding would print the previous answer.
+    expect(rows(run('theme light', following).body)).toEqual(['Light.'])
+    expect(rows(run('theme dark', following).body)).toEqual(['Dark.'])
+  })
+
+  it('keeps the system reachable, so one switch is not permanent', () => {
+    // ADR-0010 asks for this by name: a visitor who has switched must be able
+    // to get back to following their operating system.
+    const chosen: Preference = { theme: 'light', system: 'dark' }
+
+    expect(rows(run('theme system', chosen).body)).toEqual([
+      'Following your system, which is dark.',
+    ])
+  })
+
+  it('names the word rather than the verb when it is not a theme', () => {
+    // `install bsd`'s shape, for its reason: the useful answer to "not that
+    // one" is the list of the ones there are.
+    const printed = run('theme nord', following)
+
+    expect(rows(printed.body)).toEqual([
+      `${HOST}: no theme called nord`,
+      '',
+      ...rows(naming()),
+    ])
+    expect(printed.intents).toBeUndefined()
+  })
+
+  it('takes one theme and says so when handed more', () => {
+    expect(rows(run('theme dark please', following).body).at(-1)).toBe(LEFTOVERS)
   })
 })

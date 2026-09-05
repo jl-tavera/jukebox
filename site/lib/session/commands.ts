@@ -18,6 +18,7 @@ import {
   type Open,
   type Span,
 } from './lines'
+import { choosing, isTheme, naming, reporting, THEME, type Preference } from './theme'
 
 /**
  * What can be typed, and whose word it is.
@@ -86,19 +87,23 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Four today.
+ * The page's own verbs. Five today.
  *
- * #88 adds `theme` alongside the `donate` below and #90 adds `demo` -- each one
- * entry here and one branch in `run` below, which is the whole of what #91's
- * `install` cost.
- * They are deliberately not in `MENU_ENTRIES`: the menu carries the binary's
- * five and nothing else, because putting a site verb there would be the site
- * speaking in the binary's voice.
+ * #90 adds `demo` -- one entry here and one branch in `run` below, which is the
+ * whole of what #91's `install` cost and the whole of what #88's two cost after
+ * it. They are deliberately not in `MENU_ENTRIES`: the menu carries the
+ * binary's five and nothing else, because putting a site verb there would be
+ * the site speaking in the binary's voice.
  *
  * The order is the order `help` lists them in, and it is not alphabetical:
  * `help` first, because it is how somebody arrives at the rest; then what the
  * page can actually do; then `clear`, which is the way out of a screen rather
  * than a thing to do on one.
+ *
+ * **`theme` is the entry that has to be here rather than anywhere else.**
+ * ADR-0010 deleted the corner toggle and left this list and #89's chip row as
+ * the whole of how a visitor finds out the control exists -- so a `theme` that
+ * `help` does not list is a theme control nobody can reach.
  */
 const VERBS: readonly Command[] = [
   { name: 'help', summary: 'List everything you can type.', voice: 'site', takesArgument: true },
@@ -109,6 +114,12 @@ const VERBS: readonly Command[] = [
     takesArgument: true,
   },
   { name: DONATE, summary: 'Every wallet address, and a control that copies one.', voice: 'site' },
+  {
+    name: THEME,
+    summary: 'Move between light, dark and following your system.',
+    voice: 'site',
+    takesArgument: true,
+  },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -175,21 +186,26 @@ export const EMPTIED = 'The scrollback is empty.'
 const ARGUED: readonly Command[] = COMMANDS.filter((command) => command.takesArgument === true)
 
 /**
- * What joins them, and the grammar around them, **written for the two that
- * exist rather than for a list of any length.**
+ * What joins them, and the grammar around them.
  *
- * The first draft carried a comma branch and a singular verb, and neither was
- * reachable: two words are joined by `and` and take an argument between them.
- * `select.ts` refuses the same thing one file over -- it does not reproduce the
- * prompt library's skip over disabled rows, because nothing on this page can
- * express one -- and a branch no test can reach is a branch nobody has checked.
+ * **The comma branch is back, and the note that deleted it is why it can
+ * be.** It was cut as unreachable -- two words are joined by `and` and take an
+ * argument between them -- and it said what would happen when a third arrived:
+ * the sentence would read `a and b and c`, *clumsy and true*. #88's `theme` is
+ * that third, so the branch is reachable now and a test reaches it. `select.ts`
+ * still refuses the same thing one file over, and for the same reason: nothing
+ * on this page can express a disabled row, so nothing draws one.
  *
- * What is derived is the part that went stale before: the names. A third verb
- * taking an argument appears in this sentence on its own, reading `a and b and
- * c`, which is clumsy and true; a page down to one would need `takes` back.
- * Both are edits to one line, and neither can be a lie in the meantime.
+ * The names stay derived, which is the part that went stale before. A page down
+ * to one verb taking an argument would need `takes` back; that is an edit to
+ * one line, and it cannot be a lie in the meantime.
  */
-const JOIN = ' and '
+const NEXT = ', '
+const LAST = ' and '
+
+/** Nothing before the first, `and` before the last, a comma before the rest. */
+const between = (index: number, count: number): string =>
+  index === 0 ? '' : index === count - 1 ? LAST : NEXT
 
 /**
  * Said when a word was recognised and the rest of the line could not be used.
@@ -204,9 +220,9 @@ const JOIN = ' and '
  * do take one is also the more useful sentence: somebody who has just put an
  * argument somewhere it does not go is being shown where one goes.
  */
-export const NO_ARGUMENTS = `Only ${ARGUED.map((command) => command.name).join(
-  JOIN,
-)} take an argument here.`
+export const NO_ARGUMENTS = `Only ${ARGUED.map(
+  (command, index) => `${between(index, ARGUED.length)}${command.name}`,
+).join('')} take an argument here.`
 
 const echoed = (voice: Voice, typed: string): Line =>
   row(decoration(PROMPTS[voice]), ink(typed))
@@ -216,8 +232,12 @@ const echoed = (voice: Voice, typed: string): Line =>
  *
  * Two spaces clear of the longest name, so the summaries line up and adding a
  * verb cannot leave the column too narrow for it. `version` is the longest
- * today; #88, #90 and #91 all add shorter ones, so this is stable in practice
- * and correct regardless.
+ * today; #91's `install` and #88's two are shorter and #90's `demo` will be,
+ * so this is stable in practice and correct regardless.
+ *
+ * Deliberately narrower than the `GUTTER` the tables below line up on, and
+ * #85 is where that was set: this is a name against prose about it, where an
+ * arguments table is a name against a value.
  */
 const COLUMN = Math.max(...COMMANDS.map((command) => command.name.length)) + 2
 
@@ -316,7 +336,7 @@ const noArguments = (): Line[] => [
   row(
     prose('Only '),
     ...ARGUED.flatMap((command, index): Span[] => [
-      ...(index === 0 ? [] : [prose(JOIN)]),
+      ...(index === 0 ? [] : [prose(between(index, ARGUED.length))]),
       decoration('`'),
       word(command.name),
       decoration('`'),
@@ -351,6 +371,18 @@ const COPIED = 'Copied. Paste it into a terminal.'
 const unknownSystem = (word: string): Line[] => [row(ink(`${HOST}: no install command for ${word}`))]
 
 /**
+ * Said when the word after `theme` is not one of the three.
+ *
+ * `unknownSystem`'s shape and its reason, one verb over: the word is named
+ * rather than the verb, because `theme` resolved and the thing after it did
+ * not -- and the listing that follows is the pointer, since the useful answer
+ * to *not that one* is the list of the ones there are. ADR-0010 puts named
+ * schemes out of scope by name, so `theme nord` is a permanent answer rather
+ * than a gap somebody will fill.
+ */
+const unknownTheme = (word: string): Line[] => [row(ink(`${HOST}: no theme called ${word}`))]
+
+/**
  * What a shell says, said the way a shell says it.
  *
  * Flat, with no joke and no scolding. The backticks are decoration so that the
@@ -381,7 +413,7 @@ const notFound = (typed: string): Line[] => [
  * typed -- they never run here. `clear` is where it shows: typing it empties
  * the scrollback and asking about it prints a sentence.
  */
-export const run = (buffer: string): Printed => {
+export const run = (buffer: string, preference: Preference): Printed => {
   const typed = buffer.trim()
   const [name = '', ...rest] = typed.split(/\s+/)
   const command = find(name)
@@ -443,6 +475,32 @@ export const run = (buffer: string): Printed => {
   // page that can put a placeholder on a clipboard.
   if (command.name === DONATE) {
     return { echo, body: [...giving(), ...(rest.length > 0 ? noArguments() : [])] }
+  }
+
+  // **The only branch that asks the browser to change something about
+  // itself.** `next-themes` owns the theme, so what leaves here is the request
+  // and `components/live.tsx` performs it -- the arrangement `install` has
+  // with a clipboard, one field of `Intent` over.
+  //
+  // Bare, it reports and lists, which is what replaces a control a visitor
+  // could see. Given a theme it reports **the one it was just handed** rather
+  // than the one this module is holding: the round trip through the provider
+  // has not happened yet, and the system underneath is unmoved by the choice,
+  // so the two halves of the sentence come from the two places that know.
+  if (command.name === THEME) {
+    const [chosen, ...spare] = rest
+
+    if (chosen === undefined) return { echo, body: [reporting(preference), blank(), ...naming()] }
+    if (!isTheme(chosen)) return { echo, body: [...unknownTheme(chosen), blank(), ...naming()] }
+
+    return {
+      echo,
+      body: [
+        reporting({ theme: chosen, system: preference.system }),
+        ...(spare.length > 0 ? noArguments() : []),
+      ],
+      intents: [choosing(chosen)],
+    }
   }
 
   return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }

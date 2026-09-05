@@ -9,7 +9,7 @@ import {
   prose,
   row,
   word,
-  type Intent,
+  type Copying,
   type Line,
   type Open,
 } from './lines'
@@ -82,7 +82,7 @@ export const commandFor = (system: System): InstallCommand =>
  * capturing the argument to `clipboard.writeText`, not by eye* -- and #91 asks
  * the same of this one.
  */
-export const copying = (system: System): Intent => ({
+export const copying = (system: System): Copying => ({
   kind: 'copy',
   value: commandFor(system).command,
   what: 'the install command',
