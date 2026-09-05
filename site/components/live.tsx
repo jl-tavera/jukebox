@@ -2,9 +2,10 @@
 
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef } from 'react'
+import { Chips } from '@/components/chips'
 import { Screen } from '@/components/screen'
 import { REDUCED_MOTION } from '@/lib/session/boot'
-import { PROMPTS } from '@/lib/session/commands'
+import { CHIPS, PROMPTS } from '@/lib/session/commands'
 import type { Copying, Session } from '@/lib/session/lines'
 import { after, booted, KEYS, pause, UNFOCUSED } from '@/lib/session/terminal'
 import { isScheme, isTheme, RESTING } from '@/lib/session/theme'
@@ -184,6 +185,33 @@ export const Live = ({ initial }: { initial: Session }) => {
   }, [terminal])
 
   /**
+   * The page follows what it just printed.
+   *
+   * **#89 pins the prompt and the status line to the bottom of the viewport,
+   * and that is what makes this necessary rather than a nicety.** Before, the
+   * prompt sat at the end of the document and a visitor typing at it was
+   * already looking at the end; now output is appended above a row that never
+   * moves, so a command run from a chip lands below the fold and the page looks
+   * like it did nothing. A chip nobody can see the answer to is not a page that
+   * works on a phone.
+   *
+   * Keyed on `printed`, which is a count of commands rather than of renders --
+   * so a keystroke does not scroll, and neither does a boot frame: `printed` is
+   * zero through the whole replay, which is what the guard reads. It is the
+   * same counter the live region is keyed on, and for the matching reason:
+   * running `help` twice has to move the page twice.
+   *
+   * No `behavior`, so it jumps. Output on this page appears rather than
+   * arriving, and a smooth scroll would be the one animation ADR-0010 did not
+   * ask for.
+   */
+  useEffect(() => {
+    if (terminal.printed === 0) return
+
+    window.scrollTo({ top: document.documentElement.scrollHeight })
+  }, [terminal.printed])
+
+  /**
    * Any keypress reaches the end of it.
    *
    * On `window`, because at boot nothing is focused and a keystroke never
@@ -192,11 +220,19 @@ export const Live = ({ initial }: { initial: Session }) => {
    * reaching for Ctrl+R has still seen the boot. Nothing is cancelled either --
    * a key pressed into the focused prompt must still land in it.
    *
-   * **Keys only, which is what #84 asks for and no more.** A tap would be the
-   * same listener on `pointerdown`, and it is deliberately not here: a phone has
-   * no keys, so the escape is unavailable there, and what that costs is a second
-   * and a half of a boot the visitor arrived to see. #89 is the ticket that
-   * makes this page work by tapping, and a tap that skips belongs with it.
+   * **A tap is the second half, and #89 is where it arrived.** #84 asked for
+   * keys and left the note that says why that was not enough: a phone has no
+   * keys, so the escape was unavailable on the one device where a second and a
+   * half of animation is most in the way. `pointerdown` rather than `click`,
+   * because the skip should land the moment a finger does rather than when it
+   * lifts -- and because a tap that is on its way to becoming a scroll has
+   * still seen the boot.
+   *
+   * Nothing is cancelled, on either. A key pressed into the focused prompt must
+   * still land in it, and a tap that skips must still reach whatever it was
+   * aimed at -- including a chip, which runs a command against the collapsed
+   * session because `after` settles the replay ahead of every input but its own
+   * timer's.
    */
   useEffect(() => {
     if (!replaying) return
@@ -204,7 +240,12 @@ export const Live = ({ initial }: { initial: Session }) => {
     const skip = () => dispatch({ kind: 'skipped' })
 
     window.addEventListener('keydown', skip)
-    return () => window.removeEventListener('keydown', skip)
+    window.addEventListener('pointerdown', skip)
+
+    return () => {
+      window.removeEventListener('keydown', skip)
+      window.removeEventListener('pointerdown', skip)
+    }
   }, [replaying])
 
   /**
@@ -295,43 +336,102 @@ export const Live = ({ initial }: { initial: Session }) => {
     input.current?.focus()
   }, [])
 
+  /**
+   * A chip was tapped, and **focus stays where it is**.
+   *
+   * The one place this page runs a command without moving the cursor to the
+   * prompt, and the difference from `onRun` is the whole of why it is a second
+   * callback. `onRun` moves focus unconditionally because a word in the
+   * scrollback can be deleted by what it runs -- `clear` is the case -- and a
+   * cursor standing on a removed element falls to `<body>`. A chip is not in
+   * the scrollback and `clear` does not touch it, so there is nothing to
+   * rescue.
+   *
+   * **What moving focus would cost is the row itself.** Focusing the field on a
+   * phone raises the software keyboard over the status line that was just
+   * tapped, so the primary path on touch would hide itself on first use. A
+   * keyboard user is left on the chip they pressed, which is where they were
+   * and where the next Tab starts from.
+   */
+  const onChip = useCallback((command: string) => {
+    dispatch({ kind: 'chosen', command })
+  }, [])
+
+  /**
+   * The terminal was tapped, so the prompt takes the cursor.
+   *
+   * #89's *tapping the terminal raises the software keyboard*, which is the
+   * gesture as a browser can express it: a virtual keyboard is not something a
+   * page can open, and focusing a text field inside a user gesture is what asks
+   * for one. A `click` rather than a `pointerdown` for exactly that reason --
+   * the gesture has to have completed for iOS to honour the focus, and
+   * `pointerdown` would also steal the cursor mid-drag.
+   *
+   * **A selection is left alone.** Dragging across a row to copy an install
+   * command ends in a click, and focusing the field there would collapse the
+   * selection the visitor had just made.
+   *
+   * It is unconditional otherwise, a control included: a tap on a word in the
+   * scrollback focuses the prompt through `onRun` anyway, so the two agree
+   * rather than race.
+   */
+  const onReach = useCallback(() => {
+    if (window.getSelection()?.isCollapsed === false) return
+
+    input.current?.focus()
+  }, [])
+
   return (
     <>
-      <Screen session={terminal.session} onRun={onRun} onCopy={onCopy} />
+      <Screen session={terminal.session} onRun={onRun} onCopy={onCopy} onReach={onReach} />
 
-      <div className="u-prompt">
-        <span aria-hidden="true">{PROMPTS.site}</span>
-        <input
-          ref={input}
-          className="u-input"
-          value={terminal.buffer}
-          onChange={(event) => dispatch({ kind: 'typed', value: event.target.value })}
-          onKeyDown={(event) => {
-            // A held modifier means the keystroke is the browser's, not the
-            // prompt's. **Shift+Tab is the one that matters and it arrives as
-            // `Tab`:** cancelling it would trap focus in this field, because
-            // going backwards is the only way out of it towards the words above.
-            // Found by `e2e/prompt.spec.ts`, which could not reach a word to
-            // measure its focus state and was right not to be able to.
-            if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
+      {/*
+       * The status line: the prompt, and the row of verbs under it.
+       *
+       * One element around both because #89 pins them together -- *a row of
+       * site verbs, always visible, pinned as a status line with the prompt
+       * above it and the scrollback scrolling behind*. `globals.css` makes it
+       * sticky and opaque; the two facts that live here are that they are one
+       * block and that the prompt comes first, which is also the tab order a
+       * keyboard user walks: the words above, then the field, then the chips.
+       */}
+      <div className="u-status">
+        <div className="u-prompt">
+          <span aria-hidden="true">{PROMPTS.site}</span>
+          <input
+            ref={input}
+            className="u-input"
+            value={terminal.buffer}
+            onChange={(event) => dispatch({ kind: 'typed', value: event.target.value })}
+            onKeyDown={(event) => {
+              // A held modifier means the keystroke is the browser's, not the
+              // prompt's. **Shift+Tab is the one that matters and it arrives as
+              // `Tab`:** cancelling it would trap focus in this field, because
+              // going backwards is the only way out of it towards the words above.
+              // Found by `e2e/prompt.spec.ts`, which could not reach a word to
+              // measure its focus state and was right not to be able to.
+              if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
 
-            const kind = KEYS[event.key]
-            if (kind === undefined) return
+              const kind = KEYS[event.key]
+              if (kind === undefined) return
 
-            // Without this, Tab walks focus out of the field and the arrows
-            // jump the caret to either end of the line -- two bugs no other
-            // seam can see, which is why `wiring/` asserts this and not the
-            // behaviour behind it.
-            event.preventDefault()
-            dispatch({ kind })
-          }}
-          aria-label="type a command"
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="go"
-        />
+              // Without this, Tab walks focus out of the field and the arrows
+              // jump the caret to either end of the line -- two bugs no other
+              // seam can see, which is why `wiring/` asserts this and not the
+              // behaviour behind it.
+              event.preventDefault()
+              dispatch({ kind })
+            }}
+            aria-label="type a command"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="go"
+          />
+        </div>
+
+        <Chips chips={CHIPS} onRun={onChip} />
       </div>
 
       {/*

@@ -70,9 +70,14 @@
  * clear of the problem by construction rather than by measurement: the
  * wash is only ever laid under `.u-word`, and a word is always `ink`.
  * The first dim landable word is the day that row of the floor becomes
- * a real constraint, and #89's chips are where it will land. #86 came
- * and went without it: the menu's rows are dim and are not landable,
- * for a reason of their own two blocks down.
+ * a real constraint. #86 came and went without it: the menu's rows are
+ * dim and are not landable, for a reason of their own two blocks down.
+ *
+ * **#89 was named here as where it would land, and it did not.** The
+ * chips are `prose` - Argon, the human's face - which moves the typeface
+ * and leaves the colour where it was. The wash is still only ever laid
+ * under ink, and the day this becomes a measurement rather than a
+ * construction is still ahead.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -189,6 +194,29 @@
      * ad-hoc `text-[...]` the hero carried is gone rather than replaced. */
     font-size: var(--cell);
     line-height: var(--line);
+
+    /* **A column, so #89's status line has a bottom to sit at.** `.u-session`
+     * takes the slack, which is the whole of what the flex buys: on a short
+     * page - the state `clear` leaves behind - the prompt and the chips are
+     * pushed to the foot of the viewport instead of floating under three empty
+     * rows.
+     *
+     * `min-height` and not `height`, deliberately. A long session still grows
+     * the document and the *document* still scrolls, which is what keeps
+     * `.u-status`'s `position: sticky` meaningful and what keeps
+     * `e2e/harness.ts`'s `scrollsHorizontally` measuring the element that
+     * actually overflows. An `overflow` on the session instead would move the
+     * scrollport inside the page and leave four specs reading a document that
+     * can no longer scroll at all - passing, and watching nothing.
+     *
+     * Written twice so the `dvh` is an upgrade rather than a requirement. A
+     * browser without it gets `vh`, which is a status line sitting below the
+     * fold of a short page by however tall the mobile URL bar is - visible, and
+     * not pinned. Failing to the older unit is the recoverable direction. */
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Inverted, the way a terminal selection is. */
@@ -215,6 +243,12 @@
   .u-session {
     padding-block: var(--row);
     padding-inline: 1ch;
+
+    /* Takes whatever the column has left over, so `.u-status` below is at the
+     * foot of the viewport on a page too short to fill it. It is not a
+     * scrollport and must not become one - the document is what scrolls here,
+     * for the reason `body` gives. */
+    flex: 1 1 auto;
   }
 
   /* One row of the session.
@@ -240,7 +274,8 @@
   }
 
   /* A word the cursor can land on. #85 establishes it; #88's copy controls and
-   * #89's chips are the same word wearing the same class.
+   * #89's chips are the same word wearing the same class - the chips with one
+   * more beside it, `u-prose`, and a rule of their own three blocks down.
    *
    * **#86's menu rows deliberately are not**, and the padding below is why.
    * A landable label grows its row from one line to 44px, and five of those
@@ -371,6 +406,67 @@
   .u-prompt:has(.u-input:focus-visible) > span {
     background-color: var(--ink);
     color: var(--ground);
+  }
+
+  /* The status line - #89.
+   *
+   * *A row of site verbs, always visible, pinned as a status line with the
+   * prompt above it and the scrollback scrolling behind.* Sticky rather than
+   * fixed, so it is still a box in the flow with a height the session's rows
+   * end above, rather than an overlay the last line hides under - and sticky
+   * to the *document*, which is what `body`'s `min-height` keeps scrolling.
+   *
+   * **The ground is load-bearing rather than decoration.** The scrollback
+   * passes underneath this block; without a colour of its own the rows would
+   * read straight through the prompt they are scrolling behind.
+   *
+   * It is why the theme control is reachable at all. ADR-0010 deleted the
+   * corner toggle on the strength of a `theme` chip existing, and wrote down
+   * what follows: if the chips go, the theme control goes with them. */
+  .u-status {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--ground);
+  }
+
+  /* The chips themselves.
+   *
+   * The same one-character inset as every other block on the page. `wrap` is
+   * insurance rather than a layout: six chips at their widest are about 280px
+   * and the narrowest viewport measured is 375, so the row fits - and a row
+   * that did not fit would grow upwards rather than push the page sideways,
+   * which is the failure this page refuses everywhere else. */
+  .u-chips {
+    display: flex;
+    flex-wrap: wrap;
+    padding-inline: 1ch;
+  }
+
+  /* A chip's horizontal target is **real width**, where a word's is a
+   * pseudo-element - and the asymmetry is the point rather than an
+   * inconsistency.
+   *
+   * The `::before` exists because a session row is a character grid: real
+   * padding there would move every column to its right and break the page's
+   * claim that a horizontal offset is a whole character written into the
+   * string. A status line has no columns to move, so the honest mechanism is
+   * available here and is strictly better. The pseudo-element only ever
+   * *overhangs* a short word, and two four-character chips side by side would
+   * overhang into each other - overlapping targets, which `e2e/harness.ts`
+   * calls worse than a small one, because a tap in the seam runs whichever
+   * command the rounding picked.
+   *
+   * At `min-width` the boxes tile exactly instead, the way landable rows
+   * already do down the other axis. `::before`'s `max(100%, var(--target))`
+   * then resolves to `100%` on its own and reaches nothing it should not, so
+   * nothing above needs overriding.
+   *
+   * No gap, and none is needed: a four-character word centred in 44px carries
+   * its own air, and a `gap` would be a second inset on a page that documents
+   * having exactly one. */
+  .u-chips > .u-word {
+    min-width: var(--target);
+    text-align: center;
   }
 
   /* The wordmark. Sized so 67 characters always fit the viewport: monospace
