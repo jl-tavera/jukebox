@@ -99,32 +99,39 @@ Three commands read the local record back. None of them touches the network, so 
 `list` gives a line per playlist — its status, what it holds, and when your copy last changed:
 
 ```
-  spotify:1AbCdEfGhIjKlMnOpQrStU                    pending   no tracks             never updated
-  "Rain / Shine" (spotify:3cEYpjA9oz9GiPac4AsH4n)   ok        2 tracks, 1 removed   updated 2026-08-31 21:29
+  spotify:1AbCdEfGhIjKlMnOpQrStU   pending   no tracks             never updated
+  "Rain / Shine"                   ok        2 tracks, 1 removed   updated 2026-08-31 21:29
 ```
 
-The id is on every row because it is what `show` and `remove` take, so the line you are reading always carries the string the next command wants.
+Playlists are called by their names, because that is what `show` and `remove` take. An id appears only where a name cannot do the job: the first row above has no name yet, and a row whose name is shared with another playlist gets one too, so that two rows you would otherwise have no way to tell apart are told apart.
 
 That last column says *updated*, not *synced*, and the difference is worth knowing: a sync that finds nothing changed costs nothing and writes nothing. The timestamp is when your copy last moved, not when Jukebox last asked.
 
-`show` takes either the id `list` prints or the address you added the playlist with, and lists its tracks in the source's own order:
+`show` takes the name `list` prints, or the id, or the address you added the playlist with, and lists its tracks in the source's own order:
 
 ```
-"Rain / Shine" (spotify:3cEYpjA9oz9GiPac4AsH4n)
+"Rain / Shine"
 2 tracks, 1 removed, 1 entry skipped.
 
-      Long Way Down   Aria Fenn, Kit Marlow   Ninety Miles   4:02
-      Sun Dogs        Aria Fenn               Ninety Miles   2:58
+  #   TITLE           ARTIST                  ALBUM          TIME
+  1   Long Way Down   Aria Fenn, Kit Marlow   Ninety Miles   4:02
+  2   Sun Dogs        Aria Fenn               Ninety Miles   2:58
 
 Removed, and still recorded here:
   -   Blue Dot        Aria Fenn               Ninety Miles   3:34   left 2026-08-31 21:29
 ```
 
+A name is matched loosely — case is ignored, and the quotes the table prints around it are optional — because it is read off a screen and typed back by hand. Numbers count the tracks on screen rather than the source's own positions, which have gaps in them wherever an entry was skipped or a track has left.
+
+The table fits the terminal it is drawn on. Where it cannot, columns give way in a fixed order: the date a track left goes first, then the album, then the artists are shortened, and the title is cut last and only if nothing else was enough. Anything you want whole and unabridged is in `--json`.
+
 **A track that leaves a playlist is kept, not deleted.** Its row stays, with the date it left. That is what lets `sync` tell you what changed instead of printing one number and then another, and it is why your copy can tell you what a playlist used to hold — the server stores what a playlist contains now, and nothing else remembers the rest.
 
 Addresses are matched exactly as you typed them when you added the playlist. Nothing is normalised, so the same playlist pasted a second time with a tracking parameter on the end will not be found; `jukebox list` is always the way back to a name that works.
 
-`remove` stops tracking a playlist and deletes its local rows. **It affects your machine only.** There is no account and nothing upstream knows you were tracking anything, so there is nothing to tell and no endpoint to tell it to — the playlist, its source, and anyone else tracking the same one are untouched. There is no confirmation prompt because there is nothing to lose that `jukebox add` cannot fetch again, and the command prints the exact line to do it with.
+`remove` stops tracking a playlist and deletes its local rows. **It affects your machine only.** There is no account and nothing upstream knows you were tracking anything, so there is nothing to tell and no endpoint to tell it to — the playlist, its source, and anyone else tracking the same one are untouched. The command prints the exact `add` line to start again with.
+
+Given an id or an address it removes at once, because either one names exactly one playlist. Given a name it asks first, because a name is matched loosely and this is the only command that deletes anything — and where there is nobody to ask, in a pipe or a cron entry, it refuses and tells you the id to use instead. A name shared by two playlists is always refused, never guessed at.
 
 ---
 
