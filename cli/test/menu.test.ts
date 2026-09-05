@@ -18,7 +18,6 @@ import {
 import { header, NARROW_MARK } from '../src/header'
 import {
   askingFor,
-  askingToStop,
   ENTRIES,
   FOR_THIS_PLAYLIST,
   THE_ADDRESS,
@@ -28,7 +27,7 @@ import {
 } from '../src/menu'
 import { failed, succeeded } from '../src/outcome'
 import { MINIMUM_BELOW, region, RELEASED } from '../src/pinned'
-import { held, labels, named, NOTHING_TRACKED } from '../src/phrasing'
+import { askingToStop, held, labels, named, NOTHING_TRACKED } from '../src/phrasing'
 import type { MirroredPlaylist } from '../src/reading'
 import { ERASED } from '../src/spinner'
 import { WORDMARK } from '../src/wordmark'

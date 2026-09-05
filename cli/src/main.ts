@@ -4,7 +4,7 @@ import { reportVersion } from './commands/version'
 import { ConfigUnwritable } from './config'
 import { DISCOVERY_URL } from './discovery'
 import type { Io } from './io'
-import { menu } from './menu'
+import { confirming, menu } from './menu'
 import { MirrorUnopenable } from './mirror'
 import { promptsAllowed, selectMode } from './mode'
 import { failed, succeeded, type Renderable } from './outcome'
@@ -69,6 +69,10 @@ export const main = async (argv: string[], io: Io, seams: Seams = {}): Promise<n
   const session: Session = {
     backend: lazily(seams.discovery ?? DISCOVERY_URL, (text) => void warnings.push(text)),
     patience: seams.patience ?? PATIENCE,
+    // Built here because this is where both halves of the answer are: the mode,
+    // and the streams. A command is handed the result rather than the question,
+    // so nothing below has to remember to check before asking.
+    ask: promptsAllowed(mode, io) ? confirming(io) : null,
   }
 
   const root = seams.root ?? jukebox

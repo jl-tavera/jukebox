@@ -40,8 +40,36 @@ export type Patience = { windowMs: number; intervalMs: number }
  */
 export const PATIENCE: Patience = { windowMs: 30_000, intervalMs: 1_000 }
 
+/**
+ * A yes-or-no question a command may put to whoever ran it.
+ *
+ * Here for `patience`'s reason -- a command cannot reach for it, so a test can
+ * hand over its own -- and `null` rather than a function that always answers, so
+ * that "there is nobody to ask" is a shape a command has to handle rather than a
+ * `false` it can mistake for a refusal. `mode.ts` is unambiguous about what has
+ * to happen then: a missing answer is an error and never a wait, because a
+ * command that hangs in a cron entry is worse than one that fails in it.
+ *
+ * Only `remove` asks, and only for a Playlist named by its title. An id or a URL
+ * names exactly one row and always has, so nothing about those paths changed.
+ */
+export type Ask = { confirm: (message: string) => Promise<boolean> }
+
 /** What `main` puts in citty's `data`, and the only thing a command may find there. */
-export type Session = { backend: () => Promise<Backend>; patience: Patience }
+export type Session = {
+  backend: () => Promise<Backend>
+  patience: Patience
+  ask: Ask | null
+}
+
+/**
+ * Whoever is at the keyboard, or nobody.
+ *
+ * Falls back to nobody rather than refusing, as `patienceOf` falls back to the
+ * default: a command run with no session at all has a perfectly good answer to
+ * whether it may ask a question, and the answer is no.
+ */
+export const askOf = (data: unknown): Ask | null => (data as Session | undefined)?.ask ?? null
 
 /**
  * The backend, out of a context citty types as `any`.

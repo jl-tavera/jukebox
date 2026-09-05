@@ -249,3 +249,118 @@ describe('remove with no network', () => {
     expect(run.code).toBe(0)
   })
 })
+
+/** What a confirmation takes. A letter answers it at once, with no return behind it. */
+const YES = 'y'
+const NO = 'n'
+
+describe('a Playlist named by its title rather than its handle', () => {
+  /** A home holding one Playlist called `Rain / Shine`. */
+  const oneNamed = async (site: Site, name: string): Promise<string> => {
+    const home = temporaryHome(name)
+    site.tracking(URL, { id: ID, status: 'ok' })
+    site.holding(ID, twoTracks)
+    await adding(site, home)
+    return home
+  }
+
+  /** What that home still tracks, asked the way any caller would ask it. */
+  const stillTracked = async (site: Site, home: string): Promise<string[]> => {
+    const run = await jukebox(['list', '--json'], { discovery: site.url, home })
+    return ((oneObject(run).data as Listed).playlists ?? []).map((one) => one.id)
+  }
+
+  it('asks first, and deletes nothing when the answer is no', async () => {
+    const site = servingItsOwnApi()
+    const home = await oneNamed(site, 'jukebox-remove-declined-')
+
+    const run = await jukebox(['remove', 'Rain / Shine'], {
+      discovery: site.url,
+      home,
+      keys: [NO],
+    })
+
+    // Nothing went wrong, so nothing is reported as having gone wrong: a person
+    // was asked what they wanted and got it.
+    expect(run.code).toBe(0)
+    expect(run.stdout).toContain('Nothing was deleted')
+    expect(await stillTracked(site, home)).toEqual([ID])
+  })
+
+  it('removes it when the answer is yes', async () => {
+    const site = servingItsOwnApi()
+    const home = await oneNamed(site, 'jukebox-remove-confirmed-')
+
+    const run = await jukebox(['remove', 'Rain / Shine'], {
+      discovery: site.url,
+      home,
+      keys: [YES],
+    })
+
+    expect(run.code).toBe(0)
+    expect(run.stdout).toContain('Stopped tracking')
+    expect(await stillTracked(site, home)).toEqual([])
+  })
+
+  it('asks nothing at all when it was given an id', async () => {
+    const site = servingItsOwnApi()
+    const home = await oneNamed(site, 'jukebox-remove-by-id-')
+
+    // No keys scripted, so a prompt would hang rather than fail -- which is the
+    // assertion. An id names exactly one row and always has, so nothing about
+    // this path changed when a title became a handle.
+    const run = await jukebox(['remove', ID], { discovery: site.url, home })
+
+    expect(run.code).toBe(0)
+    expect(await stillTracked(site, home)).toEqual([])
+  })
+
+  it('refuses a name outright where there is nobody to ask', async () => {
+    const site = servingItsOwnApi()
+    const home = await oneNamed(site, 'jukebox-remove-unattended-')
+
+    // `--json` is something parsing the output rather than somebody reading it.
+    // A prompt there would hang a cron entry, so the answer is an error, and the
+    // error carries the handle that would have worked.
+    const run = await removing(site, home, 'Rain / Shine')
+    const answered = oneObject(run)
+
+    expect(answered.ok).toBe(false)
+    expect((answered.error as { code: string }).code).toBe('invalid_usage')
+    expect((answered.error as { message: string }).message).toContain(ID)
+    expect(run.code).toBe(1)
+    expect(await stillTracked(site, home)).toEqual([ID])
+  })
+
+  it('refuses a name that two Playlists answer to, and says which', async () => {
+    const site = servingItsOwnApi()
+    const home = temporaryHome('jukebox-remove-ambiguous-')
+
+    // A Source lets two Playlists share a name, which is the whole reason the
+    // lookup stopped taking the first row it found.
+    for (const [url, id] of [
+      [URL, ID],
+      [OTHER, OTHER_ID],
+    ] as const) {
+      site.tracking(url, { id, status: 'ok' })
+      site.holding(id, twoTracks)
+      await adding(site, home, url)
+    }
+
+    const answered = oneObject(await removing(site, home, 'Rain / Shine'))
+
+    const said = (answered.error as { message: string }).message
+
+    expect((answered.error as { code: string }).code).toBe('playlist_ambiguous')
+
+    // Named as well as identified. A title is matched with its case folded and
+    // its quotes stripped, so the two rows that collided can read visibly
+    // differently -- and a list of bare ids would show a reader neither the
+    // thing they typed nor the thing that answered to it.
+    expect(said).toContain(`"Rain / Shine" (${ID})`)
+    expect(said).toContain(`"Rain / Shine" (${OTHER_ID})`)
+
+    // Refused means refused: both are still here.
+    expect((await stillTracked(site, home)).sort()).toEqual([OTHER_ID, ID].sort())
+  })
+})
