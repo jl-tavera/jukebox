@@ -2,6 +2,7 @@ import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
 import { DONATE, giving } from './donate'
 import { copying, INSTALL, isSystem, offering, PICKER, SYSTEMS } from './install'
 import {
+  BINARY,
   blank,
   chip,
   decoration,
@@ -9,10 +10,8 @@ import {
   GUTTER,
   INDENT,
   ink,
-  PROMPT,
   prose,
   row,
-  TYPED,
   word,
   type Intent,
   type Landing,
@@ -97,7 +96,11 @@ export type Command = {
  * Not a fourth copy of `$ jukebox`: #82 wrote `PROMPT` and `TYPED` for the line
  * the page shows being typed, and this is the same shell and the same program,
  * so a page that spelled them again here could disagree with its own first
- * screen.
+ * screen. Since #90 the binary half is `BINARY` from `lines.ts` rather than
+ * composed here, and the move is that sentence enforcing itself: the recording
+ * writes four command lines at the same prompt, and this file imports the
+ * module that draws them -- so a copy over there would have been the fifth, and
+ * an import back would have been a cycle.
  *
  * Both end in a space, so an echo is a prefix and what was typed, joined with
  * nothing. That is also why the whole prefix is `decoration` when it is drawn:
@@ -105,7 +108,7 @@ export type Command = {
  * visitor wrote, and a screen reader reading the transcript wants the word.
  */
 export const PROMPTS: Readonly<Record<Voice, string>> = {
-  binary: `${PROMPT} ${TYPED} `,
+  binary: BINARY,
   site: `${HOST} ${ARROW} `,
 }
 
