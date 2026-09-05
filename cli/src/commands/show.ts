@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { withMirror, type Mirror } from '../mirror'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { columns } from '../fitting'
+import { fitted, type Move } from '../fitting'
 import { counted, identified, notTracked, skippedly, stamp } from '../phrasing'
 import {
   mirroredTracks,
@@ -47,17 +47,17 @@ const looked = (mirror: Mirror, reference: string): Renderable<Shown> => {
 
   const held = mirroredTracks(mirror, playlist.id)
 
-  return succeeded('show', { playlist, ...held }, () => human(playlist, held))
+  return succeeded('show', { playlist, ...held }, (width) => human(playlist, held, width))
 }
 
-const human = (playlist: MirroredPlaylist, held: MirroredTracks): string => {
+const human = (playlist: MirroredPlaylist, held: MirroredTracks, width: number): string => {
   const note = statusNote(playlist.status)
 
   return [
     identified(playlist.title, playlist.id),
     holds(playlist, held),
     ...(note === null ? [] : [note]),
-    ...listing(held),
+    ...listing(held, width),
   ].join('\n')
 }
 
@@ -107,37 +107,96 @@ const statusNote = (status: MirrorStatus): string | null => {
 
 const REMOVED_HEADING = 'Removed, and still recorded here:'
 
+/** What each column holds, for the reader of a table that can lose one. */
+const HEADINGS = ['#', 'TITLE', 'ARTIST', 'ALBUM', 'TIME', '']
+
+/** Where a Removed Track's marker goes, which is where its number would be. */
+const REMOVED_MARK = '-'
+
 /**
- * The two blocks, laid out as one set of columns and then cut in half.
+ * What each column gives up when the terminal is too narrow, in the order it
+ * gives it.
+ *
+ * The date a Track left goes first: the heading above those rows has already
+ * said they are gone, so the column adds a precise answer to a question the
+ * reader was not asking. The album goes next, and goes whole rather than
+ * shrinking -- `Ninet…` costs nearly the width of the real thing and tells
+ * nobody anything. Then the artists shrink, and only then the title.
+ *
+ * The title being last is the whole point of there being an order. This file
+ * used to refuse a width outright, on the grounds that a title cut off is a
+ * title a reader cannot search for, and that argument is kept rather than
+ * discarded -- two entire columns and part of a third are spent before a single
+ * character of a title is.
+ */
+const MOVES: Move[] = [{ drop: 5 }, { drop: 3 }, { trim: 2, least: 8 }, { trim: 1, least: 12 }]
+
+/**
+ * The two blocks, laid out as one set of columns and then cut apart.
  *
  * Cut afterwards rather than laid out separately, so that the Removed rows line
  * up with the present ones instead of each block being square on its own. That
- * alignment is what lets a reader run an eye down the titles across the gap.
+ * alignment is what lets a reader run an eye down the titles across the gap, and
+ * it is why the header is in the same layout rather than printed on its own: a
+ * header sized apart from its table is a header that does not sit over it.
  *
- * Nothing is truncated to a terminal width, and nothing here asks for one. `Io`
- * has carried a column count since #54, where the wordmark needed one to know
- * whether it fits; this deliberately does not read it, and the reason it gave
- * for there being none to read is the reason it still ignores the one there is.
- * A long title cut off is a title a reader cannot search for. A narrow terminal
- * wraps, and anybody who wants to slice this has `--json`.
+ * The numbers count what is shown, one upward, rather than carrying the Source's
+ * own `position`. That column is preserved with holes in it -- a Skipped entry
+ * takes an index, and a Removed Track keeps the one it held when it left -- so
+ * printing it would have a reader working out what became of the numbers that
+ * are missing, and the answer is on a different part of the screen.
+ *
+ * A Removed Track's `-` sits in that same column. It used to have one of its
+ * own, which cost every present row a blank cell and pushed the entire table six
+ * spaces right to make room for a marker almost no row carries.
+ *
+ * A width is read now, where this file used to refuse to read one. What it
+ * refused was cutting a title, and it still does: see `MOVES` for the order that
+ * makes a width safe to obey.
+ *
+ * One caveat, inherited from `columns` and not fixed here: width is
+ * `String.length`, UTF-16 code units rather than the columns a terminal spends.
+ * A CJK title costs two per unit, so it is cut short of where it should be and
+ * still overruns. That was already true of the alignment; it is now visible in
+ * the cut as well. Getting it right needs an East-Asian width table.
  */
-const listing = ({ tracks, removed }: MirroredTracks): string[] => {
+const listing = ({ tracks, removed }: MirroredTracks, width: number): string[] => {
   if (tracks.length === 0 && removed.length === 0) return []
 
-  const laid = columns([...tracks.map(row), ...removed.map(row)])
+  const laid = fitted(
+    [
+      HEADINGS,
+      ...tracks.map((track, at) => row(track, String(at + 1))),
+      ...removed.map((track) => row(track, REMOVED_MARK)),
+    ],
+    width,
+    MOVES,
+  )
+
+  const head = laid[0]!
 
   return [
-    ...(tracks.length === 0 ? [] : ['', ...laid.slice(0, tracks.length)]),
-    ...(removed.length === 0 ? [] : ['', REMOVED_HEADING, ...laid.slice(tracks.length)]),
+    ...(tracks.length === 0 ? [] : ['', head, ...laid.slice(1, tracks.length + 1)]),
+    ...(removed.length === 0
+      ? []
+      : [
+          '',
+          REMOVED_HEADING,
+          // The header goes wherever the first block is. A `show` holding
+          // nothing but Removed Tracks would otherwise name its columns above a
+          // heading that belongs to them.
+          ...(tracks.length === 0 ? [head] : []),
+          ...laid.slice(tracks.length + 1),
+        ]),
   ]
 }
 
 /**
- * One Track. The marker is `sync`'s: a leading `-` is already what this CLI
- * writes beside a Track that left a Playlist.
+ * One Track, under a mark that is either its number or `sync`'s `-`: a leading
+ * `-` is already what this CLI writes beside a Track that left a Playlist.
  */
-const row = (track: MirroredTrack): string[] => [
-  track.removedAt === null ? '' : '-',
+const row = (track: MirroredTrack, mark: string): string[] => [
+  mark,
   track.title,
   performers(track.artists),
   track.album ?? UNKNOWN,
