@@ -239,12 +239,34 @@ export const Live = ({ initial }: { initial: Session }) => {
 
     const skip = () => dispatch({ kind: 'skipped' })
 
-    window.addEventListener('keydown', skip)
-    window.addEventListener('pointerdown', skip)
+    // **On the capture phase, and #90 is what made that load-bearing.**
+    //
+    // Bubbling, this listener runs *after* React's own -- so one keypress means
+    // "run what is at the prompt" and then "skip whatever is playing", in that
+    // order. That cost nothing while no command could start a replay: `entered`
+    // already collapses one ahead of itself, so the `skipped` behind it landed
+    // on a terminal with nothing left to skip and changed nothing.
+    //
+    // #90's `demo` is a command that starts one. Bubbling, Enter ran the
+    // recording and then skipped it inside the same keystroke, and the page
+    // printed the whole transcript at once at every viewport -- with every
+    // seam-one and seam-two case still green, because neither has a real event
+    // order to get wrong.
+    //
+    // Capturing, the question is asked before the event reaches React at all,
+    // which is the honest reading of what this listener is for: **a keypress
+    // skips what was already playing when it was pressed.** A replay that
+    // keystroke went on to start is not that, and a stray `skipped` ahead of
+    // `entered` is the no-op it always was -- so the same listener that was
+    // wrong afterwards is right in front.
+    const phase = { capture: true }
+
+    window.addEventListener('keydown', skip, phase)
+    window.addEventListener('pointerdown', skip, phase)
 
     return () => {
-      window.removeEventListener('keydown', skip)
-      window.removeEventListener('pointerdown', skip)
+      window.removeEventListener('keydown', skip, phase)
+      window.removeEventListener('pointerdown', skip, phase)
     }
   }, [replaying])
 
