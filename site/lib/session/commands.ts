@@ -1,4 +1,6 @@
 import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
+import { type Frame } from './boot'
+import { DEMO, playing, recording } from './demo'
 import { DONATE, giving } from './donate'
 import { copying, INSTALL, isSystem, offering, PICKER, SYSTEMS } from './install'
 import {
@@ -113,13 +115,14 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Five today.
+ * The page's own verbs. Six, which is all of them.
  *
- * #90 adds `demo` -- one entry here and one branch in `run` below, which is the
- * whole of what #91's `install` cost and the whole of what #88's two cost after
- * it. They are deliberately not in `MENU_ENTRIES`: the menu carries the
- * binary's five and nothing else, because putting a site verb there would be
- * the site speaking in the binary's voice.
+ * #90 added `demo` -- one entry here and one branch in `run` below, which is
+ * what #91's `install` cost and what #88's two cost after it, and the estimate
+ * this docblock made of it held. ADR-0010 names the six, and with `demo` landed
+ * the list is closed rather than merely current. They are deliberately not in
+ * `MENU_ENTRIES`: the menu carries the binary's five and nothing else, because
+ * putting a site verb there would be the site speaking in the binary's voice.
  *
  * The order is the order `help` lists them in, and it is not alphabetical:
  * `help` first, because it is how somebody arrives at the rest; then what the
@@ -153,6 +156,13 @@ const VERBS: readonly Command[] = [
     takesArgument: true,
     takes: THEMES,
   },
+  // **Not `a real session`, though that is #90's own phrase for it.** The
+  // ticket is describing the feature; this is copy a visitor reads, and
+  // `SITE.md` 04 forbids a claim the product cannot currently support. The
+  // recording prints a tier no build of `jukebox show` prints yet, so `real`
+  // would be the one word on the row that is not true. What makes the exemption
+  // sound is the labelling, and the label says the honest thing already.
+  { name: DEMO, summary: 'Play a recording of a session.', voice: 'site' },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -230,6 +240,22 @@ export const NAMES: readonly string[] = COMMANDS.map((command) => command.name)
  * the select live as well as draw it, and two descriptions of one widget can
  * disagree where one cannot. `intents` is what has to happen off the page -- a
  * clipboard write, today -- and the component is what performs it.
+ *
+ * `plays` is #90's and is a request for the same reason again: `body` is what
+ * the command printed and this is the order the rows of it arrive in, which is
+ * a thing that happens over time and so not this module's to perform.
+ *
+ * **Its frames are relative to `body` rather than to the page**, because this
+ * module does not know what is above them -- `terminal.ts` holds the scrollback
+ * and prefixes it. That is also what lets the last frame hand back the very
+ * array the session ends up holding, which is the property `test/boot.test.ts`
+ * pins for the boot with `toBe` and `test/demo.test.ts` now pins for this.
+ *
+ * **Whether it is honoured is not decided here.** A visitor who asked for
+ * reduced motion is handed `body` whole and no frames are stepped, and the
+ * media query behind that is a fact about a browser -- so `terminal.ts` reads
+ * it off the state the component put there, exactly as `preference` arrives.
+ * This module answers the same way for everyone.
  */
 export type Printed = {
   readonly echo: Line
@@ -238,6 +264,7 @@ export type Printed = {
   readonly clears?: true
   readonly opens?: Open
   readonly intents?: readonly Intent[]
+  readonly plays?: readonly Frame[]
 }
 
 /** Said when `clear` has left nothing behind to say. */
@@ -569,6 +596,28 @@ export const run = (buffer: string, preference: Preference): Printed => {
       ],
       intents: [choosing(chosen)],
     }
+  }
+
+  // **The only branch on this page that prints output the binary did not
+  // produce**, and the one ADR-0010 carves out by name: nothing invents a
+  // Resolution, a Tier or a Track count *outside one labelled recording*. The
+  // label rows are inside `recording()` rather than added here, so the thing
+  // that says "this is a recording" cannot be separated from the recording.
+  //
+  // The body and the frames come from the same script, so what a visitor who
+  // asked for reduced motion is handed whole and what everybody else watches
+  // arrive are the same rows in the same order -- one description rather than
+  // two that can disagree.
+  //
+  // The leftovers go through `playing` rather than being appended after it, so
+  // the frames cover the whole body. Left out they were in `body` and in no
+  // frame at all, and the sentence arrived only when the last frame handed the
+  // session back -- a row that pops in at the end is a row that was never
+  // played, and the two halves of a `Printed` disagreed for the whole playback.
+  if (command.name === DEMO) {
+    const spare = rest.length > 0 ? noArguments() : []
+
+    return { echo, body: [...recording(), ...spare], plays: playing(spare) }
   }
 
   return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }

@@ -114,12 +114,13 @@ describe('help', () => {
     )
   })
 
-  it('covers all seven of the binary and all five of the page', () => {
+  it('covers all seven of the binary and all six of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(7)
     // The order is the order `help` lists them in, and it is not alphabetical:
     // `help` first because it is how somebody arrives at the rest, then what
     // the page can actually do, then `clear`, which is the way out of a screen
-    // rather than a thing to do on one.
+    // rather than a thing to do on one. #90's `demo` is the last of the middle
+    // group, which is where ADR-0010 lists it.
     expect(
       COMMANDS.filter((command) => command.voice === 'site').map((command) => command.name),
     ).toEqual([
@@ -127,6 +128,7 @@ describe('help', () => {
       'install',
       'donate',
       'theme',
+      'demo',
       'clear',
     ])
   })
@@ -554,11 +556,14 @@ describe('the chip row', () => {
    * Recomputing it the way `commands.ts` does would be a test that cannot
    * disagree with the code.
    *
-   * **Five rather than the ticket's six.** #89 lists `demo` and #90 is what
-   * adds it. A chip that printed `command not found` would be worse than a row
-   * that grows when the verb behind it exists, so this is the line #90 edits.
+   * **Six, which is the ticket's six.** #89 listed `demo` before it existed and
+   * left this row at five, on the grounds that a chip printing `command not
+   * found` would be worse than a row that grows when the verb behind it does --
+   * and named this as the line #90 would edit. This is that edit. The order is
+   * ADR-0010's, which is `help`'s: the way in, then what the page can do, then
+   * the way out of a screen.
    */
-  const ROW = ['help', 'install', 'donate', 'theme', 'clear']
+  const ROW = ['help', 'install', 'donate', 'theme', 'demo', 'clear']
 
   const named = (): string[] => CHIPS.map((chip) => chip.text)
 

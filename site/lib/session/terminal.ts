@@ -33,16 +33,16 @@ import { abandoned, active, answered, asking, height, moved, named } from './sel
 /**
  * Where a replay in flight stands: the frames, and which one is on screen.
  *
- * **Called `Boot` until #90, and the name only ever recorded which consumer
- * arrived first.** Nothing about it is about booting: a list of frames and a
- * cursor into it describes a recording exactly as well as it describes a
- * startup, and #90 is about to bring the second one. A field called `boot`
- * holding a demo would be a lie in the one place a reader looks to find out
- * what is moving.
+ * **It was called `Boot` until #90, and that rename is most of what the ticket
+ * cost this file.** Nothing about it was ever about booting -- a list of frames
+ * and a cursor into it describes a recording exactly as well as it describes a
+ * startup, and the old name only recorded which consumer happened to arrive
+ * first. With two of them, a field called `boot` holding a demo would be a lie
+ * in the one place a reader looks to find out what is moving.
  *
  * One field rather than two, because only one reel can be turning: `after`
  * collapses whatever is in flight ahead of every input but its own timer's, so
- * a second replay started during a first is unreachable rather than handled.
+ * a recording started during a boot is unreachable rather than handled.
  *
  * The frames are carried rather than recomputed, because deconstructing a whole
  * session on every tick is work nobody asked for. They are cheap to hold: each
@@ -51,20 +51,33 @@ import { abandoned, active, answered, asking, height, moved, named } from './sel
  */
 type Reel = { readonly frames: readonly Frame[]; readonly at: number }
 
+/**
+ * Whether the visitor asked for less of it.
+ *
+ * Here rather than read from a browser, because this module has no browser to
+ * read from -- `components/live.tsx` asks `boot.ts`'s media query and dispatches
+ * the answer, which is `preference`'s arrangement with the theme provider and
+ * `detected`'s with a user agent. It is what lets "reduced motion prints the
+ * recording whole" be a fact `bun test` can read.
+ */
+export type Motion = 'full' | 'reduced'
+
 export type Terminal = {
   /** What is on screen. Handed to the renderer unchanged, already capped. */
   readonly session: Session
 
   /**
-   * The replay in flight, and `undefined` otherwise.
+   * The replay in flight -- the boot, or #90's recording -- and `undefined`
+   * otherwise.
    *
    * **`undefined` means both *not started yet* and *finished*, and the two do
    * not need telling apart.** In either nothing is scheduled and nothing is
-   * pending, and the session is whatever the last frame left -- which is the
-   * whole of what anything downstream asks. The component dispatches
-   * `replayed` exactly once, from a mount effect, so "not started" is a state
-   * that lasts one render and answers every question the same way "finished"
-   * does.
+   * pending, and the session is whatever the last frame left, which for the
+   * boot is the session the page was served with and for a recording is the
+   * transcript entire -- which is the whole of what anything downstream asks.
+   * The component dispatches `replayed` exactly once, from a mount effect, so
+   * "not started" is a state that lasts one render and answers every question
+   * the same way "finished" does.
    */
   readonly reel: Reel | undefined
 
@@ -110,6 +123,25 @@ export type Terminal = {
    * whole of how a bare `theme` can report anything under `bun test`.
    */
   readonly preference: Preference
+
+  /**
+   * Whether the visitor asked for less motion, as the component last read it.
+   *
+   * **It rests at `reduced`, and the direction is the safe one.**
+   * `components/live.tsx` already reads a missing `matchMedia` as *reduce* --
+   * failing to the floor, which is the argument `globals.css` makes about its
+   * own fallback -- and a served page that has run no effect yet has to answer
+   * the same way. What it costs is nothing: the transcript is printed whole,
+   * which is the content, and only the animation is declined.
+   *
+   * The boot deliberately does not read this. It is asked the same question by
+   * the component, which simply does not dispatch `replayed` when the answer is
+   * *reduce*, and moving that decision in here would be rewriting a working
+   * arrangement to share a field rather than to fix anything. A recording
+   * cannot use that shape, because the command has already run by the time the
+   * question is asked and its rows have to land either way.
+   */
+  readonly motion: Motion
 }
 
 /**
@@ -136,6 +168,7 @@ export type Input =
   | { readonly kind: 'copied'; readonly intent: Copying }
   | { readonly kind: 'detected'; readonly agent: string }
   | { readonly kind: 'preferred'; readonly preference: Preference }
+  | { readonly kind: 'motion'; readonly motion: Motion }
   | Replaying
 
 /**
@@ -159,6 +192,7 @@ type Keyed = Exclude<
   | { kind: 'copied' }
   | { kind: 'detected' }
   | { kind: 'preferred' }
+  | { kind: 'motion' }
   | Replaying
 >['kind']
 
@@ -248,6 +282,11 @@ export const booted = (session: Session): Terminal => ({
   // class on it. `components/live.tsx` replaces it once the provider has
   // mounted and said what the visitor actually asked for.
   preference: RESTING,
+  // The same arrangement, and the same direction the component fails in: a page
+  // that has run no effect yet does not know what was asked for, and the
+  // answer that costs nothing to be wrong about is the one that declines the
+  // animation and keeps every row.
+  motion: 'reduced',
 })
 
 /**
@@ -351,6 +390,48 @@ const picked = (terminal: Terminal, open: Open, at: number): Terminal => {
     : entered({ ...left, buffer: option.runs })
 }
 
+/**
+ * A recording, wound back to its first frame -- and the terminal untouched for
+ * every command that is not one.
+ *
+ * **The frames arrive relative to what the command printed and leave relative
+ * to the page.** `commands.ts` computes them over its own body, because a module
+ * that answers what one line prints has no business knowing what is above it;
+ * this is where the scrollback, the air and the echo are put back in front of
+ * each one. Two halves of one description rather than a second description.
+ *
+ * **The last frame is the array the session is already holding**, handed back
+ * rather than rebuilt, which is `boot.ts`'s own arrangement one module over and
+ * for its reason: a replay then ends on the page itself rather than on a copy of
+ * it, and `test/demo.test.ts` can say so with `toBe` rather than arguing about
+ * deep equality. It also means a recording long enough to push the scrollback
+ * past its cap ends where the cap left it, instead of on a frame that disagrees.
+ *
+ * **A visitor who asked for less motion is handed the terminal unchanged, and
+ * that is the whole of the behaviour rather than a degraded version of it.** The
+ * transcript is already in `session.lines` -- `entered` appended it before this
+ * was reached -- so declining the animation costs no row. It is the trade #84
+ * made for the boot, arrived at from the other direction: there the finished
+ * session is the floor and the replay is the enhancement, and here the finished
+ * transcript is.
+ */
+const rolled = (
+  terminal: Terminal,
+  plays: readonly Frame[] | undefined,
+  above: readonly Line[],
+): Terminal => {
+  if (plays === undefined || terminal.motion === 'reduced') return terminal
+
+  const settled = terminal.session.lines
+
+  const frames = plays.map((frame, index) => ({
+    lines: index === plays.length - 1 ? settled : capped([...above, ...frame.lines]),
+    hold: frame.hold,
+  }))
+
+  return showing(terminal, frames, 0)
+}
+
 const entered = (terminal: Terminal): Terminal => {
   const open = terminal.session.open
   const typed = terminal.buffer.trim()
@@ -388,22 +469,31 @@ const entered = (terminal: Terminal): Terminal => {
   // One blank row of air above the echo, and none when there is nothing above
   // it to be separated from -- which is the state `clear` leaves behind. The
   // CLI never double-spaces and neither does this.
-  const appended = [
+  //
+  // Split in two since #90, and the top half earns its name: it is everything a
+  // recording's frames have to be prefixed with. `commands.ts` computes those
+  // frames over its own body and knows nothing about what is on screen above
+  // them, so this is the half that does.
+  const above = [
     ...walked.session.lines,
     ...(walked.session.lines.length > 0 ? [blank()] : []),
     printed.echo,
-    ...printed.body,
   ]
+
+  const appended = [...above, ...printed.body]
 
   // Immediate repeats are not recorded, or up-arrow after running something
   // twice walks through a wall of the same word.
   const history = walked.history.at(-1) === typed ? walked.history : [...walked.history, typed]
 
-  return {
-    // Nothing is replaying by the time a command runs: `after` collapses the
-    // boot ahead of every input but its own timer's, so a command is only ever
-    // entered against the finished session. Spelled rather than carried, so
-    // this stays true by statement rather than by inheritance.
+  const answered: Terminal = {
+    // Nothing is replaying by the time a command runs: `after` collapses
+    // whatever was in flight ahead of every input but its own timer's, so a
+    // command is only ever entered against a settled session. Spelled rather
+    // than carried, so this stays true by statement rather than by
+    // inheritance -- and `rolled` below is the one thing allowed to put a reel
+    // back, because a recording is a command's own answer rather than something
+    // left over from before it.
     reel: undefined,
 
     // **`intents` is replaced rather than carried, and #91 is what settled
@@ -435,7 +525,10 @@ const entered = (terminal: Terminal): Terminal => {
     // spreading one -- which is deliberate, and is why every field it does not
     // reset has to be named here.
     preference: walked.preference,
+    motion: walked.motion,
   }
+
+  return rolled(answered, printed.plays, above)
 }
 
 /** Still on the first word: leading space, then the prefix, then the end. */
@@ -623,6 +716,22 @@ const preferred = (terminal: Terminal, preference: Preference): Terminal =>
     ? terminal
     : { ...terminal, preference }
 
+/**
+ * What the browser says about motion, stored and acted on nowhere yet.
+ *
+ * `preferred` above wearing different clothes, and deliberately as small: it
+ * changes nothing on screen, because nothing has asked it anything yet. The one
+ * consumer is `rolled`, which reads it at the moment a recording is about to
+ * start, so a visitor who changes the setting mid-visit gets the answer they
+ * have now rather than the one they had on arrival.
+ *
+ * An answer that changed nothing hands back the terminal it was given, which
+ * matters for the same reason it does one function up: this is dispatched from
+ * an effect, so the no-op is the common case.
+ */
+const motioned = (terminal: Terminal, motion: Motion): Terminal =>
+  terminal.motion === motion ? terminal : { ...terminal, motion }
+
 const earlier = (terminal: Terminal): Terminal => {
   if (terminal.recall === 0) return terminal
 
@@ -658,9 +767,12 @@ const later = (terminal: Terminal): Terminal => {
  * "is anything still replaying" is one comparison and there is no terminal
  * frame to remember not to schedule after.
  *
- * The last frame's `lines` is the array `finished` returned -- `boot.ts` hands
- * it back rather than a copy -- so a replay that ran to its end leaves the
- * renderer holding the very rows it was prerendered with.
+ * The last frame's `lines` is handed back rather than rebuilt, by both callers:
+ * `boot.ts` returns the array `finished` returned, and `rolled` returns the one
+ * `entered` had just put on the session. So a replay that ran to its end leaves
+ * the renderer holding the very rows it would have been holding anyway -- the
+ * ones it was prerendered with, for the boot, and the finished transcript for a
+ * recording.
  *
  * **Everything but the rows is carried through**, which since #86 means the
  * open select as well as the intents. A replay is the page redrawing what it
@@ -680,9 +792,11 @@ const showing = (terminal: Terminal, frames: readonly Frame[], at: number): Term
  * How long the frame on screen is held before the next one, and `undefined`
  * when nothing is replaying.
  *
- * The whole of what the component needs to drive a replay, so `Reel` itself
+ * The whole of what the component needs to drive either replay, so `Reel` itself
  * stays private: the effect schedules one number and asks nothing about where
- * the replay is or how many frames are left.
+ * the replay is, how many frames are left, or which of the two it is watching.
+ * That is why #90 added a second consumer of this machinery without adding a
+ * second timer to `components/live.tsx`.
  */
 export const pause = (terminal: Terminal): number | undefined =>
   terminal.reel === undefined ? undefined : terminal.reel.frames[terminal.reel.at]!.hold
@@ -708,12 +822,14 @@ const advanced = (terminal: Terminal): Terminal =>
  * `chosen` is defined by composition rather than by a second path, so a word
  * that was clicked and a word that was typed cannot drift apart.
  *
- * **Every input but the timer's own reaches the end of the boot first, and that
- * is the whole of #84's skip.** A listener in the component could say it for a
- * keystroke and could not say it for a word that was clicked -- which would
- * otherwise print into a session still being drawn, and have the next frame
- * overwrite what it printed. Collapsing here makes that unreachable instead of
- * handled, and makes "any keypress skips" a fact `bun test` can read.
+ * **Every input but the timer's own reaches the end of whatever is playing
+ * first, and that is the whole of #84's skip -- and, since #90, of the
+ * recording's.** A listener in the component could say it for a keystroke and
+ * could not say it for a word that was clicked -- which would otherwise print
+ * into a session still being drawn, and have the next frame overwrite what it
+ * printed. Collapsing here makes that unreachable instead of handled, and makes
+ * "any keypress skips" a fact `bun test` can read about both of them, with no
+ * second mechanism to keep in step.
  *
  * The `reel === undefined` half of the guard is not an optimisation either: it
  * is what keeps the paragraph above true once a collapse runs ahead of every
@@ -722,7 +838,10 @@ const advanced = (terminal: Terminal): Terminal =>
  */
 export const after = (terminal: Terminal, input: Input): Terminal => {
   const settled =
-    input.kind === 'advanced' || input.kind === 'preferred' || terminal.reel === undefined
+    input.kind === 'advanced' ||
+    input.kind === 'preferred' ||
+    input.kind === 'motion' ||
+    terminal.reel === undefined
       ? terminal
       : skipped(terminal)
 
@@ -752,6 +871,13 @@ export const after = (terminal: Terminal, input: Input): Terminal => {
     // settled on following their system.
     case 'preferred':
       return preferred(settled, input.preference)
+
+    // Exempt for the same reason, and here it is sharper: this arrives from the
+    // mount effect that decides whether to replay at all, one dispatch ahead of
+    // `replayed`. Collapsing on it would skip the boot for every visitor, every
+    // time, which is the whole animation rather than an edge of it.
+    case 'motion':
+      return motioned(settled, input.motion)
 
     // Rewinds, rather than resuming, so a second dispatch is a boot rather than
     // two -- which is what React's StrictMode does to a mount effect in `dev`.
