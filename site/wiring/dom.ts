@@ -144,6 +144,34 @@ export const forget = (): void => {
   writes.length = 0
 }
 
+/**
+ * Where the page scrolled to, and the only way this seam can see it.
+ *
+ * **jsdom implements no `scrollTo`** -- it answers with a "not implemented"
+ * error on the virtual console rather than throwing, so without this every case
+ * that runs a command prints noise and asserts nothing. It is `written()`'s
+ * arrangement for a second effect the component performs and no other seam can
+ * watch: #89 pins the prompt and the chip row to the bottom of the viewport, so
+ * what a chip prints lands below the fold unless the page follows it down.
+ *
+ * jsdom lays nothing out, so the *number* here means nothing and is not
+ * asserted. That the component asked at all is the wiring, and is what this
+ * records.
+ */
+const scrolls: number[] = []
+
+export const scrolled = (): readonly number[] => scrolls
+
+export const forgetScrolling = (): void => {
+  scrolls.length = 0
+}
+
+Object.assign(dom.window, {
+  scrollTo: (options?: number | { top?: number }): void => {
+    scrolls.push(typeof options === 'object' ? (options?.top ?? 0) : (options ?? 0))
+  },
+})
+
 Object.assign(dom.window.navigator, {
   clipboard: {
     writeText: (value: string): Promise<void> => {
@@ -197,6 +225,20 @@ export const pressed = async (key: string): Promise<Event> => {
   // keystroke was cancelled is only answerable from the event, and #86 has a
   // key out here that must not be -- Tab, which is how focus reaches the page.
   return event
+}
+
+/**
+ * A tap on the page, with nothing focused.
+ *
+ * `pressed` above for the other half of #84's skip. A plain `Event` rather than
+ * a `PointerEvent`, which jsdom does not implement -- the listener asks only for
+ * the type, and inventing a constructor the browser has and this window does not
+ * would be testing the stub.
+ */
+export const tapped = async (): Promise<void> => {
+  await act(async () => {
+    window.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+  })
 }
 
 /** Modifiers held down alongside a keystroke. */

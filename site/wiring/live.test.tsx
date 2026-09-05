@@ -3,7 +3,7 @@ import { ThemeProvider } from 'next-themes'
 import { Live } from '@/components/live'
 import { Screen } from '@/components/screen'
 import { CLI_COMMANDS, CLI_VERSION, donations, MENU_ENTRIES } from '@/lib/content'
-import { run } from '@/lib/session/commands'
+import { CHIPS, run } from '@/lib/session/commands'
 import { finished } from '@/lib/session'
 import { replay } from '@/lib/session/boot'
 import { versionLine } from '@/lib/session/header'
@@ -11,12 +11,15 @@ import { commandFor } from '@/lib/session/install'
 import { RESTING } from '@/lib/session/theme'
 import {
   forget,
+  forgetScrolling,
   forgetTheme,
   mounted,
   prefers,
   pressed,
   pretending,
   schemed,
+  scrolled,
+  tapped,
   written,
   type Mounted,
 } from './dom'
@@ -51,6 +54,9 @@ const live = (): Promise<Mounted> => mounted(<Live initial={finished(CLI_VERSION
 const ADD = CLI_COMMANDS.find((command) => command.name === 'add')!.summary
 
 const region = (page: Mounted): HTMLElement => page.one('[role="status"]')
+
+/** The status line's words. Not rows of the session, so not reachable as one. */
+const chips = (page: Mounted): HTMLElement[] => page.all('.u-chips .u-word')
 
 describe('the keys the browser would otherwise take', () => {
   it('cancels the three it handles itself', async () => {
@@ -299,6 +305,17 @@ describe('the boot replay', () => {
     // root at all. What the collapse then does is `test/terminal.test.ts`'s.
     await asking('no-preference', async (page) => {
       await pressed('a')
+
+      expect(page.all('.u-row, .u-art')).toHaveLength(rowsWhenFinished())
+    })
+  })
+
+  it('reaches the end on a tap, because a phone has no keys to press', async () => {
+    // #84 could only offer the escape to a keyboard and said so. On the device
+    // where a second and a half of animation is most in the way, the gesture is
+    // a finger, and #89 is where it arrived.
+    await asking('no-preference', async (page) => {
+      await tapped()
 
       expect(page.all('.u-row, .u-art')).toHaveLength(rowsWhenFinished())
     })
@@ -671,6 +688,98 @@ describe('the guess at the visitor\'s system', () => {
     const page = await live()
 
     expect(page.one('main').textContent).toContain(commandFor('macos').command)
+
+    await page.unmount()
+  })
+})
+
+describe('the status line, which is the whole of the page on a phone', () => {
+  it('draws a chip for every verb the module handed over', async () => {
+    // Wiring, not the row: *which* verbs belong on it is
+    // `test/commands.test.ts`'s, and this is only that the component drew what
+    // it was given rather than a list of its own.
+    const page = await live()
+
+    expect(chips(page).map((chip) => chip.textContent)).toEqual(CHIPS.map((chip) => chip.text))
+
+    await page.unmount()
+  })
+
+  it('runs a chip that was tapped', async () => {
+    const page = await live()
+
+    await page.click(chips(page).find((chip) => chip.textContent === 'help')!)
+
+    expect(page.container.textContent).toContain(ADD)
+
+    await page.unmount()
+  })
+
+  it('leaves focus where it was, so a phone keyboard stays down', async () => {
+    // **Deliberately unlike a word in the scrollback**, which hands focus to
+    // the prompt because `clear` can delete the element the cursor was standing
+    // on. A chip cannot be deleted by what it runs -- it is not in the
+    // scrollback -- and focusing the field on a phone raises the software
+    // keyboard over the row that was just tapped, which is the opposite of what
+    // the chips are for.
+    const page = await live()
+
+    const chip = chips(page).find((one) => one.textContent === 'help')!
+    await page.click(chip)
+
+    expect(document.activeElement).not.toBe(page.field())
+
+    await page.unmount()
+  })
+
+  it('survives `clear`, because it is not a row of the scrollback', async () => {
+    const page = await live()
+
+    await page.click(chips(page).find((chip) => chip.textContent === 'clear')!)
+
+    expect(page.all('.u-row')).toHaveLength(0)
+    expect(chips(page)).toHaveLength(CHIPS.length)
+
+    await page.unmount()
+  })
+})
+
+describe('a tap on the terminal', () => {
+  it('reaches the prompt, which is what raises a software keyboard', async () => {
+    // The only half of the criterion any seam can observe: a browser will not
+    // say whether a virtual keyboard rose, and focusing the field is what asks
+    // it to.
+    const page = await live()
+
+    await page.click(page.one('main'))
+
+    expect(document.activeElement).toBe(page.field())
+
+    await page.unmount()
+  })
+})
+
+describe('what was printed, followed down the page', () => {
+  it('scrolls after a command, because the prompt is pinned over the fold', async () => {
+    forgetScrolling()
+    const page = await live()
+
+    await page.type('help')
+    await page.press('Enter')
+
+    expect(scrolled()).not.toEqual([])
+
+    await page.unmount()
+  })
+
+  it('does not scroll for a page nobody has run anything on', async () => {
+    // The boot prints nothing, so nothing should follow it anywhere -- and a
+    // page that scrolled itself on mount would move under a visitor who had not
+    // asked it to.
+    forgetScrolling()
+    const page = await live()
+
+    expect(scrolled()).toEqual([])
 
     await page.unmount()
   })
