@@ -70,16 +70,59 @@ export const prefers = (preference: typeof motion): void => {
   motion = preference
 }
 
+/**
+ * The second query this window answers, and the one `next-themes` asks.
+ *
+ * Spelled here rather than imported, because the module that asks it is a
+ * dependency rather than this project's -- and `lib/session/theme.ts`
+ * deliberately never names a media query at all, being the half of the theme
+ * that has no browser to ask.
+ *
+ * **It answers `light` until a case says otherwise**, which is `prefers`'
+ * arrangement and for its reason: every case in this directory that is about
+ * something else should mount the page in one known theme rather than in
+ * whichever one a previous case left behind.
+ */
+export const COLOUR_SCHEME = '(prefers-color-scheme: dark)'
+
+let scheme: 'light' | 'dark' = 'light'
+
+export const schemed = (preference: typeof scheme): void => {
+  scheme = preference
+}
+
 Object.assign(dom.window, {
   matchMedia: (query: string) => ({
-    matches: query === REDUCED_MOTION && motion === 'reduce',
+    matches:
+      (query === REDUCED_MOTION && motion === 'reduce') ||
+      (query === COLOUR_SCHEME && scheme === 'dark'),
     media: query,
     onchange: null,
     addEventListener: () => {},
     removeEventListener: () => {},
+    // The deprecated pair, and not optional: `next-themes` still calls
+    // `addListener` to hear the operating system change its mind, and a stub
+    // without it throws the moment a provider mounts.
+    addListener: () => {},
+    removeListener: () => {},
     dispatchEvent: () => false,
   }),
 })
+
+/**
+ * The theme, forgotten between cases.
+ *
+ * `next-themes` writes its choice to `localStorage` and its answer to a class
+ * on `<html>`, and this window is one object shared by the file -- so both
+ * survive into every case below the one that set them unless a `finally` puts
+ * them back. It is `forget`'s arrangement one screen down, for a second piece
+ * of state that outlives an unmount.
+ */
+export const forgetTheme = (): void => {
+  dom.window.localStorage.removeItem('theme')
+  dom.window.document.documentElement.className = ''
+  schemed('light')
+}
 
 /**
  * What reached the clipboard, and the only way this seam can see one.
