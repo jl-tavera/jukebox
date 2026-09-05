@@ -336,6 +336,11 @@ describe('show in JSON mode', () => {
       position: 0,
       addedAt: expect.any(Number),
       removedAt: null,
+      // Null, and this release cannot make it anything else. Asserted rather
+      // than left out for the reason above: a script reading this object is
+      // entitled to know the field is there and what it holds, and the day it
+      // starts holding a name is a day this line should have to change.
+      filePath: null,
     })
   })
 })

@@ -77,6 +77,39 @@ const asItWasAtVersionOne = (where: Locations) => {
   mirror.close()
 }
 
+/**
+ * A Mirror as the release that shipped the first two migrations would have left
+ * it, with a Track in it.
+ *
+ * The second earlier state this file can open, and the first that exercises an
+ * `ALTER TABLE` rather than a fresh `CREATE`. That is a different code path on
+ * the file somebody already has, which is the argument `MIGRATIONS` makes for
+ * splitting 1 from 2 in the first place.
+ *
+ * The Track is inserted with version 2's own column list, spelled out rather
+ * than taken from `TRACK_COLUMN_NAMES` -- that constant tracks the current
+ * schema and would start naming `file_path` here, which is the one column an
+ * earlier release could not have written.
+ */
+const asItWasAtVersionTwo = (where: Locations) => {
+  mkdirSync(where.data, { recursive: true })
+
+  const mirror = new Database(join(where.data, MIRROR_FILE), { create: true, strict: true })
+  mirror.exec(MIGRATIONS[0]!.sql)
+  mirror.exec(MIGRATIONS[1]!.sql)
+  mirror.run('INSERT INTO schema_version (id, version) VALUES (1, 2)')
+  mirror.run(
+    `INSERT INTO playlists (id, url, title, folder_name, status)
+     VALUES ('spotify:older', 'https://open.spotify.com/playlist/older', 'From Before',
+             'From Before', 'ok')`,
+  )
+  mirror.run(
+    `INSERT INTO tracks (playlist_id, track_id, title, artists, position, added_at)
+     VALUES ('spotify:older', 'spotify:from-before', 'From Before', '["Someone"]', 0, 1)`,
+  )
+  mirror.close()
+}
+
 describe('the Mirror, on first use', () => {
   it('is created by the command that needs it, with its version recorded', async () => {
     const run = await adding()
@@ -133,10 +166,23 @@ describe('the Mirror, on first use', () => {
     )
 
     // Fetching does not exist: no Catalog is consulted and no response carries
-    // anything to download. So there is nowhere to write a match, a path, a
-    // checksum, a byte count or a download time, and a column that says something
-    // untrue is worse than one that is not there.
-    for (const absent of ['match', 'file_path', 'checksum', 'bytes', 'downloaded_at', 'state']) {
+    // anything to download. So there is nowhere to write a match, a checksum, a
+    // byte count or a download time, and a column that says something untrue is
+    // worse than one that is not there.
+    //
+    // `file_path` was the fifth of these and left the list in #108, which added
+    // it. The four that remain are still refused on the grounds above and this
+    // test still holds them to it -- what changed is not the rule but that one
+    // column earned an exception, argued in migration 3 where it is added. The
+    // short of it: it is NULL in every row this binary can write and stays NULL,
+    // so unlike these four it cannot disagree with anything.
+    //
+    // Which is why the assertion below is worth more than it was. A list that
+    // lost a member because somebody added the column and deleted the line would
+    // be a rule that quietly stopped applying; this one lost a member on purpose
+    // and says so, and the next column to go missing from it has to make the
+    // same argument out loud.
+    for (const absent of ['match', 'checksum', 'bytes', 'downloaded_at', 'state']) {
       expect(columns).not.toContain(absent)
     }
   })
@@ -177,6 +223,27 @@ describe('a Mirror written by an earlier release', () => {
         mirror.query<{ n: number }, []>('SELECT count(*) AS n FROM tracks').get()!.n,
       ),
     ).toBe(1)
+  })
+
+  it('gains the column the third step adds, and the Track it already held keeps its row', async () => {
+    const run = await adding(asItWasAtVersionTwo)
+
+    expect(run.code).toBe(0)
+    expect(versionOf(run)).toBe(SCHEMA_VERSION)
+
+    // The row survives the `ALTER`, and reads NULL in the column that was not
+    // there when it was written. Nothing in this release can make it anything
+    // else, which is the whole of what migration 3 promises: it adds a column
+    // and changes no answer.
+    expect(
+      mirrorOf(run, (mirror) =>
+        mirror
+          .query<{ title: string; file_path: string | null }, [string]>(
+            'SELECT title, file_path FROM tracks WHERE track_id = ?',
+          )
+          .get('spotify:from-before'),
+      ),
+    ).toEqual({ title: 'From Before', file_path: null })
   })
 
   it('does not collide with the folder name an earlier row already holds', async () => {

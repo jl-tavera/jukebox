@@ -217,7 +217,7 @@ export const applySnapshot = (
       // came back keeps the moment it first joined: its row is that Track's whole
       // history in this Playlist, and the primary key means there is one of them.
       //
-      // Named rather than positional, so the eleven values are matched to the
+      // Named rather than positional, so the twelve values are matched to the
       // columns by SQLite instead of by the order they are written in. Both
       // halves are checked: TypeScript against `TrackRow` because this is a
       // fresh object literal, and `strict: true` at run time, which throws on
@@ -238,6 +238,17 @@ export const applySnapshot = (
         position: track.position,
         added_at: at,
         removed_at: null,
+        // Bound null and, unlike `removed_at`, absent from the update half
+        // below on purpose -- for `added_at`'s reason rather than its own. A
+        // Track that left and came back is the row Fetching may already have
+        // written a file name into, and a snapshot arriving from the Source
+        // knows nothing about this machine's disk. Overwriting it here would
+        // lose the file to the next Sync that saw the Track return.
+        //
+        // Nothing writes this yet, so today the distinction costs nothing and
+        // decides nothing. It is made now because the commit that starts
+        // writing it will not think to come back and make it.
+        file_path: null,
       })
     }
 

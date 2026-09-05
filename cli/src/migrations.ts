@@ -122,10 +122,20 @@ export const MIGRATIONS: Migration[] = [
       --
       -- Absent for the reason \`normalized_key\` was absent from the worker's
       -- second migration -- a column nothing computes is the same mistake as a
-      -- table nothing fills: match, file path, checksum, byte count, download
-      -- timestamp. Nothing in this release can produce one. So is the events log
-      -- DESIGN section 02 describes: its stated jobs are making Sync resumable
-      -- and Reconcile explainable, and neither exists yet.
+      -- table nothing fills: match, checksum, byte count, download timestamp.
+      -- Nothing in this release can produce one. So is the events log DESIGN
+      -- section 02 describes: its stated jobs are making Sync resumable and
+      -- Reconcile explainable, and neither exists yet.
+      --
+      -- \`file path\` used to be fifth on that list and is a column now, added by
+      -- step 3 below, which argues it there. The rule above is unchanged and the
+      -- four that remain are still refused by it; step 3 is an exception taken
+      -- knowingly, not a discovery that the rule was wrong.
+      --
+      -- Editing a shipped step, which the note on \`MIGRATIONS\` forbids. Allowed
+      -- here and nowhere else: this is a comment, so a Mirror that ran the old
+      -- text and one that runs this are the same Mirror. The alternative was
+      -- leaving a sentence that names a column the next table over now has.
       CREATE TABLE tracks (
         playlist_id     TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
         track_id        TEXT NOT NULL,     -- ADR-0001, derived on write
@@ -149,6 +159,45 @@ export const MIGRATIONS: Migration[] = [
       -- ever wanted in, so the index that answers the membership question answers
       -- the ordering one too rather than being a second index beside it.
       CREATE INDEX tracks_present ON tracks (playlist_id, position) WHERE removed_at IS NULL;
+    `,
+  },
+  {
+    version: 3,
+    sql: `
+      -- Where a Track's audio went, once something puts it there.
+      --
+      -- This is the column step 2 refuses by name, and it ships anyway. Both
+      -- halves of that are deliberate and this is the whole of the argument.
+      --
+      -- The rule step 2 states is right and is not being repealed: a column
+      -- nothing computes is a promise the schema makes on the code's behalf, and
+      -- match, checksum, byte count and download timestamp are all still refused
+      -- by it. What makes this one different is that it is NULL in every row this
+      -- binary can write, and stays NULL -- so unlike those four it cannot ever
+      -- disagree with anything. There is no state to be wrong about. A reader
+      -- who queries it gets NULL and learns exactly what is true.
+      --
+      -- What it buys, immediately, is the thing the note on \`MIGRATIONS\` says
+      -- version 1 bought: a runner that has upgraded something. Splitting 1 from
+      -- 2 gave the tests one real earlier state to open; this gives them a
+      -- second, and it is the first that is an ALTER rather than a fresh CREATE
+      -- -- a different code path, on the Mirror somebody already has.
+      --
+      -- What it does NOT do is answer whether a Track's file is there. Nothing
+      -- writes this, so today \`jukebox open\` reads the Playlist's folder and the
+      -- folder is the whole answer. That stays true after Fetching writes here:
+      -- a path records where a file was put, and only the filesystem knows
+      -- whether it is still there. A user who moves or deletes their own audio
+      -- tells this column nothing.
+      --
+      -- A NAME, never an absolute path. Step 1 refuses a per-Playlist absolute
+      -- path in as many words -- "a second answer to the same question, wrong the
+      -- moment the root moves" -- and a per-Track one is the same mistake with
+      -- more rows. Three columns spell one path and each says its own part:
+      -- \`library_path\` in the config file is the root, \`playlists.folder_name\`
+      -- is the directory, this is the leaf. The name reads like an absolute path
+      -- and is not, which is why it is said here.
+      ALTER TABLE tracks ADD COLUMN file_path TEXT;
     `,
   },
 ]
@@ -184,13 +233,23 @@ export type TrackRow = {
   position: number
   added_at: number
   removed_at: number | null
+  /**
+   * The file's name inside the Playlist's folder, and NULL in every row this
+   * binary writes. Step 3 argues both. Not an absolute path -- the root is
+   * `library_path` and the directory is `playlists.folder_name`.
+   *
+   * Last, and that is load-bearing rather than tidy: `ADD COLUMN` appends at the
+   * end of `pragma_table_info` order, so a Mirror upgraded to 3 and one built
+   * fresh at 3 agree only if this stays after `removed_at`.
+   */
+  file_path: string | null
 }
 
 /** `true` where the column may hold NULL, which is `TrackRow`'s own answer read back. */
 type NullableByColumn = { [C in keyof TrackRow]: null extends TrackRow[C] ? true : false }
 
 /**
- * The same eleven columns the `CREATE TABLE` above declares, said a second time.
+ * The same twelve columns the steps above declare, said a second time.
  *
  * **This is a second statement of one fact. It generates nothing and is generated
  * from nothing, and what makes that safe is that the two are compared** -- by the
@@ -211,9 +270,10 @@ type NullableByColumn = { [C in keyof TrackRow]: null extends TrackRow[C] ? true
  * the part nothing else is guaranteed to hold. SQLite resolves names when a
  * statement is prepared, which is coverage rather than a typecheck; and `tsc`
  * objects to a nullability lie only where the value bound into the column is
- * itself nullable. That happens to cover all five today, because `tracking.ts`
+ * itself nullable. That happens to cover all six today, because `tracking.ts`
  * binds `album`, `isrc`, `duration_ms` and `cover_image_url` straight off the
- * snapshot and `removed_at` as a literal null. It stops covering the first
+ * snapshot and both `removed_at` and `file_path` as literal nulls. It stops
+ * covering the first
  * column the table lets hold NULL that this CLI always writes a value into --
  * which is the one a read would go on promising until the row without it
  * arrives.
@@ -234,6 +294,7 @@ export const TRACK_COLUMN_MAY_BE_NULL: NullableByColumn = {
   position: false,
   added_at: false,
   removed_at: true,
+  file_path: true,
 }
 
 /**
