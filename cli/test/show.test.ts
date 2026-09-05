@@ -161,10 +161,13 @@ describe('a Track its Source no longer lists', () => {
     const site = servingItsOwnApi()
     const home = await withADeparture(site, 'jukebox-show-removed-human-')
 
-    const run = await showing(site, home, ID, false)
+    // Wide enough to keep every column. A Removed row is the longest one this
+    // table has -- it is the only one carrying a date -- so it is the row that
+    // decides whether anything has to give.
+    const run = await jukebox(['show', ID], { discovery: site.url, home, columns: 100 })
 
     expect(run.stdout).toContain('Removed')
-    expect(run.stdout).toMatch(/- {2,}Blue Dot/)
+    expect(run.stdout).toMatch(/^ {2}- {3}Blue Dot/m)
     expect(run.stdout).toMatch(/left \d{4}-\d{2}-\d{2} \d{2}:\d{2}/)
     expect(run.code).toBe(0)
   })
@@ -332,5 +335,80 @@ describe('show in JSON mode', () => {
       addedAt: expect.any(Number),
       removedAt: null,
     })
+  })
+})
+
+describe('the table a person reads', () => {
+  /** One `show` at a terminal of a given width, rendered for a person. */
+  const atWidth = (site: Site, home: string, columns: number): Promise<Run> =>
+    jukebox(['show', ID], { discovery: site.url, home, columns })
+
+  it('numbers the tracks and names the columns', async () => {
+    const site = servingItsOwnApi()
+    const home = await tracked(site, 'jukebox-show-numbered-')
+
+    const run = await atWidth(site, home, 80)
+
+    // A header, because a column that can drop out on a narrow terminal needs
+    // to have been named while it was there.
+    expect(run.stdout).toMatch(/ {2}# {3}TITLE\s+ARTIST\s+ALBUM\s+TIME/)
+
+    // Counted over what is shown, one upward, rather than the Source's own
+    // index -- which has holes in it, because a Skipped entry took position 1
+    // and a reader would be left wondering what became of it.
+    expect(run.stdout).toMatch(/^ {2}1 {3}Blue Dot/m)
+    expect(run.stdout).toMatch(/^ {2}2 {3}Long Way Down/m)
+  })
+
+  it('puts a removed marker where a number would be, not in a column of its own', async () => {
+    const site = servingItsOwnApi()
+    const home = await tracked(site, 'jukebox-show-marker-')
+    site.holding(ID, moved)
+    await syncing(site, home)
+
+    const run = await atWidth(site, home, 80)
+
+    // One column, not two. Every present row used to carry a blank cell here
+    // purely so this `-` would line up, which indented the whole table six
+    // spaces to make room for a marker almost no row has.
+    expect(run.stdout).toMatch(/^ {2}- {3}Blue Dot/m)
+    expect(run.stdout).toMatch(/^ {2}1 {3}Long Way Down/m)
+  })
+})
+
+describe('a table wider than the terminal it is drawn on', () => {
+  const withADeparture = async (site: Site, name: string): Promise<string> => {
+    const home = await tracked(site, name)
+    site.holding(ID, moved)
+    await syncing(site, home)
+    return home
+  }
+
+  it('spends the date a Track left before anything a reader came for', async () => {
+    const site = servingItsOwnApi()
+    const home = await withADeparture(site, 'jukebox-show-narrow-')
+
+    // Eighty is the ordinary terminal, and this table does not fit one: the
+    // Removed row runs to eighty-nine. So the date goes -- the heading above
+    // those rows has already said they are gone, which makes the exact minute
+    // the one thing on the line answering a question nobody asked.
+    const run = await jukebox(['show', ID], { discovery: site.url, home, columns: 80 })
+
+    expect(run.stdout).not.toContain('left 20')
+    expect(run.stdout).toContain('Long Way Down')
+    expect(run.stdout).toContain('Aria Fenn, Kit Marlow')
+    expect(run.stdout).toContain('Ninety Miles')
+
+    for (const line of run.stdout.split('\n')) expect(line.length).toBeLessThanOrEqual(80)
+  })
+
+  it('gives up the album before it cuts a title', async () => {
+    const site = servingItsOwnApi()
+    const home = await withADeparture(site, 'jukebox-show-narrower-')
+
+    const run = await jukebox(['show', ID], { discovery: site.url, home, columns: 55 })
+
+    expect(run.stdout).not.toContain('Ninety Miles')
+    expect(run.stdout).toContain('Long Way Down')
   })
 })
