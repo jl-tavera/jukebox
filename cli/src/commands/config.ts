@@ -14,7 +14,7 @@ import {
   type Wrote,
 } from '../config'
 import { failed, succeeded, type Renderable } from '../outcome'
-import { columns } from '../phrasing'
+import { columns } from '../fitting'
 
 /**
  * `jukebox config`: every resolved value and where it came from, and -- since

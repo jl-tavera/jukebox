@@ -1,7 +1,8 @@
 import { defineCommand } from 'citty'
 import { withMirror } from '../mirror'
 import { succeeded, type Renderable } from '../outcome'
-import { columns, held, identified, NOTHING_TRACKED, stamp } from '../phrasing'
+import { columns } from '../fitting'
+import { held, identified, NOTHING_TRACKED, stamp } from '../phrasing'
 import { mirroredPlaylists, type MirroredPlaylist } from '../reading'
 
 /**
