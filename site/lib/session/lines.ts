@@ -422,3 +422,149 @@ export const spoken = (line: Line): string => {
     .map((span) => span.text)
     .join('')
 }
+
+/**
+ * The row separator, and the one escape a caller has to be able to name.
+ *
+ * A terminal drops a line on LF and leaves the cursor in the column it was
+ * already in, so a screen whose rows are joined with `\n` arrives stair-stepped
+ * down and to the right. Both bytes, every row.
+ *
+ * Exported for the reason `cli/src/pinned.ts` exports `RELEASED`: `written`
+ * below *joins* rows rather than terminating them, which leaves the cursor at
+ * the end of the last one, and whoever owns the stream has to decide what
+ * follows. Terminating here would print a blank row for `clear`, whose whole
+ * answer is `body: []` -- the one command whose point is the screen going blank
+ * cannot be the one command that always writes a row. So the decision belongs
+ * to the caller, and this is what the caller spells it with instead of writing
+ * the escape by hand.
+ */
+export const CRLF = '\r\n'
+
+/**
+ * Every attribute, taken back off.
+ *
+ * SGR 0 rather than the narrow closes -- 27 for reverse, 39 for a foreground
+ * colour -- because it is the only single code that clears every rung of the
+ * ladder at once, and the fifth rung `Tone` reserves would need a third narrow
+ * close that nobody would remember to add.
+ *
+ * `cli/src/header.ts` decides this the other way and is right to. It writes
+ * `\x1b[39m` because it brackets one row inside a stream it does not own, so an
+ * attribute its caller had set has to survive. Nothing nests here -- this
+ * module writes whole screens -- so there is nothing to preserve, and clearing
+ * everything is strictly right.
+ */
+const RESET = '\x1b[0m'
+
+/**
+ * The ladder, in the one alphabet a terminal reads.
+ *
+ * `dim` is bright black rather than faint, and that is the whole reason this
+ * table is written down rather than left to be guessed: SGR 2 is
+ * implementation-defined, so the same row is unreadable on one emulator and
+ * unchanged on the next, where 90 resolves to a palette slot. **That slot is
+ * not "grey".** It is filled from `--dim` -- by `globals.css` today and by a
+ * terminal theme after #112 -- and nothing in the type system records the
+ * coupling, so a value changed here and not there is a contrast ratio ADR-0010
+ * measured and this quietly stopped meeting.
+ *
+ * `prose` opens nothing, because the second typeface it carried is being
+ * retired and a face is not something a terminal has. It still closes, which is
+ * `written` below's business rather than this table's.
+ *
+ * A total `Record` rather than a switch with a default, for the reason
+ * `components/screen.tsx` gives for the map it keeps in this same shape: the
+ * fifth rung arrives here as a compile error, where a default would render it
+ * in the wrong tone and say nothing.
+ */
+const OPEN: Readonly<Record<Tone, string>> = {
+  ink: '\x1b[0m',
+  inverted: '\x1b[7m',
+  dim: '\x1b[90m',
+  prose: '',
+}
+
+/**
+ * One line as the rows it occupies, which is not always one of them.
+ *
+ * `header.ts` builds the wordmark as five rows of Block Elements inside a
+ * single `art` line, joined with `\n`, and `boot.ts` builds partial marks the
+ * same way. Returning a string here would leave those newlines bare inside a
+ * screen whose every other row was separated properly: the mark would
+ * stair-step down and to the right while every acceptance criterion still
+ * passed, and nobody would see it until #112 rendered. Rows out, joined once
+ * below, makes "no bare newline reaches the terminal" true by construction --
+ * which is the argument `Line` itself makes about indentation and about blank
+ * rows, held on a third axis.
+ *
+ * The art wears no attribute of its own. `Line` gives it no tone, so one here
+ * would be vocabulary this module invented -- and the mark's colour is settled
+ * twice already and differently: `cli/src/header.ts` writes truecolor yellow,
+ * `session/header.ts` says no colour at all, and #112 settles it a third time
+ * in a palette. A fourth opinion, in the file the other two point at, is what
+ * their docblocks exist to prevent.
+ */
+const rows = (line: Line): readonly string[] => {
+  if (line.kind === 'blank') return ['']
+  if (line.kind === 'art') return line.text.split('\n')
+  return [line.spans.map((span) => `${OPEN[span.tone]}${span.text}${RESET}`).join('')]
+}
+
+/**
+ * A whole session as a terminal is handed it.
+ *
+ * `text` above is what the terminal printed and `spoken` is what a screen
+ * reader is given; this is what is *written to* one. Three functions rather
+ * than one skeleton taking three callbacks, because what differs between them
+ * is the answer and not the walk -- a parameterised version would read worse
+ * than any of the three and would put all of them inside one edit.
+ *
+ * **It takes the screen where the other two take a row**, and that asymmetry is
+ * worth explaining rather than removing. Their consumers are per-row: `text`
+ * feeds a row-by-row comparison, and `spoken` feeds a live region whose joiner
+ * drops blanks and uses `\n`, because a reader wants rows and not a picture.
+ * This one has a single consumer shape -- `term.write` -- and that takes a
+ * stream. Handing rows out instead would put the separator in the caller's
+ * hands, and a caller who reaches for `\n` gets a stair-stepped screen rather
+ * than a compile error.
+ *
+ * **Every span closes what it opened, including the two that opened nothing.**
+ * `ink` is SGR 0, so it opens and closes with the same byte; `prose` opens with
+ * none and closes anyway. Both look like waste and both are kept, because the
+ * rule is one line only for as long as it has no exceptions -- and the moment
+ * closing becomes conditional, a span's bytes start depending on the span in
+ * front of it. That dependency is what bleeding *is*: a `dim` left open ahead
+ * of an `inverted` paints the row ground-on-bright-black instead of
+ * ground-on-ink, because SGR 7 reverses whatever it finds in force.
+ *
+ * Hidden spans are written, as `text` writes them and for its reason: the rail
+ * and the sigils are hidden from assistive technology, not absent from the row,
+ * and after #112 the terminal is the whole page.
+ *
+ * **Tone is the whole of what a span gets a code for.** `struck` does not get
+ * SGR 9. It is a flag rather than a rung, so nothing forces it into the table
+ * above and nothing has asked for it; it would make a span an open, a maybe, a
+ * text and a close, which is a second axis in the one function whose worth is
+ * having a single rule; and its only producer, `select.ts`, is deleted by #112.
+ * The value still arrives bright black, because `struck()` builds it dim --
+ * what is lost is the line through it, and that is said here rather than left
+ * to be discovered. `inverted` is the contrast that states the rule cleanly:
+ * its only producer is doomed too, and it keeps its code, because it is a rung.
+ * `runs` and `copies` go the same way and lose nothing that was ever here -- a
+ * clipboard write travels on `Printed.intents`, beside the span rather than
+ * inside it.
+ *
+ * **This adds escapes; it does not escape.** A span whose `text` held an ESC
+ * would pass straight through. Nothing forbids that today and nothing needs to,
+ * because every line here is composed in this module -- but it is why this is
+ * not called `escaped`, and it is the paragraph to reread on the day a line is
+ * built out of something a visitor typed.
+ *
+ * Bleeding *in* is not fixed here and cannot be. #112 registers `jukebox` as a
+ * real command in a real shell, so a coloured prompt can be in force before the
+ * first byte of this string. A pure function about lines cannot know what the
+ * terminal was doing; the adapter that owns the stream can open its write with
+ * a reset on the day that matters.
+ */
+export const written = (lines: readonly Line[]): string => lines.flatMap(rows).join(CRLF)
