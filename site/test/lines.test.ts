@@ -1,27 +1,39 @@
 import { describe, expect, it } from 'bun:test'
+import { header } from '../lib/session/header'
 import {
   blank,
   chip,
   copy,
+  CRLF,
   decoration,
   dim,
   ink,
+  inverted,
   prose,
   row,
   spoken,
   text,
   word,
+  written,
   type Intent,
   type Line,
+  type Span,
+  type Tone,
 } from '../lib/session/lines'
 
 /**
- * The vocabulary itself, which #85 is the first ticket to widen.
+ * The vocabulary itself, which #85 is the first ticket to widen and #111 the
+ * second.
  *
- * `text` is what the terminal printed and `spoken` is what a screen reader is
- * given, and the two differ by exactly the decoration -- so they are tested
+ * `text` is what the terminal printed, `spoken` is what a screen reader is
+ * given, and `written` is what a terminal emulator is handed. They differ by
+ * exactly the decoration and exactly the attributes -- so they are tested
  * against each other rather than each against a literal, which is the only way
  * the difference is the thing being asserted.
+ *
+ * The codes are the one exception and are transcribed from #111's own table,
+ * because an escape asserted against the constant that produced it would agree
+ * with whatever that constant happened to say.
  */
 
 describe('word', () => {
@@ -120,5 +132,134 @@ describe('spoken', () => {
     const line = row(ink('add'), dim('  Track a playlist.'))
 
     expect(spoken(line)).toBe(text(line))
+  })
+})
+
+describe('written', () => {
+  /**
+   * The mark as `header.ts` actually builds it: several rows of Block Elements
+   * inside one `art` line.
+   *
+   * Taken from the header rather than re-split from `WORDMARK` here, because a
+   * fixture that re-implements that split can agree with itself while
+   * disagreeing with the page. `header.test.ts` owns the split and argues for
+   * it; this file only needs a line that really does have rows inside it.
+   */
+  const MARK = header('1.2.3').find((line) => line.kind === 'art')!
+
+  /** Every attribute this serialiser writes, so a test can take them all off. */
+  const SGR = /\x1b\[[0-9;]*m/g
+
+  it('gives each rung of the ladder the code #111 assigns it', () => {
+    // Transcribed from the ticket's table rather than read back off `OPEN`,
+    // which is the only way this assertion can ever disagree with the code.
+    //
+    // `dim` is bright black rather than faint deliberately. Faint is
+    // implementation-defined across emulators; 90 resolves to a palette slot
+    // the site fills and whose contrast it has already measured in both themes.
+    expect(written([row(ink('x'))])).toBe('\x1b[0mx\x1b[0m')
+    expect(written([row(inverted('x'))])).toBe('\x1b[7mx\x1b[0m')
+    expect(written([row(dim('x'))])).toBe('\x1b[90mx\x1b[0m')
+    expect(written([row(prose('x'))])).toBe('x\x1b[0m')
+  })
+
+  it('closes even the tones that opened nothing, so the rule stays one line', () => {
+    // `ink` is SGR 0, so it opens and closes with the same byte, and `prose`
+    // opens with none at all. Both look redundant and both are kept: the
+    // moment closing becomes conditional, a span's bytes start depending on
+    // the span in front of it, which is the property the test below denies.
+    expect(written([row(ink('x'))]).endsWith('\x1b[0m')).toBe(true)
+    expect(written([row(prose('x'))]).endsWith('\x1b[0m')).toBe(true)
+  })
+
+  it('writes the wordmark as its glyphs, wearing no attribute of its own', () => {
+    // The `Line` type gives art no tone, so an attribute here would be
+    // inventing vocabulary this ticket is not allowed to invent. The mark's
+    // colour is settled twice already and differently -- `cli/src/header.ts`
+    // writes truecolor yellow, `session/header.ts` says "No colour, so no
+    // escapes" -- and #112 bridges it through palette slots. A third opinion
+    // in a third file is what those docblocks exist to prevent.
+    expect(written([MARK])).not.toContain('\x1b')
+  })
+
+  it('leaves the wordmark no newline a cursor would not return from', () => {
+    // `header.ts` builds the mark as several rows inside ONE line, joined with
+    // `\n`. Joining lines with CRLF never reaches inside one, so every row but
+    // the first would begin where the last ended and the mark would stair-step
+    // down and to the right. That is the exact failure CRLF is here to prevent,
+    // and it is invisible until #112 renders.
+    expect(written([MARK]).split(CRLF).join('')).not.toContain('\n')
+
+    // And the rows are the ones the terminal would have printed, checked
+    // against `text` the way this file checks everything else: the separator
+    // swapped, and not one glyph of the art touched on the way past.
+    expect(written([MARK]).split(CRLF)).toEqual(text(MARK).split('\n'))
+  })
+
+  it('joins rows with CRLF, because a bare newline leaves the cursor where it was', () => {
+    // A terminal drops a line on LF and does not return to column zero, so a
+    // separator that is not CRLF stair-steps every row after the first.
+    //
+    // Both bytes are written out by hand here, and this is the only place they
+    // are. Every other assertion in this block reaches the separator through
+    // the imported constant, which would agree with `\n` just as readily -- and
+    // the separator is the one byte-level claim #112 is built on, so it is
+    // pinned to the ticket's table the way the four codes above are.
+    expect(CRLF).toBe('\r\n')
+    expect(written([row(ink('a')), row(ink('b'))])).toBe('\x1b[0ma\x1b[0m\r\n\x1b[0mb\x1b[0m')
+  })
+
+  it('gives a blank row nothing but its place in the stream', () => {
+    // `blank` is the page's only vertical spacing mechanism, so it has to
+    // survive as a row rather than vanish: two rows around one blank are three
+    // rows on the terminal.
+    expect(written([row(ink('a')), blank(), row(ink('b'))]).split(CRLF)).toHaveLength(3)
+    expect(written([blank()])).toBe('')
+  })
+
+  it('is empty for no lines at all, which is what `clear` answers with', () => {
+    // `clear` prints `body: []`. A serialiser that terminated rows rather than
+    // joining them would print a blank row for the one command whose whole
+    // answer is the screen going blank.
+    expect(written([])).toBe('')
+  })
+
+  it('composes, so no span can depend on the span in front of it', () => {
+    // The bleed rule, asserted as a property rather than as a literal: if any
+    // tone ever failed to close, a pair would stop being the two singles
+    // concatenated. Driven off the ladder, so a fifth rung joins by being
+    // added here rather than by anyone remembering to widen a literal.
+    const LADDER: Readonly<Record<Tone, (text: string) => Span>> = { ink, inverted, dim, prose }
+
+    for (const [first, a] of Object.entries(LADDER)) {
+      for (const [second, b] of Object.entries(LADDER)) {
+        expect(written([row(a('x'), b('y'))]), `${first} then ${second}`).toBe(
+          written([row(a('x'))]) + written([row(b('y'))]),
+        )
+      }
+    }
+  })
+
+  it('paints an inverted span against the ground and not against its neighbour', () => {
+    // What the property above is protecting, written out once because it is
+    // what "a tone bleeds" actually looks like. SGR 7 reverses whatever is in
+    // force, so a `dim` left open in front of it would paint the row
+    // ground-on-bright-black instead of ground-on-ink.
+    expect(written([row(dim('  '), inverted('add'))])).toBe('\x1b[90m  \x1b[0m\x1b[7madd\x1b[0m')
+  })
+
+  it('is the row the terminal printed, once the attributes are taken back off', () => {
+    // The method this file's header states, extended to the third serialiser:
+    // asserted against `text` rather than against a literal, so what is pinned
+    // is the difference between them rather than a transcription of either.
+    // Decoration is written, as `text` writes it -- the terminal draws the
+    // backticks even though a screen reader is spared them.
+    const session = [
+      row(ink('add'), dim('  Track a playlist.')),
+      blank(),
+      row(prose('Try '), decoration('`'), word('help'), decoration('`'), prose('.')),
+    ]
+
+    expect(written(session).replace(SGR, '').split(CRLF)).toEqual(session.map(text))
   })
 })
