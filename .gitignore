@@ -13,6 +13,9 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
+# Bun's local module cache: rebuilt on demand, never the build record.
+.bun-cache/
+
 # Wrangler's local state: the Miniflare-backed D1, KV and queue that tests and
 # `wrangler dev` run against. Rebuilt on demand; never the infra record.
 .wrangler/
