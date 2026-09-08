@@ -96,8 +96,9 @@ export const HOST = 'jukebox.dev'
  * them is built, because `InstallCommand` below has to name it and a leaf
  * reaching back through the module that reads it is the dependency pointing the
  * wrong way -- the reason `Open` and `Option` sit in `session/lines.ts` rather
- * than in `session/select.ts`. It is copy-deck vocabulary either way: these are
- * three words the page prints.
+ * than in the `session/select.ts` that used to draw them, and the reason they
+ * outlived it when #112 deleted the widget. It is copy-deck vocabulary either
+ * way: these are three words the page prints.
  */
 export type System = 'macos' | 'linux' | 'windows'
 

@@ -364,7 +364,8 @@ export const word = (text: string): Span => ({ text, tone: 'ink', runs: text })
  * It is not a `Line` and never becomes one. The status line survives `clear`,
  * which is the whole of why it is pinned, so it cannot be a row of a
  * scrollback that `clear` empties -- `components/chips.tsx` draws these, and
- * `components/screen.tsx` never sees them.
+ * nothing that renders the scrollback ever sees them. That was true of
+ * `components/screen.tsx` and is true of the emulator that replaced it.
  */
 export const chip = (text: string): Landing => ({ text, tone: 'prose', runs: text })
 
@@ -474,9 +475,10 @@ const RESET = '\x1b[0m'
  * `written` below's business rather than this table's.
  *
  * A total `Record` rather than a switch with a default, for the reason
- * `components/screen.tsx` gives for the map it keeps in this same shape: the
- * fifth rung arrives here as a compile error, where a default would render it
- * in the wrong tone and say nothing.
+ * `components/screen.tsx` gave for the map it kept in this same shape -- and
+ * `components/chips.tsx` still gives, having inherited it: the fifth rung
+ * arrives here as a compile error, where a default would render it in the wrong
+ * tone and say nothing.
  */
 const OPEN: Readonly<Record<Tone, string>> = {
   ink: '\x1b[0m',
