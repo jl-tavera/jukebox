@@ -9,6 +9,7 @@ import { Chips } from '@/components/chips'
 import { CLI_VERSION } from '@/lib/content'
 import { CHIPS, NAMES } from '@/lib/session/commands'
 import { CRLF, TYPED, written, type Intent } from '@/lib/session/lines'
+import { HOME, MACHINE, RELOCATED } from '@/lib/session/machine'
 import { answered, greeting, reworded, started } from '@/lib/session/shell'
 import { isScheme, isTheme, RESTING, type Preference } from '@/lib/session/theme'
 
@@ -33,7 +34,18 @@ import { isScheme, isTheme, RESTING, type Preference } from '@/lib/session/theme
 /** Asked of a browser rather than declared, and only this file has one to ask. */
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 
-export const Live = () => {
+/**
+ * What the shell's filesystem holds that only a build machine could know.
+ *
+ * Handed down as a prop rather than imported here, because reading it needs
+ * `node:fs` and this file is a client component. `lib/published.ts` does the
+ * reading and `app/page.tsx` is the one place with a filesystem to read from.
+ */
+type Seeded = {
+  readonly published: Record<string, string>
+}
+
+export const Live = ({ published }: Seeded) => {
   const { ref, write } = useTerminal()
   const { theme, systemTheme, setTheme } = useTheme()
 
@@ -162,19 +174,40 @@ export const Live = () => {
         return { stdout, stderr: '', exitCode: 0 }
       }
 
-      // **`cwd` is `/` because the filesystem is empty, and that is not a
-      // detail.** The adapter runs every line as `cd "<cwd>" && <line>`, so a
-      // working directory that does not exist fails the `cd`, short-circuits the
-      // `&&`, and silently swallows the command -- printing a `cd` error where
-      // the answer should have been. Its own default is `/home/user`, which
-      // nothing has created, so the first thing any visitor typed was thrown
-      // away.
+      // **The home this ran at `/` for want of, filled in -- #113.** The
+      // adapter runs every line as `cd "<cwd>" && <line>`, so a working
+      // directory that does not exist fails the `cd`, short-circuits the `&&`
+      // and silently swallows the command. Until there were files to create it,
+      // `/home/user` was a directory nothing had made and `/` was the only
+      // honest answer.
       //
-      // `/` always exists. Seeding a home directory instead would mean inventing
-      // a file to create it, and inventing files is #113's ticket rather than
-      // this one's -- when it lands, this can move back to a home with something
-      // in it.
-      const made = new BashShell({ cwd: '/', greeting: greeting(CLI_VERSION, wt.cols) })
+      // There are files now: the site's own, read off disk at build time, and
+      // an invented Library and Mirror. `InMemoryFs` creates a seeded file's
+      // parents, so the home directory exists because its contents do.
+      //
+      // **`HOME` has to be said out loud, and this is the trap in doing so.**
+      // `Bash` sets it from `useDefaultLayout = !cwd && !files`, and `BashShell`
+      // always forwards `files` -- `{}` when nobody passed any -- so that is
+      // permanently false and `HOME` would be `/`. Every `~` a visitor typed
+      // would expand to the root and `cd ~/Music` would fail from a home that
+      // plainly exists. Passing `env` replaces the adapter's own default rather
+      // than extending it, so `SHELL` and `TERM` are restated here to keep them.
+      // `JUKEBOX_HOME` is set because the Mirror is seeded where it puts it,
+      // and the two have to agree or the folder is unexplained. It is also the
+      // answer to *why is this here*: a visitor who runs `env` is told, rather
+      // than having to take a directory on trust. `machine.ts` carries the
+      // reason the relocation exists at all.
+      const made = new BashShell({
+        cwd: HOME,
+        env: {
+          HOME,
+          JUKEBOX_HOME: RELOCATED,
+          SHELL: '/bin/bash',
+          TERM: 'xterm-256color',
+        },
+        files: { ...published, ...MACHINE },
+        greeting: greeting(CLI_VERSION, wt.cols),
+      })
       shell.current = made
 
       // Bash's own message is reworded on the way out rather than intercepted on
@@ -203,7 +236,11 @@ export const Live = () => {
         )
       })
     },
-    [write],
+    // `published` joins `write` here because the seed map is read when the
+    // shell is constructed. It is a prerender-time constant in practice -- the
+    // page hands down the same object for the life of the export -- but the
+    // guard above means a second identity would rebuild nothing anyway.
+    [write, published],
   )
 
   /**
