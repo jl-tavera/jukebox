@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'bun:test'
-import { CLI_COMMANDS, HOST, type CliCommand } from '../lib/content'
-import { ARROW, CHIPS, COMMANDS, find, NO_ARGUMENTS, PROMPTS, run } from '../lib/session/commands'
+import { CLI_COMMANDS, HOST, MENU_ENTRIES, type CliCommand } from '../lib/content'
+import {
+  ARROW,
+  CHIPS,
+  COMMANDS,
+  find,
+  NAMES,
+  NO_ARGUMENTS,
+  PROMPTS,
+  run,
+} from '../lib/session/commands'
 import { EXAMPLES, giving } from '../lib/session/donate'
 import { commandFor, copying, PICKER } from '../lib/session/install'
 import { spoken, text, type Line } from '../lib/session/lines'
@@ -114,7 +123,7 @@ describe('help', () => {
     )
   })
 
-  it('covers all eight of the binary and all five of the page', () => {
+  it('covers all eight of the binary and all six of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(8)
     // The order is the order `help` lists them in, and it is not alphabetical:
     // `help` first because it is how somebody arrives at the rest, then what
@@ -125,6 +134,14 @@ describe('help', () => {
     // labelled recording paced by a typewriter the page no longer has -- a real
     // shell prints when a command returns -- so the verb went with the
     // mechanism rather than being left to print the whole thing at once.
+    //
+    // **Six since #113, and `quit` is the one that arrived.** It is last
+    // because it is the only one here that is not the page's own word: the
+    // greeting prints the binary's five menu entries as text a visitor can
+    // type, four of them resolve to binary commands, and this one resolved to
+    // nothing at all until it was registered. `CHIPS` below is where it parts
+    // from the other five -- it answers a question rather than being a control,
+    // so it is not on the row.
     expect(
       COMMANDS.filter((command) => command.voice === 'site').map((command) => command.name),
     ).toEqual([
@@ -133,7 +150,30 @@ describe('help', () => {
       'donate',
       'theme',
       'clear',
+      'quit',
     ])
+  })
+
+  it('offers every menu entry the greeting prints as something typeable', () => {
+    // #112 asked that the greeting's five entries each run when typed, and
+    // #113 is where the fifth actually does. `quit` sat in `MENU_ENTRIES` and
+    // not in `CLI_COMMANDS`, so the page printed a word and then answered
+    // *command not found* for it. Derived from the greeting's own list rather
+    // than written out, so a sixth entry cannot arrive unregistered.
+    const unanswered = MENU_ENTRIES.map((entry) => entry.label).filter(
+      (label) => !NAMES.includes(label),
+    )
+
+    expect(unanswered).toEqual([])
+  })
+
+  it('keeps quit off the status line while leaving it typeable', () => {
+    // The row is the page's controls and the whole of how a phone with no
+    // keyboard operates it. `quit` is neither a control nor discoverable-only
+    // here -- the greeting already prints the word -- so it is the one verb
+    // deliberately absent from the chips.
+    expect(NAMES).toContain('quit')
+    expect(CHIPS.map((chip) => chip.text)).not.toContain('quit')
   })
 
   it('indents with spaces, because there is no indent field', () => {

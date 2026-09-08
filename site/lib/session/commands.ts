@@ -91,6 +91,24 @@ export type Command = {
    * only because nobody types it.
    */
   readonly takes?: readonly string[]
+
+  /**
+   * Typeable, but kept off the status line -- #113.
+   *
+   * **One word carries this and it is `quit`.** `CHIPS` is `VERBS` by
+   * construction, which is the arrangement #89 chose so that a verb cannot be
+   * added without arriving on the row; this is the one exception, and it is a
+   * field rather than a filter written over there so that the exception is
+   * declared beside the word it applies to.
+   *
+   * The reason is what the row is for. Chips are the page's controls -- the
+   * whole of how somebody on a phone with no keyboard operates it, and the only
+   * thing making `theme` discoverable. `quit` is neither: it is a word the
+   * greeting already prints, and typing it answers a question rather than doing
+   * anything. A sixth chip for that is noise on the one row that cannot afford
+   * any.
+   */
+  readonly unchipped?: true
 }
 
 /**
@@ -116,19 +134,28 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Five, which is all of them.
+ * The verbs the page answers for. Six, which is all of them.
  *
- * Six until #112, and the one that went is worth naming: `demo` played a
- * labelled recording whose pacing came from a typewriter the page no longer
+ * Six until #112 as well, and the one that went is worth naming: `demo` played
+ * a labelled recording whose pacing came from a typewriter the page no longer
  * has. Removing an entry cost exactly what adding one cost -- this list and one
- * branch in `run` -- which is the property the docblock claimed when the list
- * was growing, tested in the other direction.
+ * branch in `run` -- which is the property this docblock claimed when the list
+ * was growing, tested in the other direction. #113 tested it a third time by
+ * adding `quit` and needing no branch at all.
  *
- * They are deliberately not in `MENU_ENTRIES`: the menu carries the binary's
- * five and nothing else, because putting a site verb there would be the site
- * speaking in the binary's voice. Since #112 both lists are printed by the same
- * greeting, so that separation is now carried by which of them a shell resolves
- * to a real binary rather than by two prompts.
+ * **Five of them are the page's own words and `quit` is not**, which is why
+ * this no longer says *the page's own verbs*. The other five exist because the
+ * page needs them; `quit` is here because the greeting prints the binary's five
+ * menu entries as runnable text and this is the one with no command behind it.
+ *
+ * So the old claim that none of these is in `MENU_ENTRIES` is half retired.
+ * It still holds in the direction that carried the rule: no verb the page
+ * invented has been put in the binary's menu, because that would be the site
+ * speaking in the binary's voice. What changed is the other direction -- a word
+ * already in that menu now has an answer here, and the answer is the page's
+ * because there is no menu on this page for the binary to close. Since #112
+ * both lists are printed by the same greeting, so the separation is carried by
+ * which of them a shell resolves to a real binary rather than by two prompts.
  *
  * The order is the order `help` lists them in, and it is not alphabetical:
  * `help` first, because it is how somebody arrives at the rest; then what the
@@ -163,6 +190,36 @@ const VERBS: readonly Command[] = [
     takes: THEMES,
   },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
+
+  /**
+   * The fifth menu entry, which was the one word in the greeting that answered
+   * nothing -- #113.
+   *
+   * #112 turned the menu's five entries into text and asked that typing one run
+   * it. Four of them are commands the binary has, so they were already
+   * registered and already print their own generated help. `quit` is a menu
+   * entry rather than a command: it is in `MENU_ENTRIES`, it is not in
+   * `CLI_COMMANDS`, and so it reached nothing. The greeting printed it and the
+   * shell answered *command not found* for a word the page had just offered.
+   *
+   * **The voice is the page's because the answer is.** The word belongs to the
+   * binary and `help` groups by whose answer a reader is about to get, not by
+   * whose word it is -- and there is no answer the binary would give here,
+   * because the thing `quit` leaves does not exist on this page. Putting it
+   * among the binary's commands would also put a hand-written entry in a
+   * section that is generated from `cli/src/commands/`, which is the one
+   * property that section has.
+   *
+   * No branch in `run` for it. Typing a command prints what that command is,
+   * which is exactly what `add` and `sync` do here too, and `helped` already
+   * prints a summary alone for a verb with no usage line.
+   */
+  {
+    name: 'quit',
+    summary: 'In the binary, leave the menu. Here the prompt is always open.',
+    voice: 'site',
+    unchipped: true,
+  },
 ]
 
 /**
@@ -209,11 +266,20 @@ const voiced = (voice: Voice): readonly Command[] =>
  * `VERBS` and #112 took it off again the same way, which is the claim holding
  * in both directions.
  *
+ * **#113 added the one exception and put it in `VERBS` rather than here.**
+ * `quit` is typeable and is deliberately not on the row; `unchipped` on the
+ * `Command` says so beside the word, which keeps this derivation a filter over
+ * a declared fact rather than a list of names that would go stale on the next
+ * verb. The claim above is unchanged in the direction that matters: nothing
+ * reaches this row without being one of the page's own verbs.
+ *
  * Spans rather than names, because the module is what decides how a chip is
  * drawn -- the same landable word as everything else on the page, in the voice
  * the page speaks in. `components/chips.tsx` renders them and chooses nothing.
  */
-export const CHIPS: readonly Landing[] = voiced('site').map((command) => chip(command.name))
+export const CHIPS: readonly Landing[] = voiced('site')
+  .filter((command) => command.unchipped !== true)
+  .map((command) => chip(command.name))
 
 /** Everything typeable as a first word, which is also what `help` takes as a second. */
 export const NAMES: readonly string[] = COMMANDS.map((command) => command.name)
