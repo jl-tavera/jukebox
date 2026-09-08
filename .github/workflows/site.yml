@@ -28,6 +28,19 @@ name: site
 # running these checks. One file rather than `cli/**`, so the rest of the CLI's
 # churn still stays out; the same shape cli.yml uses in the other direction.
 #
+# `README.md` and `CONTEXT.md` are named for the same reason, and are new with
+# #113. The shell on the landing page now has a filesystem, and both documents
+# are read to fill it: `site/lib/published.ts` seeds the README into it at build
+# time, so a visitor can read the whole of what the page's tagline and lede are
+# the opening of; and `site/test/machine.test.ts` reads the glossary to hold the
+# invented Library and Mirror to it -- every domain word granted by `CONTEXT.md`
+# and no synonym it tells us to avoid.
+#
+# Both are therefore inputs to this workflow rather than prose beside it. A
+# README edited without naming it here would change what the page ships without
+# running a single check, and a term retired from the glossary would leave a
+# landing page using it with nothing to say so.
+#
 # GitHub Actions does not expand YAML anchors, so the list is written twice.
 on:
   push:
@@ -36,6 +49,8 @@ on:
       - 'site/**'
       - 'schema/**'
       - 'cli/package.json'
+      - 'README.md'
+      - 'CONTEXT.md'
       - '.github/workflows/site.yml'
       - 'package.json'
       - 'bun.lock'
@@ -44,6 +59,8 @@ on:
       - 'site/**'
       - 'schema/**'
       - 'cli/package.json'
+      - 'README.md'
+      - 'CONTEXT.md'
       - '.github/workflows/site.yml'
       - 'package.json'
       - 'bun.lock'
