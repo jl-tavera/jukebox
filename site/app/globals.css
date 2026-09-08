@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* The emulator's own sheet, imported here rather than side-effect imported from
+ * the component. Two reasons, and the second is the load-bearing one: a bare
+ * `import "@wterm/react/css"` has no type declaration, so it fails the
+ * typecheck; and the `.wterm` overrides below have to win the cascade against
+ * it, which is only legible if both are in this file. See #112.
+ *
+ * **`layer(base)` is what makes them win, and without it they silently do not.**
+ * An unlayered rule beats a layered one outright, whatever the specificity - so
+ * with a bare import the vendor's `.wterm { --term-bg: #1e1e1e }` defeats an
+ * identical selector inside `@layer components`, and the page renders in the
+ * emulator's dark grey with the theme switcher appearing to do nothing to it.
+ * Putting the sheet in `base` puts it under everything this file declares. */
+@import "@wterm/dom/css" layer(base);
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ------------------------------------------------------------------ *
@@ -195,19 +209,20 @@
     font-size: var(--cell);
     line-height: var(--line);
 
-    /* **A column, so #89's status line has a bottom to sit at.** `.u-session`
+    /* **A column, so #89's status line has a bottom to sit at.** `.u-terminal`
      * takes the slack, which is the whole of what the flex buys: on a short
-     * page - the state `clear` leaves behind - the prompt and the chips are
-     * pushed to the foot of the viewport instead of floating under three empty
-     * rows.
+     * page - the state `clear` leaves behind - the chips are pushed to the foot
+     * of the viewport instead of floating under three empty rows.
      *
-     * `min-height` and not `height`, deliberately. A long session still grows
-     * the document and the *document* still scrolls, which is what keeps
-     * `.u-status`'s `position: sticky` meaningful and what keeps
-     * `e2e/harness.ts`'s `scrollsHorizontally` measuring the element that
-     * actually overflows. An `overflow` on the session instead would move the
-     * scrollport inside the page and leave four specs reading a document that
-     * can no longer scroll at all - passing, and watching nothing.
+     * **The paragraph that stood here warned about exactly what #112 then
+     * did**, and it is corrected rather than deleted, because it was right
+     * about the consequence. It said an `overflow` on the session would move
+     * the scrollport inside the page and leave specs reading a document that
+     * can no longer scroll - *passing, and watching nothing*. The emulator owns
+     * its own overflow and virtualises the rows outside it, so that is now the
+     * arrangement: the document does not scroll, and every spec that measured
+     * one had to be rewritten against the terminal instead. The warning is kept
+     * because it names the failure mode those rewrites had to avoid.
      *
      * Written twice so the `dvh` is an upgrade rather than a requirement. A
      * browser without it gets `vh`, which is a status line sitting below the
@@ -232,41 +247,62 @@
 }
 
 @layer components {
-  /* The session. Full-bleed and left-aligned, because a terminal centres
-   * nothing and the wordmark belongs top-left.
+  /* The terminal - #112, and the whole of the page above the status line.
    *
-   * The only inset on the page, and it is one character wide - `1ch` in a
-   * monospace face is exactly one cell. Every other horizontal offset is a
-   * space inside a row, written by the session module, which is what makes
-   * "every horizontal offset is a whole character" true of the strings rather
-   * than of a stylesheet nobody re-reads. */
-  .u-session {
-    padding-block: var(--row);
-    padding-inline: 1ch;
-
-    /* Takes whatever the column has left over, so `.u-status` below is at the
-     * foot of the viewport on a page too short to fill it. It is not a
-     * scrollport and must not become one - the document is what scrolls here,
-     * for the reason `body` gives. */
+   * `.u-session` and `.u-row` stood here until the emulator arrived. They
+   * described a scrollback this page hand-rendered; the emulator renders its
+   * own, so what is left is where to put it and how to paint it.
+   *
+   * Full-bleed and left-aligned, because a terminal centres nothing and the
+   * wordmark belongs top-left. It takes whatever the column has left over, so
+   * `.u-status` is at the foot of the viewport on a page too short to fill it.
+   *
+   * **This one *is* a scrollport, and that is a change.** `.u-session` said it
+   * must not become one because the document scrolled; the emulator owns its
+   * own overflow and virtualises the rows outside it, which is what lets a long
+   * session stay cheap. The document no longer scrolls at all. */
+  .u-terminal {
     flex: 1 1 auto;
+    min-height: 0;
   }
 
-  /* One row of the session.
+  /* The bridge - the emulator's palette, said in this page's tokens.
    *
-   * `pre-wrap` is load-bearing twice over: it keeps the two spaces after every
-   * rail glyph, which HTML would otherwise collapse and which are the whole of
-   * the widget's alignment, and it wraps a long row at the viewport instead of
-   * scrolling it sideways. A wrapped row continues at column zero, which is
-   * what a narrow terminal does - there is deliberately no hanging indent,
-   * because that would be a horizontal offset living somewhere other than in
-   * the string.
+   * Every colour `@wterm/dom` paints is a `var()` reference rather than a
+   * resolved value, so redefining the custom properties here is the whole of
+   * the integration: the theme switcher goes on flipping one class on
+   * `<html>`, and rows already on screen repaint with it. No new palette, no
+   * accent token, nothing added to the two colours that swap places.
    *
-   * `min-height` is what gives a blank row its one line. A blank row is the
-   * page's only vertical spacing mechanism; there is no margin anywhere. */
-  .u-row {
-    min-height: var(--row);
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
+   * **Slot 8 is load-bearing and is not "grey".** `written` in
+   * `lib/session/lines.ts` emits the `dim` rung as SGR 90 - bright black -
+   * specifically because that resolves to a palette slot this file controls,
+   * where SGR 2 is implementation-defined. Its docblock names this line as the
+   * other half of the coupling. A value changed there and not here is a
+   * contrast ratio ADR-0010 measured and the page quietly stopped meeting. */
+  .wterm {
+    --term-bg: var(--ground);
+    --term-fg: var(--ink);
+    --term-cursor: var(--ink);
+    --term-color-8: var(--dim);
+
+    --term-font-family: var(--font-mono);
+    --term-font-size: var(--cell);
+    --term-line-height: var(--line);
+
+    /* The shipped sheet draws a card: 8px radius, a 32px drop shadow and 12px
+     * of padding. This page draws no boxes anywhere - `e2e/prompt.spec.ts`
+     * sweeps every element asserting exactly that - so the first two are
+     * overridden rather than exempted, because an exemption is how a page
+     * acquires its first box.
+     *
+     * The padding goes for a different reason: the page has exactly one inset
+     * and it is `1ch`, one whole character in a monospace face. 12px is not a
+     * character. The emulator subtracts padding before dividing the width into
+     * columns, so this is a layout decision rather than a measurement bug. */
+    padding: var(--row) 1ch;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .u-prose {
@@ -353,61 +389,6 @@
     outline: none;
   }
 
-  /* The live prompt.
-   *
-   * Not a row of the session, and deliberately not `.u-row`: it is the one
-   * element on this page a person operates, and a `Line` cannot express one
-   * without putting a control inside a type whose whole claim is that it only
-   * describes drawing.
-   *
-   * `align-items: baseline` keeps the sigil and the typed text on one baseline
-   * while the field carries the padding that makes it 44px. */
-  .u-prompt {
-    display: flex;
-    align-items: baseline;
-    min-height: var(--target);
-    /* The same one-character inset the session carries, so the sigil sits in
-     * the column the rows above it start in. `.u-session`'s bottom padding is
-     * one row, which is the single blank line of air between the last output
-     * and the prompt - zero or one line, like every other gap on the page. */
-    padding-inline: 1ch;
-  }
-
-  /* The sigil keeps its own trailing space, which this row has no `pre-wrap`
-   * to preserve for it. */
-  .u-prompt > span {
-    white-space: pre;
-  }
-
-  .u-input {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-block: calc((var(--target) - var(--row)) / 2);
-    appearance: none;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    caret-color: var(--ink);
-  }
-
-  .u-prompt:hover .u-input {
-    background-color: var(--wash);
-  }
-
-  /* Focus inverts the sigil rather than drawing a ring around the field, which
-   * is what a terminal does and what the rest of this page already does. The
-   * field itself washes on hover, so the two states stay distinguishable here
-   * the same way they do on a word. */
-  .u-input:focus-visible {
-    outline: none;
-  }
-
-  .u-prompt:has(.u-input:focus-visible) > span {
-    background-color: var(--ink);
-    color: var(--ground);
-  }
-
   /* The status line - #89.
    *
    * *A row of site verbs, always visible, pinned as a status line with the
@@ -467,32 +448,5 @@
   .u-chips > .u-word {
     min-width: var(--target);
     text-align: center;
-  }
-
-  /* The wordmark. Sized so 67 characters always fit the viewport: monospace
-   * advance is ~0.6em, so the block is ~40.2em wide. The 25px cap lands it
-   * at ~1005px on a wide screen.
-   *
-   * Left exactly as it was. SITE.md 03 warns that changing the art means
-   * rechecking these numbers, #81 changes the typeface underneath them and #83
-   * measures all five rows in a real browser - so this is not the ticket to
-   * move a clamp in. The consequence, accepted knowingly: on a wide screen the
-   * art is wider than the text below it, which is what "the wordmark is the
-   * only exception, art at its own 67-column clamp" costs. */
-  .u-art {
-    display: block;
-    white-space: pre;
-    font-size: clamp(5px, 2vw, 25px);
-    line-height: 1;
-    /* Adjacent block glyphs each rasterise in their own cell, and at
-     * fractional cell widths the boundaries leave sub-pixel gaps that let the
-     * ground bleed through as hairlines. A hair of negative tracking overlaps
-     * the cells and closes them. Applied uniformly, so every row still
-     * measures the same width. */
-    letter-spacing: -0.03em;
-    /* Block characters sit edge to edge, so subpixel antialiasing paints
-     * colour fringes along every internal seam. Grayscale AA removes them. */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 }

@@ -5,18 +5,23 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.wiring.json && tsc --noEmit -p tsconfig.e2e.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.e2e.json",
     "test": "bun test ./test",
-    "test:wiring": "bun test ./wiring",
     "test:e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
     "fonts:build": "bun run scripts/build-fonts.ts",
     "check:discovery": "bun run scripts/check-discovery.ts",
     "check:installers": "bun run scripts/check-installers.ts",
     "check:fonts": "bun run scripts/check-fonts.ts",
-    "deploy": "bun run build && bun run check:discovery && bun run check:installers && bun run check:fonts && wrangler deploy"
+    "check:wasm": "bun run scripts/check-wasm.ts",
+    "deploy": "bun run build && bun run check:discovery && bun run check:installers && bun run check:fonts && bun run check:wasm && wrangler deploy"
   },
   "dependencies": {
+    "@wterm/core": "0.5.0",
+    "@wterm/dom": "0.5.0",
+    "@wterm/just-bash": "0.5.0",
+    "@wterm/react": "0.5.0",
+    "just-bash": "2.14.5",
     "next": "^16.3.3",
     "next-themes": "^0.4.6",
     "react": "^19.2.8",
@@ -27,11 +32,9 @@
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "^1.4.0",
-    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
-    "jsdom": "^30.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "wrangler": "^4.127.1"
