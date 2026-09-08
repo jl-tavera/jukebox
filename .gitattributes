@@ -12,6 +12,22 @@ worker/worker-configuration.d.ts text eol=lf
 site/public/install.sh  text eol=lf
 site/public/install.ps1 text eol=lf
 
+# The discovery document and the README, pinned since #113 for the reason
+# directly above rather than for the reason either has always been text. The
+# landing page's shell now seeds both as real files, read off disk at build
+# time, so their bytes are published too -- and a CRLF checkout puts a carriage
+# return on the end of every line a visitor reads in a terminal.
+#
+# discovery.json was unpinned and arriving CRLF on Windows. Nothing broke:
+# check-discovery.ts parses JSON either way, and the export is a verbatim copy
+# of public/, so what the shell shows and what the Worker serves agreed on any
+# one machine. They just disagreed between machines, which is what a pin is for.
+#
+# The README is not served by this Worker at all, so nothing reads it back out
+# of the export. The pin is the whole of what keeps it clean.
+site/public/discovery.json text eol=lf
+README.md                  text eol=lf
+
 # The wordmark's source and the two files scripts/generate-wordmark.ts writes
 # from it. Most of this repo is checked out CRLF and none of it minds; this art
 # does, because it is measured in columns and a carriage return is a byte on the
