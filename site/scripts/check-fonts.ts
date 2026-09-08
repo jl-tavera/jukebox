@@ -97,10 +97,22 @@ const REQUIRED: readonly Requirement[] = [
   { what: 'the radios that were not chosen', from: 0x25cb },
 
   // The same widget's other three states. Two of them arrived with #86, which
-  // made the menu answerable: `lib/session/select.ts` draws the answered mark
-  // when a row is chosen and the cancelled one when a visitor types past the
-  // question. The third is still waiting -- nothing on this page validates an
+  // made the menu answerable: `lib/session/select.ts` drew the answered mark
+  // when a row was chosen and the cancelled one when a visitor typed past the
+  // question. The third was still waiting -- nothing on this page validates an
   // answer -- and it stays for the reason the entry below it gives.
+  //
+  // **#112 deleted that widget, and nothing on this page draws these three any
+  // more.** They are subset into the served face and never asked for. The CLI
+  // is not a second consumer to keep them for -- `cli/src/menu.ts` reaches
+  // @clack/prompts in a real terminal, drawn in whatever face the reader has
+  // installed, and never fetches anything from `site/out/fonts`.
+  //
+  // Kept rather than dropped anyway, because a subset is cheap to carry and
+  // expensive to get wrong: this whole file exists because a face missing a
+  // code point fails silently and late. Worth dropping deliberately, in a
+  // ticket that re-measures the subset, rather than as a side effect of this
+  // one.
   //
   // They are here and U+2192 is not, which is the distinction worth stating
   // rather than leaving to look arbitrary: these are marks of a widget this
