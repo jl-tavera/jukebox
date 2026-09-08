@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { THEMES } from '../lib/session/theme'
-import { enter, open, painted, ROW, TARGET, undersized, WORD } from './harness'
+import { enter, open, painted, ROW } from './harness'
 
 /**
  * The theme, in the only place its remaining questions can be asked.
@@ -9,8 +8,10 @@ import { enter, open, painted, ROW, TARGET, undersized, WORD } from './harness'
  * What `theme` prints, which words it lists, and that a switch leaves as a
  * declared intent rather than as something the module did -- all answered in
  * `test/theme.test.ts` and `test/commands.test.ts` with no browser. That the
- * intent reaches `setTheme` and that the provider's answer comes back is
- * `wiring/`, where the whole round trip closes inside jsdom.
+ * intent reaches `setTheme` and that the provider's answer comes back was the
+ * jsdom seam's, and #112 deleted that layer with the component it tested -- so
+ * the round trip closes here now, in the case below that switches and reads the
+ * ground back.
  *
  * **What is left needs a real one, and one row of ADR-0010's grown floor can
  * be held nowhere else.** *No theme flash on hard reload, in either theme.*
@@ -36,15 +37,21 @@ type Sample = { classes: string; rows: number }
 /**
  * Watch the theme from before the page's own scripts run.
  *
- * `boot.spec.ts`'s instrument, pointed at a different question and installed
- * for its reason: an observer attached after `goto` returns has already missed
- * the frames it exists to catch, and here those frames are the whole subject.
+ * Built for `boot.spec.ts`, which #112 deleted along with the replay it
+ * watched, and kept here for the reason that outlived it: an observer attached
+ * after `goto` returns has already missed the frames it exists to catch, and
+ * here those frames are the whole subject.
  *
  * `rows` is what makes *before a visitor could have seen anything* a
  * measurable thing rather than a screenshot race. The page's content is rows;
  * a document with none of them in it has nothing on screen that could have
  * been painted the wrong colour, and `SITE.md` 05 claims exactly that of the
  * inline script -- *it runs before any visible content is parsed*.
+ *
+ * **The rows it counts are the emulator's now**, which makes the claim stronger
+ * rather than weaker: they arrive later than the server-rendered ones it was
+ * written against, so a theme that lost its race would have further to fall
+ * before this noticed.
  */
 const watching = async (page: Page): Promise<void> => {
   await page.addInitScript((selector: string) => {
@@ -177,14 +184,17 @@ test.describe('the verb', () => {
     await expect.poll(() => ground(page)).toEqual(dark)
   })
 
-  test('gives all three of its words a target a finger can hit', async ({ page }) => {
-    // The first multi-word landables the page has drawn. `theme system` is
-    // twelve characters, so the horizontal half of the target is the word
-    // itself; what is being measured is the vertical, three rows deep.
-    await open(page)
-    await enter(page, 'theme')
-
-    expect(await undersized(page, WORD, TARGET)).toEqual([])
-    await expect(page.locator(WORD, { hasText: /^theme /u })).toHaveCount(THEMES.length)
-  })
+  /**
+   * **A case stood here and #112 deleted its subject.**
+   *
+   * `theme` printed its three answers as landable words -- the first multi-word
+   * ones the page had drawn -- and this measured a 44px target across all three,
+   * three rows deep. The verb still prints them, but a terminal draws text, so
+   * there is nothing left to hit: they are typed rather than tapped now, the
+   * same way the menu entries are.
+   *
+   * The floor those three carried did not go with them. `chips.spec.ts` holds
+   * the target, the two paints and the contrast ratio against the row that is
+   * still real DOM, which is what #112's criterion preserves on purpose.
+   */
 })

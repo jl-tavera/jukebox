@@ -4,12 +4,23 @@ import { WIDTHS } from './e2e/harness'
 /**
  * Seam three of three: the things only a real browser can answer.
  *
- * The other two seams are already drawn and this one must not drift into them.
- * Behaviour belongs to the session module, driven directly under `bun test`
- * with no DOM in the room; what a component does with an intent belongs to a
- * jsdom layer. **Only what needs pixels belongs here** -- an advance width, a
- * contrast ratio, a touch target, a paint that happened before a stylesheet
- * arrived. ADR-0010 puts it plainly: none of it is answerable in jsdom.
+ * **Seam two of three since #112, and the boundary moved rather than
+ * softened.** Behaviour still belongs to the session module, driven directly
+ * under `bun test` with no DOM in the room. What used to sit between them --
+ * a jsdom layer asking what a component did with an intent -- is gone with the
+ * component it tested: a terminal emulator needs WebAssembly and real text
+ * measurement, and jsdom has neither.
+ *
+ * So this file inherited the half of that layer which still has a subject. The
+ * rule it replaces is not *only what needs pixels* any more, because the round
+ * trip through `setTheme` and the write to a real clipboard now have nowhere
+ * else to close. The rule is: **whatever cannot be answered without a browser,
+ * and nothing that can.** An advance width, a contrast ratio, a touch target, a
+ * paint that happened before a stylesheet arrived -- and now a lattice of
+ * painted cells, a keystroke reaching a shell, and a clipboard.
+ *
+ * That makes this step load-bearing in a way it was not, which #114 records
+ * alongside the rest of what the migration cost.
  *
  * **The viewports are projects rather than loops inside each spec.** Three
  * widths are a property of this page's quality floor -- `SITE.md` 06 names 375,
@@ -36,17 +47,25 @@ import { WIDTHS } from './e2e/harness'
  * `wrangler.jsonc` already declares `assets.directory: "./out"` and no `main`,
  * so this is production's own asset path, `public/_headers` included.
  *
- * **Every spec here asks for reduced motion, and `boot.spec.ts` is the one that
- * asks for the other thing.** Playwright's own default is `no-preference`, so
- * without the line below #84's replay would be running underneath every
- * measurement in this directory -- `wordmark.spec.ts` counts five rows of art,
- * and mid-replay there are fewer, so it would fail on the boot's timing rather
- * than on the advance width it exists to watch. `open()` cannot simply wait the
- * replay out, either: before hydration the served HTML already looks finished,
- * so any "wait until complete" check can resolve before the boot has started.
- * Asking for the finished page the way a visitor with reduced motion does is
- * deterministic, and it is the honest thing to say about specs that are
- * measuring a page at rest.
+ * **Every spec here asks for reduced motion, and what it buys changed with
+ * #112.** It was written against #84's boot replay: Playwright defaults to
+ * `no-preference`, so without the line below the typewriter would have been
+ * running underneath every measurement in this directory, and a spec counting
+ * rows of art mid-replay would fail on the boot's timing rather than on what it
+ * exists to watch. That replay is gone, deleted with the typewriter that paced
+ * it.
+ *
+ * The line stays because the emulator has an animation of its own. `live.tsx`
+ * reads `prefers-reduced-motion` once, when the terminal is constructed, and
+ * passes it to `cursorBlink` -- so without this the cursor would be blinking
+ * under every paint this directory reads, and `painted` resolves a colour at
+ * whatever phase it happened to catch. Asking for the page a visitor with
+ * reduced motion gets is what makes a contrast ratio a number rather than a
+ * coin toss.
+ *
+ * **What it costs, named rather than found later:** no case here ever sees the
+ * cursor blink, so *reduced motion disables it* is asserted nowhere. #114
+ * carries that alongside the ticket's other uncovered criteria.
  *
  * It goes through `contextOptions` because `reducedMotion` is not one of the
  * options this version of Playwright promotes to the top level -- `colorScheme`
@@ -55,11 +74,14 @@ import { WIDTHS } from './e2e/harness'
  * `devices['Desktop Chrome']` sets no context options, so nothing below undoes
  * it.
  *
- * **What that costs, named rather than discovered later:** after this, the only
- * case in the whole harness that proves the page ever hydrates is
- * `prompt.spec.ts`'s "typing a command prints what the module said it would",
- * plus `boot.spec.ts`. Delete both and a page whose JavaScript never ran would
- * pass everything here.
+ * **What that used to cost, and no longer does.** Asking every spec for a page
+ * at rest once left hydration nearly unwitnessed: two cases proved the page's
+ * JavaScript had run at all, and deleting them would have left a dead page
+ * passing this suite. That hazard went with the served HTML. A terminal
+ * emulator is WebAssembly and a shell -- there is no pre-hydration page to
+ * mistake for a finished one, and `open` in the harness waits for a prompt bash
+ * had to boot in order to draw. Every case here now fails on a page that never
+ * hydrated, rather than two of them.
  */
 
 const PORT = 8788
