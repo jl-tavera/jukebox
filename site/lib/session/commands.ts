@@ -1,6 +1,4 @@
 import { CLI_COMMANDS, HOST, type CliArgument } from '../content'
-import { type Frame } from './boot'
-import { DEMO, playing, recording } from './demo'
 import { DONATE, giving } from './donate'
 import { copying, INSTALL, isSystem, offering, PICKER, SYSTEMS } from './install'
 import {
@@ -43,8 +41,11 @@ import {
  *
  * The other half of that ADR governs everything printed here: *the page
  * explains; it never simulates.* A binary command answers with a description of
- * itself and never with output it did not produce. #90's recording is the only
- * place on this page where fabricated output is allowed to appear.
+ * itself and never with output it did not produce. #90's recording was the one
+ * carve-out from that and #112 deleted it, so as of this file there are none --
+ * every row below is a description, generated help, or the page's own copy.
+ * #113 reopens the question from the filesystem's side and #114 is where the
+ * rule is restated to match; nothing here invents output in the meantime.
  */
 
 /** The page's own prompt mark. Pinned as a code point in the tests, and in `check-fonts.ts`. */
@@ -115,14 +116,19 @@ export const PROMPTS: Readonly<Record<Voice, string>> = {
 }
 
 /**
- * The page's own verbs. Six, which is all of them.
+ * The page's own verbs. Five, which is all of them.
  *
- * #90 added `demo` -- one entry here and one branch in `run` below, which is
- * what #91's `install` cost and what #88's two cost after it, and the estimate
- * this docblock made of it held. ADR-0010 names the six, and with `demo` landed
- * the list is closed rather than merely current. They are deliberately not in
- * `MENU_ENTRIES`: the menu carries the binary's five and nothing else, because
- * putting a site verb there would be the site speaking in the binary's voice.
+ * Six until #112, and the one that went is worth naming: `demo` played a
+ * labelled recording whose pacing came from a typewriter the page no longer
+ * has. Removing an entry cost exactly what adding one cost -- this list and one
+ * branch in `run` -- which is the property the docblock claimed when the list
+ * was growing, tested in the other direction.
+ *
+ * They are deliberately not in `MENU_ENTRIES`: the menu carries the binary's
+ * five and nothing else, because putting a site verb there would be the site
+ * speaking in the binary's voice. Since #112 both lists are printed by the same
+ * greeting, so that separation is now carried by which of them a shell resolves
+ * to a real binary rather than by two prompts.
  *
  * The order is the order `help` lists them in, and it is not alphabetical:
  * `help` first, because it is how somebody arrives at the rest; then what the
@@ -156,13 +162,6 @@ const VERBS: readonly Command[] = [
     takesArgument: true,
     takes: THEMES,
   },
-  // **Not `a real session`, though that is #90's own phrase for it.** The
-  // ticket is describing the feature; this is copy a visitor reads, and
-  // `SITE.md` 04 forbids a claim the product cannot currently support. The
-  // recording prints a tier no build of `jukebox show` prints yet, so `real`
-  // would be the one word on the row that is not true. What makes the exemption
-  // sound is the labelling, and the label says the honest thing already.
-  { name: DEMO, summary: 'Play a recording of a session.', voice: 'site' },
   { name: 'clear', summary: 'Empty the scrollback.', voice: 'site' },
 ]
 
@@ -206,8 +205,9 @@ const voiced = (voice: Voice): readonly Command[] =>
  *
  * It is `ARGUED`'s arrangement one screen down and for its reason: a list
  * written out here would be a second copy of `VERBS`, and a second copy is
- * what goes stale. #90's `demo` arrives on this row by adding one entry to
- * `VERBS`, and nothing else.
+ * what goes stale. #90's `demo` arrived on this row by adding one entry to
+ * `VERBS` and #112 took it off again the same way, which is the claim holding
+ * in both directions.
  *
  * Spans rather than names, because the module is what decides how a chip is
  * drawn -- the same landable word as everything else on the page, in the voice
@@ -241,21 +241,12 @@ export const NAMES: readonly string[] = COMMANDS.map((command) => command.name)
  * disagree where one cannot. `intents` is what has to happen off the page -- a
  * clipboard write, today -- and the component is what performs it.
  *
- * `plays` is #90's and is a request for the same reason again: `body` is what
- * the command printed and this is the order the rows of it arrive in, which is
- * a thing that happens over time and so not this module's to perform.
- *
- * **Its frames are relative to `body` rather than to the page**, because this
- * module does not know what is above them -- `terminal.ts` holds the scrollback
- * and prefixes it. That is also what lets the last frame hand back the very
- * array the session ends up holding, which is the property `test/boot.test.ts`
- * pins for the boot with `toBe` and `test/demo.test.ts` now pins for this.
- *
- * **Whether it is honoured is not decided here.** A visitor who asked for
- * reduced motion is handed `body` whole and no frames are stepped, and the
- * media query behind that is a fact about a browser -- so `terminal.ts` reads
- * it off the state the component put there, exactly as `preference` arrives.
- * This module answers the same way for everyone.
+ * **`plays` was the fourth and is gone with #112.** It carried the order the
+ * rows of a recording arrived in, and its pacing came from a typewriter this
+ * page no longer has -- a real shell prints when a command returns. The
+ * recording went with it rather than being reprinted all at once, because a
+ * labelled recording that arrives instantly is a block of invented output with
+ * no reason left for being invented.
  */
 export type Printed = {
   readonly echo: Line
@@ -264,7 +255,6 @@ export type Printed = {
   readonly clears?: true
   readonly opens?: Open
   readonly intents?: readonly Intent[]
-  readonly plays?: readonly Frame[]
 }
 
 /** Said when `clear` has left nothing behind to say. */
@@ -327,8 +317,8 @@ const echoed = (voice: Voice, typed: string): Line =>
  *
  * Two spaces clear of the longest name, so the summaries line up and adding a
  * verb cannot leave the column too narrow for it. `version` is the longest
- * today; #91's `install` and #88's two are shorter and #90's `demo` will be,
- * so this is stable in practice and correct regardless.
+ * today; #91's `install` and #88's two are shorter, and #112 removing `demo`
+ * left it untouched -- so this is stable in practice and correct regardless.
  *
  * Deliberately narrower than the `GUTTER` the tables below line up on, and
  * #85 is where that was set: this is a name against prose about it, where an
@@ -596,28 +586,6 @@ export const run = (buffer: string, preference: Preference): Printed => {
       ],
       intents: [choosing(chosen)],
     }
-  }
-
-  // **The only branch on this page that prints output the binary did not
-  // produce**, and the one ADR-0010 carves out by name: nothing invents a
-  // Resolution, a Tier or a Track count *outside one labelled recording*. The
-  // label rows are inside `recording()` rather than added here, so the thing
-  // that says "this is a recording" cannot be separated from the recording.
-  //
-  // The body and the frames come from the same script, so what a visitor who
-  // asked for reduced motion is handed whole and what everybody else watches
-  // arrive are the same rows in the same order -- one description rather than
-  // two that can disagree.
-  //
-  // The leftovers go through `playing` rather than being appended after it, so
-  // the frames cover the whole body. Left out they were in `body` and in no
-  // frame at all, and the sentence arrived only when the last frame handed the
-  // session back -- a row that pops in at the end is a row that was never
-  // played, and the two halves of a `Printed` disagreed for the whole playback.
-  if (command.name === DEMO) {
-    const spare = rest.length > 0 ? noArguments() : []
-
-    return { echo, body: [...recording(), ...spare], plays: playing(spare) }
   }
 
   return { echo, body: [...helped(command), ...(rest.length > 0 ? noArguments() : [])] }

@@ -114,13 +114,17 @@ describe('help', () => {
     )
   })
 
-  it('covers all eight of the binary and all six of the page', () => {
+  it('covers all eight of the binary and all five of the page', () => {
     expect(COMMANDS.filter((command) => command.voice === 'binary')).toHaveLength(8)
     // The order is the order `help` lists them in, and it is not alphabetical:
     // `help` first because it is how somebody arrives at the rest, then what
     // the page can actually do, then `clear`, which is the way out of a screen
-    // rather than a thing to do on one. #90's `demo` is the last of the middle
-    // group, which is where ADR-0010 lists it.
+    // rather than a thing to do on one.
+    //
+    // **Five since #112, and `demo` is the one that went.** It played a
+    // labelled recording paced by a typewriter the page no longer has -- a real
+    // shell prints when a command returns -- so the verb went with the
+    // mechanism rather than being left to print the whole thing at once.
     expect(
       COMMANDS.filter((command) => command.voice === 'site').map((command) => command.name),
     ).toEqual([
@@ -128,7 +132,6 @@ describe('help', () => {
       'install',
       'donate',
       'theme',
-      'demo',
       'clear',
     ])
   })
@@ -556,14 +559,17 @@ describe('the chip row', () => {
    * Recomputing it the way `commands.ts` does would be a test that cannot
    * disagree with the code.
    *
-   * **Six, which is the ticket's six.** #89 listed `demo` before it existed and
-   * left this row at five, on the grounds that a chip printing `command not
-   * found` would be worse than a row that grows when the verb behind it does --
-   * and named this as the line #90 would edit. This is that edit. The order is
-   * ADR-0010's, which is `help`'s: the way in, then what the page can do, then
-   * the way out of a screen.
+   * **Five, and this line has now been edited in both directions.** #89 listed
+   * `demo` before it existed and left this row at five, on the grounds that a
+   * chip printing `command not found` would be worse than a row that grows when
+   * the verb behind it does; #90 added it; #112 removed the verb and this
+   * followed it back down. A row derived from `VERBS` costs one line either
+   * way, which is what that reasoning was buying.
+   *
+   * The order is `help`'s: the way in, then what the page can do, then the way
+   * out of a screen.
    */
-  const ROW = ['help', 'install', 'donate', 'theme', 'demo', 'clear']
+  const ROW = ['help', 'install', 'donate', 'theme', 'clear']
 
   const named = (): string[] => CHIPS.map((chip) => chip.text)
 
