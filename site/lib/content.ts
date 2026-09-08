@@ -66,8 +66,16 @@ export const WORDMARK = `
  * The two commands below went unread by the page for three tickets, against
  * the day #91 landed. It has: the boot offers the visitor's own line with a
  * copy control, and `install` opens a picker over all three systems.
+ *
+ * **Exported since #113, for a checker rather than for a renderer.** The same
+ * address is written by hand in each installer's usage comment, and #113 seeds
+ * both installers into the page's shell so a visitor reads those comments.
+ * `scripts/check-installers.ts` now asserts the three spellings agree, which
+ * turns a domain move that missed a file from something a visitor finds into
+ * something CI does. `SITE.md` 08 lists every place this string appears and is
+ * the document to update when it changes.
  */
-const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
+export const SITE = 'https://jukebox-site.joseluis64tavera.workers.dev'
 
 /**
  * The name the page speaks under. **Not the address it is served from.**
