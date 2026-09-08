@@ -86,12 +86,27 @@ export const CHIP = '.u-chips .u-word'
 /**
  * What bash draws when it is ready for a line.
  *
- * `live.tsx` runs the shell at `/` with the adapter's default user, so this is
- * the whole prompt rather than a fragment of it. Counting these is how every
- * wait in this file knows a command has finished: a prompt is drawn when one
- * returns, so one more prompt than before is the shell coming back.
+ * Counting these is how every wait in this file knows a command has finished: a
+ * prompt is drawn when one returns, so one more prompt than before is the shell
+ * coming back.
+ *
+ * **A pattern rather than a literal since #113, and the reason is `cd`.** This
+ * was the fixed string `user@wterm:/$`, which worked while the shell had an
+ * empty filesystem and could never leave `/`. There is a Library to walk into
+ * now, and the adapter's prompt carries the working directory -- `/home/user`
+ * rendered as `~`, and `~/Music/Jukebox/Late Shift` in full once a visitor
+ * descends. A literal would stop matching at the first `cd`.
+ *
+ * Neither failure announces itself, which is what makes this worth a paragraph:
+ * every wait here polls for *one more* prompt, so a spelling that stopped
+ * matching times each case out at thirty seconds rather than reporting a wrong
+ * prompt. #112 lost fifty-four cases that way.
+ *
+ * `[^$]*` is what allows a Playlist folder with a space in its name, and it
+ * cannot run past the prompt's own `$` because that is the one character it
+ * excludes. No path this page seeds contains one.
  */
-const PROMPT = 'user@wterm:/$'
+const PROMPT = /user@wterm:[^$]*\$/g
 
 /** Every row of the grid, as text. Blocks are empty spans, so the art is not in it. */
 export const screenText = (page: Page): Promise<string> =>
@@ -102,7 +117,7 @@ export const screenText = (page: Page): Promise<string> =>
 
 /** How many times the shell has offered to take a line. */
 const prompts = async (page: Page): Promise<number> =>
-  (await screenText(page)).split(PROMPT).length - 1
+  ((await screenText(page)).match(PROMPT) ?? []).length
 
 /**
  * The page, painted, with both faces applied **and the shell actually up**.
