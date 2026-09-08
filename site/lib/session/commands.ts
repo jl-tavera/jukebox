@@ -486,7 +486,7 @@ const unknownTheme = (word: string): Line[] => [row(ink(`${HOST}: no theme calle
  * `help` between them is a word the cursor can land on, which costs one
  * constructor call and saves the visitor typing it.
  */
-const notFound = (typed: string): Line[] => [
+export const notFound = (typed: string): Line[] => [
   row(ink(`${HOST}: command not found: ${typed}`)),
   row(prose('Try '), decoration('`'), word('help'), decoration('`'), prose('.')),
 ]
