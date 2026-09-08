@@ -1,79 +1,65 @@
 import { expect, test } from '@playwright/test'
-import { commandFor, PICKER, WHICH_SYSTEM } from '../lib/session/install'
-import { enter, FIELD, open, painted, SESSION, TARGET, undersized, WORD } from './harness'
+import { commandFor, WHICH_SYSTEM } from '../lib/session/install'
+import { clipboardText, enter, open, screenText } from './harness'
 
 /**
- * The install picker, in the only place its remaining questions can be asked.
+ * `install`, in the only place its remaining questions can be asked.
  *
- * Seam three, and the boundary is `menu.spec.ts`'s. Which rows the picker
- * offers, what choosing one runs, what reaches the clipboard -- all of it is a
- * pure function of state, answered in `test/install.test.ts` and
- * `test/terminal.test.ts`. That the intent reaches `clipboard.writeText` at all
- * is `wiring/`, which is where `SITE.md` 06 asks for it: *capture the argument,
- * not the pixels*.
+ * **Two of this file's three cases lost their subject to #112, and the third
+ * arrived because another seam did.**
  *
- * **What is left is what only a browser has.** The widget answering a real
- * keyboard on a page nobody has clicked, and -- the requirement ADR-0010 wrote
- * down when it deleted the donate dialog -- *copy controls living in scrollback
- * must stay reachable by keyboard with a visible focus state*. That one was a
- * gift from the platform while the controls lived in a `<dialog>`; in a
- * scrollback it is a claim, and this is where it is held.
+ * What went: the picker was a reproduction of a prompt library's widget --
+ * arrow keys, a cursor, a struck-out abandoned value -- built in #86 because
+ * the page had no shell to ask. It has one now, so the systems are typed rather
+ * than walked to, and *the menu stops being a select* is this ticket's point
+ * rather than a casualty of it. The control it left behind in the scrollback
+ * went the same way: a copy button in a character grid is a run of text, so the
+ * 44px target and the focus state that were measured on it have nothing left to
+ * measure. `chips.spec.ts` holds that floor against the row that is still DOM.
  *
- * `prompt.spec.ts` already sweeps every `.u-word` on the booted page for a
- * touch target, so the offer's own control is covered there. What is not
- * covered there is a control that did not exist until a command printed it,
- * which is the case below.
+ * What arrived: **that `install` actually copies.** It is one of #112's
+ * acceptance criteria and it had no test at any seam. `SITE.md` 06 asked for it
+ * as *capture the argument, not the pixels*, and the jsdom layer captured the
+ * argument to `clipboard.writeText` -- then #112 deleted that layer along with
+ * the component it tested. A real clipboard in a real browser is the only place
+ * left that can answer it, so it is answered here.
  */
 
-test.describe('the picker', () => {
-  test('is the same widget, reached and answered by keyboard', async ({ page }) => {
+/**
+ * Read and write, because the assertion needs both halves.
+ *
+ * Chromium gates `readText` behind a permission that headless does not grant by
+ * default, and granting it per-context here rather than in `playwright.config.ts`
+ * keeps every other spec in this directory running without a capability it has
+ * no use for.
+ */
+test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+
+test.describe('the verb', () => {
+  test('puts the install command on the clipboard', async ({ page }) => {
+    await open(page)
+    await enter(page, 'install windows')
+
+    // The whole command, not a truncation of it. What the page prints is
+    // allowed to be shortened to fit a grid; what it copies is what somebody
+    // pastes into a shell, and a copy that lost its tail is worse than no copy
+    // at all -- `test/install.test.ts` pins the two apart, and this is the end
+    // of that claim that only a browser holds.
+    const { command } = commandFor('windows')
+
+    await expect
+      .poll(() => clipboardText(page), { message: 'nothing reached the clipboard' })
+      .toBe(command)
+  })
+
+  test('offers the systems when it is not told one', async ({ page }) => {
     await open(page)
     await enter(page, 'install')
 
-    await expect(page.locator(SESSION)).toContainText(WHICH_SYSTEM)
-
-    // Walked to the last row and taken, which is the gesture the frame's own
-    // footer advertises. Counted off the picker rather than pressed a fixed
-    // number of times, so reordering the systems moves this with them.
-    for (let at = 0; at < PICKER.options.length - 1; at++) {
-      await page.keyboard.press('ArrowDown')
-    }
-    await page.keyboard.press('Enter')
-
-    await expect(page.locator(SESSION)).toContainText(commandFor('windows').command)
-  })
-})
-
-test.describe('the control the picker leaves behind', () => {
-  test('is a target a finger can hit', async ({ page }) => {
-    await open(page)
-    await enter(page, 'install windows')
-
-    expect(await undersized(page, WORD, TARGET)).toEqual([])
-  })
-
-  test('is reachable by keyboard, and says so where a reader can see it', async ({ page }) => {
-    await open(page)
-    await enter(page, 'install windows')
-
-    const rest = await painted(page, WORD)
-
-    // Focus is reached by keyboard rather than by a click, for the reason
-    // `prompt.spec.ts` gives: Chromium does not apply `:focus-visible` to a
-    // clicked button, so a spec that clicked would read the resting paint and
-    // pass while the criterion failed. Shift+Tab out of the field lands on the
-    // last word above it, which is the control this command just printed.
-    await page.click(FIELD)
-    await page.keyboard.press('Shift+Tab')
-
-    const focused = page.locator(`${WORD}:focus`)
-    await expect(focused).toHaveText('copy')
-
-    // Inverted, which is this page's only focus indicator -- it has no rings
-    // and no boxes, so a control that did not invert would be one a keyboard
-    // user could not find.
-    const focus = await painted(page, `${WORD}:focus`)
-    expect(focus.background).not.toEqual(rest.background)
-    expect(focus.color).toEqual(rest.background)
+    // The rows themselves are `test/install.test.ts`'s, down to their wording.
+    // What is worth a browser is that the bare verb reaches the registry at all
+    // -- it is the one command on this page that answers differently with an
+    // argument and without one, and bash is what decides which.
+    expect(await screenText(page)).toContain(WHICH_SYSTEM)
   })
 })

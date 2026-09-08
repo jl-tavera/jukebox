@@ -1,30 +1,26 @@
 import { expect, test, type Page } from '@playwright/test'
-import { dirname, join } from 'node:path'
-import {
-  WIDTHS,
-  artFontSize,
-  artRowWidths,
-  faceLoaded,
-  open,
-  scrollsHorizontally,
-  spread,
-} from './harness'
+import { WORDMARK } from '../lib/content'
+import { faceLoaded, lattice, open, screenText, scrollsHorizontally, WIDTHS } from './harness'
 
 /**
  * The wordmark, measured rather than looked at.
  *
- * `SITE.md` 03 was written about one failure and this file is what finally
- * watches for it. The art is five rows of sixty-seven columns built from
- * nothing but spaces and Block Elements. If the face in use carries some of
- * those glyphs and not others, the browser fetches the missing ones from the
- * next font in the stack -- at a different advance -- and the rows stop being
- * the same length. The letterforms shear apart.
+ * **#112 changed the failure this file watches for, and the change is not a
+ * loosening.** `SITE.md` 03 was written about shear: the art is built from
+ * spaces and Block Elements, and a face carrying some of those glyphs and not
+ * others sends the missing ones to the next font in the stack at a different
+ * advance, so the rows stop being the same length and the letterforms come
+ * apart. `@wterm/dom` ends that failure rather than surviving it -- it
+ * intercepts U+2580-U+259F before any run is flushed and paints each cell as a
+ * CSS gradient in a `1ch` box, so the font is never asked for a block glyph and
+ * a face that dropped the whole table cannot shear anything.
  *
- * What makes it worth a browser is that it is invisible on the machine that
- * built the page. Whoever has Monaspace installed locally, or a system
- * monospace carrying the whole Block Elements table, sees the art intact while
- * shipping something broken. `SITE.md` 06 says it plainly: this is the one to
- * measure rather than eyeball.
+ * What can still go wrong is the lattice. The art is five rows of sixty-seven
+ * columns and the blocks have to land on the columns `WORDMARK` puts them on --
+ * a row dropped, a row shifted, a row wrapped because the grid was narrower
+ * than the art, or a column count that is not the art's are all still reachable,
+ * and all of them are invisible on the machine that built the page. That is
+ * what is measured here.
  *
  * **Everything checkable without pixels is checked without pixels, and none of
  * it is repeated here.** That the art is five rows of sixty-seven columns, and
@@ -32,124 +28,110 @@ import {
  * `cli/scripts/generate-wordmark.ts` when the art is generated, with CI
  * regenerating and diffing. That the shipped faces still carry every one of
  * those code points after subsetting is enforced by `site/scripts/check-fonts.ts`
- * against the built export. Those are three different questions and this file
- * asks the fourth, the only one they cannot reach: a code point present in a
- * cmap is not proof of a correct advance width.
+ * against the built export -- which still earns its keep for a consumer this
+ * page no longer is, since `cli/src/header.ts` draws the same art in a real
+ * terminal from the same vendored face. That `greeting` picks the right branch
+ * for a column count is `test/shell.test.ts`. This file asks the one question
+ * none of them can reach: what the emulator actually painted, and where.
  */
 
 /**
- * The size the art resolves to at each viewport.
+ * The face the page actually draws, under the name `globals.css` declares it.
  *
- * Asserted as the guard that the viewport is the one the project asked for.
- * `.u-art` is sized `clamp(5px, 2vw, 25px)`, so the number can only be right if
- * the width is -- which makes it a better check than `window.innerWidth`, whose
- * value a scrollbar quietly changes.
+ * **Neon alone, and the missing one is a finding rather than an oversight.**
+ * `globals.css` declares Argon too and `check-fonts.ts` proves the export ships
+ * it, but a browser fetches a webfont when something needs it to paint and
+ * nothing on this page does any more: the tagline and the lede were the human's
+ * voice in Argon, and since #112 they are rows inside a terminal that draws
+ * every cell in one family. `document.fonts` reports Argon `unloaded` on a
+ * fully painted page, so asserting it here would fail for telling the truth.
  *
- * **Row widths in pixels are deliberately not pinned here, and the first
- * version of this file got that wrong.** Three widths measured in Chromium on
- * Windows failed in Chromium on Linux by 33.5px at 1440 -- the same page, the
- * same font, the same size, with the two platforms applying the `-0.03em`
- * tracking across the run differently. A number that moves for a reason
- * unrelated to what it is watching only ever gets its tolerance widened until
- * it is watching nothing.
- *
- * The property that pin was reaching for -- that the face drawing this is the
- * one this repo ships -- is asked directly below, and asked better: monospace
- * advances cluster so tightly around 0.6em that a row width can be right to the
- * pixel while a different font draws it.
+ * The chip row looks like the remaining consumer and is not one. Its buttons
+ * carry `u-prose`, but `.u-word` sets the `font` shorthand to `inherit` from
+ * the same layer at equal specificity and later in source order, so the family
+ * is reset before it lands -- which predates this ticket and is unchanged by it.
  */
-const SIZES: Record<(typeof WIDTHS)[number], string> = {
-  375: '7.5px',
-  768: '15.36px',
-  1440: '25px',
+const FACES = ['Monaspace Neon'] as const
+
+/** Every Block Element, which is the whole alphabet the art is drawn in. */
+const BLOCKS = /[▀-▟]/u
+
+/**
+ * Which columns each row of the source puts a block on.
+ *
+ * Derived from `WORDMARK` rather than written out, because a table of numbers
+ * this long is a table nobody checks -- and the art is generated, so a literal
+ * here would be a second copy of it going stale the first time it changes. The
+ * leading newline the template literal carries is dropped, which is what makes
+ * this five rows rather than six.
+ */
+const EXPECTED = WORDMARK.split('\n')
+  .filter((line) => line.length > 0)
+  .map((line) => [...line].flatMap((glyph, column) => (BLOCKS.test(glyph) ? [column] : [])))
+
+/**
+ * Whether the grid at this viewport is wide enough to be shown the art.
+ *
+ * `greeting` prints the mark only where the column count clears its natural
+ * width and a plain version line everywhere else, so at 375 there is no art to
+ * measure and its absence is the assertion. Written as a table against `WIDTHS`
+ * for `SIZES`' old reason: adding a fourth project without deciding which side
+ * of the threshold it falls on is a compile error here rather than a case that
+ * quietly never ran.
+ *
+ * Measured: 375 resolves to 44 columns, 768 to 84 and 1440 to 152, against an
+ * art sixty-seven wide.
+ */
+const WIDE: Record<(typeof WIDTHS)[number], boolean> = {
+  375: false,
+  768: true,
+  1440: true,
 }
 
-/** Both faces, under the names `globals.css` declares them. */
-const FACES = ['Monaspace Neon', 'Monaspace Argon'] as const
-
-/**
- * How many rows the art is, as rendered.
- *
- * `cli/scripts/generate-wordmark.ts` already refuses a banner that is not five
- * rows of sixty-seven columns, so this is not that check arriving a second
- * time. That one pins the *source*; this pins what the renderer made of it, and
- * only one of the two can see a component that dropped a line on the way to the
- * page.
- *
- * It is load-bearing rather than belt-and-braces. Every other assertion here
- * reads a list of row widths and compares them to each other -- and a list of
- * one is trivially equal to itself, so a render that lost four rows would leave
- * this file green while the page showed a stripe.
- */
-const ROWS = 5
-
-/**
- * The smallest disagreement between rows worth calling a shear.
- *
- * A whole pixel, which is far below the ~15px a real fallback produces and far
- * above anything layout rounding does -- the good case measures a spread of
- * exactly zero, on both platforms this has run on.
- */
-const SHEAR = 1
-
-/**
- * A copy of Neon carrying printable ASCII and not one Block Element.
- *
- * Written by `bun run --cwd site fonts:build` into `e2e/fixtures/`, never into
- * `public/`, so it is never served and never enters the export.
- *
- * Located beside this file, via the path Playwright reports for it. Neither
- * `import.meta.url` nor `__dirname` will do: this workspace declares no
- * `"type": "module"`, so Playwright transpiles specs to CommonJS and
- * `import.meta` is a syntax error inside one, while `__dirname` would work
- * today and break the day that changes. `testInfo.file` is the spec's own
- * absolute path under either, and the fixture is its neighbour.
- */
-const fixture = (specFile: string): string =>
-  join(dirname(specFile), 'fixtures', 'neon-without-block-elements.woff2')
-
-/**
- * What this project's viewport should produce.
- *
- * Keyed off the viewport Playwright actually gave the page rather than off the
- * project name, so it cannot drift from the config by a rename. `SIZES` is
- * typed against `WIDTHS`, so adding a fourth project without measuring it is a
- * compile error here rather than an undefined lookup at run time.
- */
-const expected = (page: Page) => SIZES[page.viewportSize()!.width as (typeof WIDTHS)[number]]
+const wide = (page: Page): boolean => WIDE[page.viewportSize()!.width as (typeof WIDTHS)[number]]
 
 test.describe('the wordmark', () => {
-  test('renders every row at the same width', async ({ page }) => {
+  test('paints every row on the columns the source puts it on', async ({ page }) => {
+    test.skip(!wide(page), 'this grid gets the version line instead')
+
     await open(page)
 
-    const widths = await artRowWidths(page)
+    const painted = await lattice(page)
 
-    // Before comparing them to each other, that there are five of them. A list
-    // of one is equal to itself, so without this the assertion below passes on
-    // a render that lost four rows.
-    expect(widths).toHaveLength(ROWS)
+    // The row count first, because it is what the equality below cannot see. A
+    // list of four rows that each match their counterpart still matches, so
+    // without this a render that dropped the fifth would leave this green.
+    expect(painted).toHaveLength(EXPECTED.length)
 
-    // Exact rather than a tolerance, and it can be: every glyph in this face
-    // has the same advance, so each row is sixty-seven of the same number and
-    // the five results are the same arithmetic. Any spread at all is a glyph
-    // that came from somewhere else, which is the whole failure. Measured at
-    // exactly zero on both Windows and Linux.
-    expect(spread(widths)).toBe(0)
+    // Then the lattice itself, exactly. Every glyph in this face has the same
+    // advance and the cell is read off a block's own `1ch` box, so a column
+    // index is arithmetic rather than a measurement with a tolerance -- and it
+    // came out identical to the source at both wide viewports.
+    expect(painted).toEqual(EXPECTED)
+  })
+
+  test('prints a version line instead, where the grid is too narrow', async ({ page }) => {
+    test.skip(wide(page), 'this grid is wide enough for the art')
+
+    await open(page)
+
+    // **The case that caught the bug this ticket shipped with.** `wt.cols` is
+    // the emulator's default of 80 until its own `ResizeObserver` has delivered,
+    // and 80 clears the art's natural width -- so the greeting was composed for
+    // a wide grid on every viewport and then truncated when the real one turned
+    // out to be 44 columns. A phone got five rows of art cut off mid-letter at
+    // column 43. `live.tsx` now waits for the measurement.
+    expect(await lattice(page)).toEqual([])
+    expect(await screenText(page)).toContain('jukebox')
   })
 
   test('renders in the faces this repo ships', async ({ page }) => {
     await open(page)
 
-    // The size first, because it is what proves the viewport is the one this
-    // project asked for -- `.u-art` is sized in `vw`, so a wrong width could
-    // not produce a right size.
-    expect(await artFontSize(page)).toBe(expected(page))
-
-    // Then that the vendored faces actually loaded. The case above says the
-    // five rows agree with each other; this says what they agree in. Without it
-    // a whole-face substitution passes everything else here -- every row equally
-    // wrong, in a fallback that happens to be monospace -- which is the one
-    // failure equality cannot see.
+    // The art is painted rather than typeset now, so this no longer guards the
+    // wordmark -- it guards everything around it. The prose, the menu and the
+    // prompt are all still glyphs, and a whole-face substitution is the one
+    // failure a lattice of gradient boxes cannot see.
     for (const face of FACES) {
       expect(await faceLoaded(page, face), `${face} did not load`).toBe(true)
     }
@@ -159,7 +141,7 @@ test.describe('the wordmark', () => {
     await open(page)
 
     // `SITE.md` 06's responsive row. The art is the widest thing on the page by
-    // a distance, so if anything overflows at these widths it is this.
+    // a distance wherever it appears, so if anything overflows it is this.
     expect(await scrollsHorizontally(page)).toBe(false)
   })
 
@@ -167,27 +149,28 @@ test.describe('the wordmark', () => {
    * The first assertion above, shown failing.
    *
    * An equality check that has never been seen to go red is a claim rather than
-   * a check, and this one guards a failure nobody can see by looking. So the
-   * face is swapped for one missing exactly the glyphs the art is built from,
-   * and the rows are required to disagree.
+   * a check, and this one guards a failure nobody can see by looking. The
+   * original spec proved its point by serving a face stripped of Block
+   * Elements; that fixture no longer reproduces anything, because a painted
+   * cell does not consult the font.
    *
-   * **Serving no face at all would not reproduce it.** Aborting the request
-   * sends every glyph to the same fallback, and a fallback monospace renders
-   * five equal rows -- the art survives, in the wrong typeface. The failure this
-   * page is exposed to is a face that carries *some* of what it needs, so the
-   * simulation has to be a partial font rather than a missing one.
+   * So the grid is taken below the art instead, which is the condition the
+   * lattice actually protects against. The greeting is composed once, against
+   * the width measured at boot -- a window narrowed afterwards reflows the
+   * scrollback under art that was already written, and the emulator has no way
+   * to put back what no longer fits. Measured: sixty-seven columns become fifty,
+   * and every row loses between a quarter and a third of its blocks.
    */
-  test('shears when the served face lacks Block Elements', async ({ page }, testInfo) => {
-    await page.route('**/fonts/monaspace-neon.woff2', (route) =>
-      route.fulfill({ path: fixture(testInfo.file), contentType: 'font/woff2' }),
-    )
+  test('loses the lattice when the grid is taken below the art', async ({ page }) => {
+    test.skip(!wide(page), 'this grid never had the art to lose')
 
     await open(page)
+    expect(await lattice(page)).toEqual(EXPECTED)
 
-    // Spaces now come from the fixture and blocks from the fallback stack, at a
-    // different advance. The rows carry between nine and twenty-seven spaces
-    // each, so they cannot stay equal -- and a harness that let them would be
-    // measuring nothing. Measured at ~15px against a threshold of one.
-    expect(spread(await artRowWidths(page))).toBeGreaterThan(SHEAR)
+    await page.setViewportSize({ width: 420, height: 900 })
+
+    await expect
+      .poll(() => lattice(page), { message: 'the art survived a grid it does not fit' })
+      .not.toEqual(EXPECTED)
   })
 })

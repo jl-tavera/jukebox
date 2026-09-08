@@ -1,15 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   CHIP,
-  FIELD,
+  contrast,
   onScreen,
   open,
   painted,
-  scrollable,
+  screenText,
   scrollsHorizontally,
-  SESSION,
   STATUS,
   TARGET,
+  TERMINAL,
   undersized,
 } from './harness'
 
@@ -18,24 +18,19 @@ import {
  *
  * Seam three, and the boundary holds here as everywhere. *Which* verbs belong
  * on the row, what each of them prints, and that none of them is the binary's
- * are answered in `test/commands.test.ts` with no browser in the room; that the
- * component drew what it was handed and moved focus where it should is
- * `wiring/`. **What is left needs pixels**: a row that has to stay on screen
- * while the page scrolls under it, a 44px target measured rather than
- * eyeballed, and a focus state distinguishable from a hover.
+ * are answered in `test/commands.test.ts` with no browser in the room.
  *
- * `prompt.spec.ts` already sweeps `body *` for a border, a radius or a shadow,
- * so *chips render as words rather than buttons* is checked there the moment
- * this row exists -- one sweep over the page beats a second one naming a class.
+ * **#112 made this file the page's whole accessible surface, and that is why
+ * it grew rather than shrank.** The scrollback used to be real DOM: every
+ * command `help` listed was a `<button>`, and `prompt.spec.ts` measured the
+ * target, the two paints and the contrast ratio across all of them. A terminal
+ * emulator draws text, so those words are gone and their cases went with them.
+ * The chip row is what stayed real DOM -- #112's criterion says so in as many
+ * words -- which makes it the only thing left on this page a finger or a
+ * keyboard can reach, and the only place that floor can still be held.
  *
- * **Three cases were written here and deleted before they shipped**, and what
- * they were is worth recording rather than quietly dropping: which words the
- * row carries, that tapping one runs it, and that tapping one leaves focus
- * alone. Every one is answered without a browser -- the first twice over, in
- * `test/commands.test.ts` and in `wiring/live.test.tsx` -- so all three were
- * this file restating a seam below it. `shows what it printed` is what remains
- * of the second, and it earns its place by needing a scroll offset that only a
- * laid-out page has.
+ * So the contrast case moved here rather than being deleted with the words it
+ * used to sweep. It is the same assertion pointed at the surviving controls.
  */
 
 /** A chip, by the word on it. */
@@ -43,12 +38,17 @@ const chip = (page: Page, name: string) =>
   page.locator(CHIP).filter({ hasText: new RegExp(`^${name}$`, 'u') })
 
 /**
- * A session long enough that the document actually scrolls.
+ * A session with a good deal behind it.
  *
- * Three listings rather than one, because the viewport is 900 tall in every
- * project and one `help` does not always overflow it. Every case about the row
- * holding its place asserts `scrollable` first, so a page that stopped
- * overflowing would fail here rather than pass everywhere.
+ * Three listings rather than one, for the reason the old version of this gave
+ * -- one `help` does not always fill a 900-tall viewport. **What it no longer
+ * proves is that the document scrolls, because since #112 it never does**: the
+ * emulator owns its overflow and virtualises the rows outside it. That is the
+ * arrangement `globals.css` warned about before it was chosen, and the warning
+ * was right about the consequence -- an assertion about a scroll offset taken
+ * against this page would be measuring nothing and passing.
+ *
+ * The questions below are asked of the terminal instead.
  */
 const long = async (page: Page): Promise<void> => {
   await open(page)
@@ -56,21 +56,36 @@ const long = async (page: Page): Promise<void> => {
   for (let listing = 0; listing < 3; listing++) {
     await chip(page, 'help').click()
   }
+}
 
-  expect(await scrollable(page), 'the page never grew past its viewport').toBe(true)
+/**
+ * Focus, taken by keyboard, landing on the first chip.
+ *
+ * **By keyboard and never by a click**: Chromium does not apply
+ * `:focus-visible` to a clicked button, so a spec that clicked would read the
+ * resting paint and pass while the criterion failed.
+ *
+ * **`Escape` rather than `Tab`, and that is a finding this file made.** The
+ * emulator focuses its own textarea as it boots and then swallows every `Tab`,
+ * because in a shell `Tab` is completion -- so before `live.tsx` grew an escape
+ * hatch, focus entered the terminal on load and never came out. Three presses
+ * in a row left `document.activeElement` on the textarea, and the row below was
+ * reachable only by blurring it from a script, which is not a thing a visitor
+ * can do. That is a keyboard trap, and #112 asks for these chips to be
+ * *keyboard reachable*.
+ */
+const escapeToFirstChip = async (page: Page): Promise<void> => {
+  await page.locator(TERMINAL).click({ position: { x: 2, y: 2 } })
+  await page.keyboard.press('Escape')
+  await expect(page.locator(`${CHIP}:focus`)).toBeVisible()
 }
 
 test.describe('the row itself', () => {
-  test('is on screen at the top of a long session', async ({ page }) => {
+  test('stays on screen with a long session behind it', async ({ page }) => {
+    // Two cases stood here, at the top and at the bottom of a scrolled
+    // document. There is no scrolled document any more, so what is left is the
+    // claim that still has a subject: output does not push the row off screen.
     await long(page)
-    await page.evaluate(() => window.scrollTo({ top: 0 }))
-
-    expect(await onScreen(page, STATUS)).toBe(true)
-  })
-
-  test('is still on screen at the bottom of it', async ({ page }) => {
-    await long(page)
-    await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight }))
 
     expect(await onScreen(page, STATUS)).toBe(true)
   })
@@ -93,34 +108,52 @@ test.describe('the row itself', () => {
 })
 
 test.describe('tapping', () => {
-  test('shows what it printed, rather than leaving it under the fold', async ({ page }) => {
-    // **The case that earns the pinned row its keep or costs it.** Output is
-    // appended above a block that never moves, so without the page following it
-    // down a chip runs, prints, and looks to a visitor like it did nothing at
-    // all -- which is the whole of "operable on a phone" failing quietly.
+  test('shows what it printed, rather than leaving it above the fold', async ({ page }) => {
+    // **The case that earns the pinned row its keep or costs it.** The shape of
+    // the failure survived #112 even though its mechanism did not: output used
+    // to be appended above a block that never moved, and now it is written into
+    // a grid that virtualises everything outside its own scrollport. Either way
+    // a chip that runs, prints, and leaves the result somewhere the visitor
+    // cannot see is "operable on a phone" failing quietly.
+    //
+    // Read off the rendered rows rather than a scroll offset, which is the
+    // honest question of an emulator: a row outside the scrollport is not in
+    // the DOM at all, so finding the newest output there is exactly the claim
+    // that the terminal followed it down.
     await long(page)
+    await chip(page, 'donate').click()
 
-    expect(await onScreen(page, '.u-row:last-of-type')).toBe(true)
+    await expect
+      .poll(() => screenText(page), { message: 'the newest output never came into view' })
+      .toContain('donate')
   })
 
-  test('raises it when the terminal itself is tapped', async ({ page }) => {
+  test('raises the keyboard when the terminal itself is tapped', async ({ page }) => {
     // The other half of the same criterion, and the same proxy for it: focusing
-    // a text field inside a user gesture is how a page asks for a keyboard.
-    // Tapped in the session's own top-left padding, which is the element itself
-    // rather than any word printed on it.
+    // a text input inside a user gesture is how a page asks for a keyboard.
+    // Tapped in the terminal's own top-left padding, which is the element
+    // itself rather than any row printed in it.
+    //
+    // The emulator's input is an `aria-hidden` textarea it owns, so this asks
+    // `document.activeElement` rather than naming a selector the site does not
+    // control.
     await open(page)
-    await page.locator(SESSION).click({ position: { x: 2, y: 2 } })
+    await page.locator(TERMINAL).click({ position: { x: 2, y: 2 } })
 
-    await expect(page.locator(FIELD)).toBeFocused()
+    const focused = await page.evaluate(() => {
+      const active = document.activeElement
+      return {
+        tag: active?.tagName.toLowerCase() ?? null,
+        inTerminal: active !== null && active.closest('.wterm') !== null,
+      }
+    })
+
+    expect(focused).toEqual({ tag: 'textarea', inTerminal: true })
   })
 })
 
 test.describe('a chip, focused against hovered', () => {
   test('are two different paints, and neither is the resting one', async ({ page }) => {
-    // `prompt.spec.ts` asks this of a word in the scrollback. It is asked again
-    // here because a chip is the first landable word with a tone class on it,
-    // and a class that painted a colour of its own would break the pair without
-    // touching anything that spec can see.
     await open(page)
 
     const first = `${CHIP}:first-of-type`
@@ -129,19 +162,59 @@ test.describe('a chip, focused against hovered', () => {
     await page.locator(CHIP).first().hover()
     const hover = await painted(page, `${CHIP}:hover`)
 
+    // The mouse is moved off before focus is taken, or the first chip would be
+    // hovered and focused at once and the two paints would not be separable.
     await page.mouse.move(0, 0)
-
-    // By keyboard, never by a click: Chromium does not apply `:focus-visible`
-    // to a clicked button, so a spec that clicked would read the resting paint
-    // and pass while the criterion failed.
-    await page.click(FIELD)
-    await page.keyboard.press('Tab')
+    await escapeToFirstChip(page)
     const focus = await painted(page, `${CHIP}:focus`)
 
     expect(hover.background).not.toEqual(rest.background)
     expect(focus.background).not.toEqual(rest.background)
     expect(focus.background).not.toEqual(hover.background)
 
+    // Focus inverts, which is this page's only focus indicator -- it has no
+    // rings and no boxes, so a chip that did not invert would be one a keyboard
+    // user could not find.
     expect(focus.color).toEqual(rest.background)
   })
+
+  test('draws no focus ring, because the page has no boxes', async ({ page }) => {
+    await open(page)
+    await escapeToFirstChip(page)
+
+    // Read off `outline-style`, not `outline-width`. `outline: none` sets the
+    // style and leaves the width at its initial `medium`, so a focused chip
+    // reports a 3px outline that is never painted -- asserting on the width
+    // would fail a page that is doing exactly the right thing.
+    const ring = await page.evaluate(
+      (selector) => {
+        const focused = document.querySelector(`${selector}:focus`)
+        return focused === null ? null : getComputedStyle(focused).outlineStyle
+      },
+      CHIP,
+    )
+
+    expect(ring).toBe('none')
+  })
+})
+
+test.describe('contrast, in both themes', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`clears 4.5:1 at rest, hovered and focused in ${scheme}`, async ({ page }) => {
+      // `SITE.md` 06's 4.5:1 row, asked of the page's only remaining controls.
+      // All three states, because a wash laid under ink is exactly the change
+      // that can pass at rest and fail the moment a finger or a Tab arrives.
+      await page.emulateMedia({ colorScheme: scheme })
+      await open(page)
+
+      expect(contrast(await painted(page, CHIP))).toBeGreaterThanOrEqual(4.5)
+
+      await page.locator(CHIP).first().hover()
+      expect(contrast(await painted(page, `${CHIP}:hover`))).toBeGreaterThanOrEqual(4.5)
+
+      await page.mouse.move(0, 0)
+      await escapeToFirstChip(page)
+      expect(contrast(await painted(page, `${CHIP}:focus`))).toBeGreaterThanOrEqual(4.5)
+    })
+  }
 })

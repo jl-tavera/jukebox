@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 
 /**
  * What every case in this directory needs before it can measure anything.
@@ -8,6 +8,13 @@ import type { Page } from '@playwright/test'
  * tear down -- and none of these do. They are a handful of questions about a
  * painted page, and a later ticket adding one more should be able to add a
  * function here without learning a fixture graph first.
+ *
+ * **#112 rewrote this file against a terminal emulator.** Everything here used
+ * to address a renderer the site owned: a `<pre>` holding the art, an `<input>`
+ * carrying the line, a `<main>` of `.u-row`s that grew until the document
+ * scrolled. None of those exist now. The emulator owns its own grid, its own
+ * input and its own overflow, so the questions are the same and every one of
+ * them is asked somewhere else.
  */
 
 /**
@@ -23,18 +30,82 @@ import type { Page } from '@playwright/test'
 export const WIDTHS = [375, 768, 1440] as const
 
 /**
- * The wordmark, as a selector.
+ * The emulator's own vocabulary, and the reason it is spelled here.
  *
- * One string rather than three lookups written three ways. The art is the only
- * `<pre>` on the page and `components/screen.tsx` is the only thing that emits
- * one, so this is as stable as a test id would be and does not ask the renderer
- * to carry an attribute that exists only for tests -- which is why there is no
- * test id anywhere in this repo.
+ * These are `@wterm/dom`'s class names rather than this page's. They are read
+ * out of `@wterm/dom/src/terminal.css` and `dist/renderer.js` rather than
+ * guessed, and #114 records that the renderer is pre-1.0 -- which makes this
+ * block the whole of what a renderer upgrade costs this directory. A spec that
+ * spelled `.term-row` inline would spread that cost across six files.
  */
-const ART = 'pre.u-art'
+export const TERMINAL = '.wterm'
+
+/** One row of the grid, and what this page has instead of `.u-row`. */
+export const ROW = '.term-row'
 
 /**
- * The page, painted, with both faces actually applied.
+ * One painted block cell.
+ *
+ * `@wterm/dom` intercepts U+2580-U+259F before any text run is flushed and
+ * emits an **empty** span painted with a `linear-gradient` in a `1ch` box, so
+ * the font is never asked for a block glyph. Two consequences the whole of
+ * `wordmark.spec.ts` rests on: the art never appears in `textContent`, and it
+ * can only be measured as geometry.
+ */
+export const BLOCK = '.term-block'
+
+/**
+ * The touch target, and the second place this number is written.
+ *
+ * `globals.css` has it as `--target`, because a stylesheet cannot import one of
+ * these and a custom property cannot be read from here without a paint. The two
+ * must agree, and this comment is the only thing saying so -- which is the same
+ * arrangement `WIDTHS` has with `playwright.config.ts` and is accepted for the
+ * same reason: one of them is measured against the page, so a disagreement
+ * fails rather than hides.
+ */
+export const TARGET = 44
+
+/** The pinned block outside the terminal: the chip row, and what holds it. */
+export const STATUS = '.u-status'
+
+/** A word the cursor can land on. Since #112 the page has these only as chips. */
+export const WORD = '.u-word'
+
+/**
+ * One chip.
+ *
+ * A `.u-word` inside the row rather than a class of its own, which is what
+ * `globals.css` styles it as. The page has one landable control and #89 did not
+ * add a second -- a chip is that word with a face and a box of its own, so a
+ * selector naming a new class here would claim a distinction the stylesheet
+ * does not make.
+ */
+export const CHIP = '.u-chips .u-word'
+
+/**
+ * What bash draws when it is ready for a line.
+ *
+ * `live.tsx` runs the shell at `/` with the adapter's default user, so this is
+ * the whole prompt rather than a fragment of it. Counting these is how every
+ * wait in this file knows a command has finished: a prompt is drawn when one
+ * returns, so one more prompt than before is the shell coming back.
+ */
+const PROMPT = 'user@wterm:/$'
+
+/** Every row of the grid, as text. Blocks are empty spans, so the art is not in it. */
+export const screenText = (page: Page): Promise<string> =>
+  page.evaluate(
+    (row) => [...document.querySelectorAll(row)].map((line) => line.textContent ?? '').join('\n'),
+    ROW,
+  )
+
+/** How many times the shell has offered to take a line. */
+const prompts = async (page: Page): Promise<number> =>
+  (await screenText(page)).split(PROMPT).length - 1
+
+/**
+ * The page, painted, with both faces applied **and the shell actually up**.
  *
  * **Awaiting `document.fonts.ready` is not politeness, it is the whole
  * measurement.** `globals.css` sets `font-display: block`, which means the
@@ -42,104 +113,100 @@ const ART = 'pre.u-art'
  * flashing a fallback with different metrics. A measurement taken before that
  * promise settles reads either nothing or the fallback -- so a harness built to
  * catch a fallback would be reading one and calling it correct.
+ *
+ * **Waiting for the prompt is #112's addition, and it is not optional.**
+ * `BashShell.attach()` is a promise and the emulator boots WebAssembly behind
+ * it, so before it resolves the page is a mounted terminal with nothing in it.
+ * The version of this function that waited only on the font left every spec
+ * racing the greeting, which is exactly how this directory came to fail
+ * fifty-four cases on a thirty-second timeout apiece.
  */
 export const open = async (page: Page): Promise<void> => {
   await page.goto('/')
   await page.evaluate(async () => {
     await document.fonts.ready
   })
+
+  await expect
+    .poll(() => prompts(page), { message: 'the shell never drew a prompt' })
+    .toBeGreaterThan(0)
 }
 
 /**
- * The rendered width of each row of the wordmark.
+ * Type a command at the prompt and run it, then wait for the shell to come back.
  *
- * **Measured with a `Range`, and it has to be.** The art is one `<pre>` holding
- * a single text node with four newlines in it -- `components/screen.tsx` passes
- * `line.text` as one JSX child -- so there are no per-row elements whose
- * `getBoundingClientRect` could be read. A `Range` over that text node is what
- * gives each line its own box.
+ * **Typed rather than filled, and it has to be.** The emulator's only input is
+ * an `aria-hidden` textarea it consumes keystrokes from; there is no field with
+ * a value to set, so `page.fill` waits forever on a selector that will never
+ * match. Clicking the terminal first is what a visitor does and what gives the
+ * textarea focus.
  *
- * Two ways of getting this wrong, both of them found the hard way while #81 was
- * being verified, and both silent:
- *
- * - Building a probe element and copying `getComputedStyle(art).cssText` onto
- *   it drags the art's own resolved `width` along with everything else, so the
- *   probe reports the container rather than the text. It answered 623.1px where
- *   the real figure was 988.25px, and it answered it five times identically --
- *   which is to say it would have passed this ticket's assertion while
- *   measuring nothing at all.
- * - Asking a browser to resize its window is not the same as setting a
- *   viewport. A resize that silently does not take leaves every case measuring
- *   one width three times and agreeing with itself. Playwright sets the
- *   viewport at context creation rather than by asking, so the hazard does not
- *   arise here -- but `artFontSize` below is what proves it in each case rather
- *   than assuming it.
+ * **And awaited rather than assumed.** The reducer this replaced had already
+ * run by the time `Enter` returned, so the old version of this could read the
+ * DOM immediately. A command now runs inside bash and returns when it returns,
+ * so what makes the next assertion safe is one more prompt than there was.
  */
-export const artRowWidths = (page: Page, selector = ART): Promise<number[]> =>
-  page.evaluate((art) => {
-    const pre = document.querySelector(art)
-    if (pre === null) throw new Error(`nothing matches ${art} on the page`)
+export const enter = async (page: Page, command: string): Promise<void> => {
+  const before = await prompts(page)
 
-    const node = pre.firstChild
-    if (node === null || node.nodeType !== Node.TEXT_NODE) {
-      throw new Error('the art is not a single text node; the renderer changed shape')
-    }
+  await page.locator(TERMINAL).click({ position: { x: 2, y: 2 } })
+  await page.keyboard.type(command)
+  await page.keyboard.press('Enter')
 
-    // Every line, including any that is empty. Skipping blanks would make the
-    // count the caller checks depend on what the art happens to contain, and a
-    // row that arrived empty is exactly the change worth failing on.
-    return (node.textContent ?? '').split('\n').map((line, index, lines) => {
-      const offset = lines.slice(0, index).reduce((at, before) => at + before.length + 1, 0)
+  await expect
+    .poll(() => prompts(page), { message: `the shell never came back from ${command}` })
+    .toBeGreaterThan(before)
+}
 
-      const range = document.createRange()
-      range.setStart(node, offset)
-      range.setEnd(node, offset + line.length)
+/**
+ * Which columns of the grid each row of art is painted on.
+ *
+ * **This is the check that replaced measuring row widths, and the reason is
+ * mechanical.** The old one ran a `Range` over the art's text node and required
+ * the five rows to come out the same width, which caught a face that carried
+ * some Block Elements and not others -- the missing ones arriving from the next
+ * font in the stack at a different advance. `@wterm/dom` paints those cells
+ * instead of typesetting them, so there is no text node to range over and no
+ * glyph to be missing. That failure is gone rather than unwatched.
+ *
+ * What can still go wrong is the lattice: a row dropped, a row shifted, a row
+ * wrapped because the grid was narrower than the art, or a column count that is
+ * not the art's. All four are visible as the set of columns each row's blocks
+ * land on, which is what this returns -- rows with no art in them omitted, so
+ * the greeting's prose and the prompt do not have to be skipped by the caller.
+ *
+ * Columns rather than pixels, because a column is what `WORDMARK` is written in.
+ * The cell width is read off a block's own box -- `.term-block` is `1ch` -- so
+ * this stays correct at every one of the three viewports without a table of
+ * sizes to keep in step with the stylesheet.
+ */
+export const lattice = (page: Page): Promise<number[][]> =>
+  page.evaluate(
+    ({ row, block }) =>
+      [...document.querySelectorAll(row)]
+        .map((line) => {
+          const blocks = [...line.querySelectorAll(block)]
+          if (blocks.length === 0) return []
 
-      return range.getBoundingClientRect().width
-    })
-  }, selector)
+          const cell = blocks[0]!.getBoundingClientRect().width
+          if (cell === 0) throw new Error('a block cell measured zero wide; the grid never painted')
 
-/** How far apart the widest and narrowest rows are. Zero is the wordmark holding. */
-export const spread = (widths: readonly number[]): number =>
-  Math.max(...widths) - Math.min(...widths)
+          const left = line.getBoundingClientRect().left
+
+          return blocks.map((box) => Math.round((box.getBoundingClientRect().left - left) / cell))
+        })
+        .filter((columns) => columns.length > 0),
+    { row: ROW, block: BLOCK },
+  )
 
 /**
  * Whether the page scrolls sideways.
  *
- * Read off the document element rather than the body: the session is full-bleed
- * and `body` has no width of its own to overflow.
+ * Read off the document element rather than the body: the terminal is
+ * full-bleed and `body` has no width of its own to overflow.
  */
 export const scrollsHorizontally = (page: Page): Promise<boolean> =>
-  page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-  )
-
-// No locator helper here. One was written for `getByRole('img', { name: ART_LABEL })`
-// and deleted before it shipped: nothing needed it, and SITE.md 07 deletes a
-// thing with no consumer rather than keeping it as a reservation. The role and
-// the label are still the right way to reach the art, and the ticket that first
-// needs one can add it back in three lines.
-
-/**
- * The size the art actually resolved to.
- *
- * Asserted by every case that pins a width, as the guard that the viewport is
- * the one the project asked for. `window.innerWidth` would be the obvious thing
- * to check and is the wrong one: a classic scrollbar subtracts from it, so the
- * day this page grows past one screen at 375 the check would fail for a reason
- * that has nothing to do with what it was watching.
- *
- * This is exact instead, and it is downstream of the viewport by construction --
- * `.u-art` is sized `clamp(5px, 2vw, 25px)`, so the number can only be right if
- * the width is.
- */
-export const artFontSize = (page: Page, selector = ART): Promise<string> =>
-  page.evaluate((art) => {
-    const pre = document.querySelector(art)
-    if (pre === null) throw new Error(`nothing matches ${art} on the page`)
-
-    return getComputedStyle(pre).fontSize
-  }, selector)
+  page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
 
 /**
  * Whether a family is loaded and available to draw with.
@@ -155,75 +222,27 @@ export const artFontSize = (page: Page, selector = ART): Promise<string> =>
  *
  * It is also the weaker question of the two even where it works. Monospace
  * faces cluster around a 0.6em advance -- Monaspace, Liberation Mono and DejaVu
- * Sans Mono are within a percent of each other -- so a width can be right to
- * the pixel while a different font draws it. Asking the font set directly
+ * Sans Mono are within a percent of each other -- so a width can be right to the
+ * pixel while a different font draws it. Asking the font set directly
  * discriminates what arithmetic on advances cannot.
  */
 export const faceLoaded = (page: Page, family: string): Promise<boolean> =>
   page.evaluate((name) => document.fonts.check(`16px "${name}"`), family)
 
 /**
- * The touch target, and the second place this number is written.
+ * What the page put on the clipboard.
  *
- * `globals.css` has it as `--target`, because a stylesheet cannot import one of
- * these and a custom property cannot be read from here without a paint. The two
- * must agree, and this comment is the only thing saying so -- which is the same
- * arrangement `WIDTHS` has with `playwright.config.ts` and is accepted for the
- * same reason: one of them is measured against the page, so a disagreement
- * fails rather than hides.
- */
-export const TARGET = 44
-
-/** The scrollback. The only `<main>` the page has, and what #84 replays. */
-export const SESSION = 'main.u-session'
-
-/** The live prompt's field. The only `<input>` the page has. */
-export const FIELD = 'input.u-input'
-
-/** A word the cursor can land on. */
-export const WORD = '.u-word'
-
-/** The pinned block: the prompt, and the chip row under it. */
-export const STATUS = '.u-status'
-
-/**
- * One chip.
+ * **The seam that had to move.** `install` copying its command was checked in
+ * jsdom by capturing the argument to `clipboard.writeText`, and #112 deleted
+ * that layer along with the component it tested. It is an acceptance criterion,
+ * so it is asked here instead -- of a real clipboard, in a real browser, which
+ * is now the only place that can answer it.
  *
- * A `.u-word` inside the row rather than a class of its own, which is what
- * `globals.css` styles it as. The page has one landable control and #89 did not
- * add a second -- a chip is that word with a face and a box of its own, so a
- * selector naming a new class here would claim a distinction the stylesheet
- * does not make.
+ * Needs `clipboard-read` granted by the caller; `install.spec.ts` is the only
+ * consumer and does it there rather than widening every context in this suite.
  */
-export const CHIP = '.u-chips .u-word'
-
-/**
- * One row of the session, and the only thing on the page that is visible
- * content rather than frame.
- *
- * `theme.spec.ts` counts these to say *before anything had been parsed*: a
- * document with no rows in it is a document with nothing on screen to have
- * flashed the wrong colour.
- */
-export const ROW = '.u-row'
-
-/**
- * The page, without waiting on a font.
- *
- * `open` above awaits `document.fonts.ready` inside `page.evaluate`, which is
- * exactly right for measuring the wordmark and impossible for a case that runs
- * with JavaScript disabled. This is the same navigation with nothing that needs
- * a script to run.
- */
-export const served = async (page: Page): Promise<void> => {
-  await page.goto('/')
-}
-
-/** Type a command at the prompt and run it. */
-export const enter = async (page: Page, command: string): Promise<void> => {
-  await page.fill(FIELD, command)
-  await page.press(FIELD, 'Enter')
-}
+export const clipboardText = (page: Page): Promise<string> =>
+  page.evaluate(() => navigator.clipboard.readText())
 
 /**
  * Every element matching `selector` whose tap area does not cover `size`.
@@ -326,9 +345,10 @@ export const undersized = (page: Page, selector: string, size = TARGET): Promise
  * now, which is the one thing a scroll offset changes and the other reading
  * does not.
  *
- * #89 asks that the chip row be visible *at every scroll position*, which is a
- * claim about the pinned block rather than about the page, and this is the
- * measurement behind it.
+ * #89 asks that the chip row be visible *at every scroll position*. Since #112
+ * the document does not scroll at all -- the emulator owns its overflow -- so
+ * what this now holds is the weaker, still-real claim that the row is on screen
+ * with a long session behind it.
  */
 export const onScreen = (page: Page, selector: string): Promise<boolean> =>
   page.evaluate((match) => {
@@ -339,19 +359,6 @@ export const onScreen = (page: Page, selector: string): Promise<boolean> =>
 
     return box.top >= 0 && box.bottom <= window.innerHeight && box.height > 0
   }, selector)
-
-/**
- * Whether the page has anything to scroll at all.
- *
- * The guard every case about scrolling needs, and for `artFontSize`'s reason:
- * a document that fits its viewport holds a pinned row on screen without
- * pinning anything, so an assertion taken against one would pass while
- * measuring nothing.
- */
-export const scrollable = (page: Page): Promise<boolean> =>
-  page.evaluate(
-    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
-  )
 
 /** A colour as the browser resolved it. */
 export type Rgb = readonly [number, number, number]
