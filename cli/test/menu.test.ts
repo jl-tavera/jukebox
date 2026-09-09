@@ -246,6 +246,13 @@ const sessionAt = (site: Site, home: string, keys: string[]): Promise<Run> =>
  */
 const NARROWEST = 40
 
+/** The rows the mark and its blank line occupy, at a given width. */
+const heightAt = (columns: number): number =>
+  header(columns, pkg.version, false).split('\n').length + 1
+
+/** The first row that may scroll, which is the one under all of that. */
+const firstScrolling = (columns: number): number => heightAt(columns) + 1
+
 const listed = (run: Run): Listed => oneObject(run).data as Listed
 
 const idsIn = async (home: string): Promise<string[]> =>
@@ -1392,13 +1399,6 @@ describe('a picker built from what `config` returned', () => {
  * day either changed.
  */
 describe('the wordmark, held still', () => {
-  /** The rows the mark and its blank line occupy, at a given width. */
-  const heightAt = (columns: number): number =>
-    header(columns, pkg.version, false).split('\n').length + 1
-
-  /** The first row that may scroll, which is the one under all of that. */
-  const firstScrolling = (columns: number): number => heightAt(columns) + 1
-
   it('fences the rows under it, and gives them back on the way out', async () => {
     const run = await jukebox([], { keys: QUIT })
 
