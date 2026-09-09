@@ -24,11 +24,21 @@
  * Shaped like `spinner.ts`, and for that file's reasons rather than by analogy.
  * It is handed where to write and whether to do anything at all, so both of its
  * branches are reachable from a test that drives `main`; and it installs nothing
- * on the process. A `SIGWINCH` listener would keep the region right across a
- * resize, and would be the first such reach this program makes -- the four
- * ADR-0007's amendment counts are the prompt library's, which is the whole
- * reason that library's spinner went unused. #50 puts resize handling out of
- * scope by name, which is the same answer arrived at from the other side.
+ * on the process.
+ *
+ * What it hands back is a pair rather than the undo alone, and that is #110
+ * rather than taste. Every prompt the menu draws is drawn inside these rows,
+ * and the prompt library has to be told how many there are -- so "is the mark
+ * held" and "how much room is left under it" are one question, asked once and
+ * answered where the region is written. Asked twice they can disagree, and a
+ * picker sized against a screen it is not being drawn on is what that
+ * disagreement looks like.
+ *
+ * A `SIGWINCH` listener would keep the region right across a resize, and would
+ * be the first such reach this program makes -- the four ADR-0007's amendment
+ * counts are the prompt library's, which is the whole reason that library's
+ * spinner went unused. #50 puts resize handling out of scope by name, which is
+ * the same answer arrived at from the other side.
  */
 
 /**
@@ -83,7 +93,12 @@ const at = (row: number): string => `\x1b[${row};1H`
 export const MINIMUM_BELOW = 10
 
 /**
- * Draws the header, holds it, and hands back the way to let go.
+ * Draws the header, holds it, and says what is left under it and how to let go.
+ *
+ * `room` is the rows a prompt drawn below may use: the ones the region fences
+ * where the mark is held, and the whole terminal where it is drawn once and
+ * the terminal left alone. It comes out of the branch that decided which of
+ * those happened, so there is no second answer for it to differ from.
  *
  * `fixed` is false wherever the error stream is not a terminal --
  * `jukebox 2>log.txt` at a console -- and there this is exactly what the menu
@@ -107,20 +122,36 @@ export const pinning = (
   write: (text: string) => void,
   rows: number,
   fixed: boolean,
-): (() => void) => {
-  // The mark, plus the blank line under it that the menu has always drawn. Both
-  // are held, so the frame has a floor and the first prompt is not flush against
-  // the version.
-  const height = header.split('\n').length + 1
-
-  if (!fixed || rows - height < MINIMUM_BELOW) {
+): Pinned => {
+  if (!holds(header, rows, fixed)) {
     write(header + '\n\n')
-    return () => {}
+
+    // Nothing was fenced, so there is nothing to give back -- and nothing
+    // above a prompt that it has to stay clear of either. The mark scrolls
+    // away with everything else, which is what every session did before #66.
+    return { room: rows, release: () => {} }
   }
 
-  const top = height + 1
+  const top = heightOf(header) + 1
 
   write(CLEARED + header + '\n\n' + region(top, rows) + at(top))
 
-  return () => void write(RELEASED)
+  // Counted off the region rather than off the header a second time. These
+  // are the two numbers the terminal was just handed, and the rows between
+  // them are by definition the ones that may scroll.
+  return { room: rows - top + 1, release: () => void write(RELEASED) }
 }
+
+/** A held mark: what is left under it, and the way to give the terminal back. */
+export type Pinned = { room: number; release: () => void }
+
+/**
+ * The mark, plus the blank line under it that the menu has always drawn. Both
+ * are held, so the frame has a floor and the first prompt is not flush against
+ * the version.
+ */
+const heightOf = (header: string): number => header.split('\n').length + 1
+
+/** Whether this terminal gets a held mark or a drawn-once one. */
+const holds = (header: string, rows: number, fixed: boolean): boolean =>
+  fixed && rows - heightOf(header) >= MINIMUM_BELOW
