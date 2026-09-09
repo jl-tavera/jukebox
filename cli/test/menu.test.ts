@@ -833,6 +833,145 @@ describe('a picker built from what `list` returned', () => {
     expect(run.code).toBe(0)
   })
 
+  /**
+   * The opening frame a picker drew, as the one string it was written as.
+   *
+   * The prompt library writes its first frame in a single call and every frame
+   * after it as a diff against that one, and the harness keeps each write apart
+   * -- so the first chunk carrying the question is the whole of what somebody
+   * saw before they touched a key. Asserting across all of `stderr` instead
+   * would let a row that only arrived on a later repaint stand in for one that
+   * was offered, which is the difference #110 is about.
+   */
+  const firstFrame = (run: Run, question: string): string => {
+    const frame = run.interleaved.find((text) => text.includes(question))
+    if (frame === undefined) throw new Error(`Nothing carrying ${question} was drawn.`)
+
+    return frame
+  }
+
+  /**
+   * Every Track offered, in the one frame handed over.
+   *
+   * The row is built the way the picker builds it -- the index plus one, and
+   * `show`’s own billing -- because that is what the screen has to show. Two
+   * tests make this assertion about two terminals, and a second spelling of it
+   * is how they would come to disagree about what counts as offered.
+   */
+  const offersEvery = (frame: string, tracks: MirroredTrack[]): void => {
+    for (const [at, track] of tracks.entries()) {
+      expect(frame).toContain(`${at + 1}. ${billed(track)}`)
+    }
+  }
+
+  /** A Playlist of any length, its titles at any width. */
+  const manyTracks = (count: number, title: (at: number) => string): MirroredTrack[] =>
+    Array.from({ length: count }, (_, at) => ({
+      ...INVENTED_TRACKS[0]!,
+      trackId: `spotify:many-${at}`,
+      title: title(at),
+      position: at,
+    }))
+
+  it('offers every Track in the first frame, at the terminal’s real width', async () => {
+    // The prompt library reads `rows` and `columns` off the stream it writes to
+    // and falls back to eighty by twenty where they are absent -- which is what
+    // a stream assembled out of a pair of write functions carries. #108 shipped
+    // one, so every picker was windowed to sixteen rows and every row cut at
+    // eighty columns, however large the terminal was.
+    //
+    // Thirty Tracks on a fifty-row terminal fit with room to spare, and the
+    // titles run past eighty characters, so a row that arrives whole is a row
+    // measured against the terminal rather than against the guess. Nothing here
+    // walks the list: a cancel leaves at once, so what is asserted is what was
+    // drawn before any key could scroll more of it into view.
+    const many = manyTracks(
+      30,
+      (at) => `Track Number ${at + 1} With A Deliberately Long Title To Outrun Eighty Columns`,
+    )
+
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-long-'),
+      discovery: NO_SITE,
+      root: holdingTracks(many),
+      rows: 50,
+      columns: 200,
+      keys: [...LIST, ...FIRST, ...ITS_TRACKS, CANCEL],
+    })
+
+    const frame = firstFrame(run, WHICH_TRACK)
+
+    offersEvery(frame, many)
+  })
+
+  it('keeps the picker inside the room the mark leaves, not the library’s guess at it', async () => {
+    // The consequence that reads as a fault rather than a limit, and the whole
+    // reason the height handed over is the region rather than the screen. The
+    // library budgets a frame against whatever height it was told, so one built
+    // for twenty rows and drawn into the sixteen the mark leaves overflows them:
+    // the region scrolls, the row the library moves back to is no longer where
+    // the frame began, and what it repaints lands under the copy still standing.
+    //
+    // Eighty by twenty-four is the terminal the whole suite runs on. The mark is
+    // held, sixteen rows are left under it, and the library's own guess is
+    // twenty -- so a frame that fits the sixteen is one that was measured
+    // against the region it is drawn in. Thirty Tracks is far more than will
+    // fit, which is the point: what is asserted is where the windowing stopped.
+    const many = manyTracks(30, (at) => `Track Number ${at + 1}`)
+
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-fits-'),
+      discovery: NO_SITE,
+      root: holdingTracks(many),
+      keys: [...LIST, ...FIRST, ...ITS_TRACKS, CANCEL],
+    })
+
+    // The bound comes off the region this run actually fenced, and never off
+    // the code that decides how tall a picker may be -- a bound computed by
+    // `pinning` would agree with itself whatever it answered, which is a test
+    // that cannot fail. `firstScrolling` reaches this through `header` alone,
+    // and it is the pin suite’s own count of where the mark stops.
+    const top = firstScrolling(80)
+
+    expect(run.stderr).toContain(region(top, 24))
+
+    // Eighty by twenty-four is the harness default, so both numbers are this
+    // run’s own input rather than something derived: the rows between the two
+    // the terminal was handed are the ones a frame drawn there may fill.
+    const room = 24 - top + 1
+
+    const drawn = firstFrame(run, WHICH_TRACK).trimEnd().split('\n')
+
+    expect(drawn.length).toBeLessThanOrEqual(room)
+  })
+
+  it('gives the picker the whole terminal where the mark is drawn once', async () => {
+    // The other half of the same answer, and the half that would drift if two
+    // things computed it. Where the error stream is not a terminal the mark is
+    // drawn once and the terminal left alone -- there is no region to overflow,
+    // so the room below the mark is the whole screen and the picker may use all
+    // of it. Sized against the library's twenty instead, this Playlist would be
+    // windowed on a terminal with room for every row of it.
+    const many = manyTracks(30, (at) => `Track Number ${at + 1}`)
+
+    const run = await jukebox([], {
+      home: temporaryHome('jukebox-menu-unpinned-'),
+      discovery: NO_SITE,
+      root: holdingTracks(many),
+      stderrTty: false,
+      rows: 50,
+      keys: [...LIST, ...FIRST, ...ITS_TRACKS, CANCEL],
+    })
+
+    // The branch this is about, said rather than assumed: no region was ever
+    // set, so none was given back.
+    expect(run.stderr).not.toContain(RELEASED)
+
+    const frame = firstFrame(run, WHICH_TRACK)
+
+    offersEvery(frame, many)
+  })
+
   it('says a Playlist holds no Tracks in `show`’s own words, rather than opening an empty picker', async () => {
     const run = await jukebox([], {
       home: temporaryHome('jukebox-menu-no-tracks-'),

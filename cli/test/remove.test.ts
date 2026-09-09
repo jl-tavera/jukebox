@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from 'bun:test'
 import { CACHE_FILE } from '../src/cache'
 import type { Listed } from '../src/commands/list'
 import { LOCAL_ONLY, type Untracked } from '../src/commands/remove'
+import { askingToStop } from '../src/phrasing'
 import { jukebox, mirrorOf, oneObject, removeHomes, temporaryHome, type Run } from './harness'
 import { servingItsOwnApi, snapshot, stopServing, track, type Site } from './server'
 
@@ -28,6 +29,19 @@ const BRIEF = { windowMs: 100, intervalMs: 10 }
 
 /** Nowhere, as `config.test.ts` spells it: a run that quietly booted would fail. */
 const NO_SITE = 'http://127.0.0.1:1/discovery.json'
+
+/**
+ * A Playlist whose name outruns eighty columns on its own.
+ *
+ * Long for one reason and no other: the confirmation asked before this is
+ * deleted has to arrive at the width of the terminal it is asked on, and a
+ * name that fits inside the prompt library’s fallback could not tell that
+ * apart from a name cut down to it.
+ */
+const LONG_NAME =
+  'Rain / Shine, And Every Other Thing The Sky Has Ever Done, End To End On A Wet Afternoon'
+
+const longNamed = snapshot({ title: LONG_NAME, tracks: [track()] })
 
 const twoTracks = snapshot({
   title: 'Rain / Shine',
@@ -300,6 +314,34 @@ describe('a Playlist named by its title rather than its handle', () => {
     expect(run.code).toBe(0)
     expect(run.stdout).toContain('Stopped tracking')
     expect(await stillTracked(site, home)).toEqual([])
+  })
+
+  it('asks at the width of the terminal it is asked on', async () => {
+    // The other place this program asks a question, and the one that builds its
+    // own stream rather than sharing the menu's. The prompt library reads
+    // `columns` off whatever it is handed and falls back to eighty where it is
+    // absent -- which is what a stream assembled out of a pair of write
+    // functions carries -- so a name this long arrived cut in half on a terminal
+    // with room for all of it.
+    //
+    // Answered no, because what is being read is the question rather than what
+    // follows it.
+    const site = servingItsOwnApi()
+    const home = temporaryHome('jukebox-remove-wide-')
+
+    site.tracking(URL, { id: ID, status: 'ok' })
+    site.holding(ID, longNamed)
+    await adding(site, home)
+
+    const run = await jukebox(['remove', LONG_NAME], {
+      discovery: site.url,
+      home,
+      columns: 200,
+      keys: [NO],
+    })
+
+    expect(run.stderr).toContain(askingToStop({ title: LONG_NAME, id: ID }))
+    expect(run.code).toBe(0)
   })
 
   it('asks nothing at all when it was given an id', async () => {

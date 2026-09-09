@@ -321,14 +321,32 @@ type Next = 'menu' | 'quit'
  * decoded from a buffer, so a multi-byte character cannot be split across two
  * writes and arrive as two broken ones.
  */
-const writingTo = (io: Io): Writable =>
-  new Writable({
-    decodeStrings: false,
-    write(chunk: unknown, _encoding, done) {
-      io.err(typeof chunk === 'string' ? chunk : String(chunk))
-      done()
-    },
-  })
+const writingTo = (io: Io, rows: number): Writable =>
+  // `columns` and `rows` are read off this stream by the prompt library, which
+  // falls back to eighty by twenty where they are absent -- and a stream
+  // assembled out of a pair of write functions carries neither unless it is
+  // told.
+  //
+  // #108 shipped one, and a Playlist of thirty-five Tracks made all three
+  // consequences visible at once: rows cut at eighty columns mid-word, the list
+  // windowed to what twenty rows hold, and -- the one that reads as a fault
+  // rather than a limit -- a frame budgeted for twenty rows drawn into the
+  // fewer the mark leaves, overflowing them, so the repaint landed under the
+  // copy still standing.
+  //
+  // Which is why `rows` is the room under the mark rather than the whole
+  // terminal, and why `pinned.ts` is what says how much that is: the same
+  // predicate that decided whether the mark is held at all.
+  Object.assign(
+    new Writable({
+      decodeStrings: false,
+      write(chunk: unknown, _encoding, done) {
+        io.err(typeof chunk === 'string' ? chunk : String(chunk))
+        done()
+      },
+    }),
+    { columns: io.columns, rows },
+  )
 
 /**
  * A command's way of asking a question, on the streams the menu asks its own on.
@@ -346,6 +364,13 @@ const writingTo = (io: Io): Writable =>
  *
  * A cancel is a no. Ctrl-C means leave everywhere else in this program, and the
  * one thing leaving must not do is the thing that was being confirmed.
+ *
+ * Sized like the menu's own prompts, since it is the same constructor, and
+ * handed the whole terminal because nothing is pinned on the path that reaches
+ * it. `remove` asks this only when it was given a title, and no menu entry hands
+ * over a title -- the entry that launches it hands over the id of the Playlist
+ * already on the screen. An entry that did would want the room below the mark
+ * here too, and this is the argument to change.
  */
 export const confirming = (io: Io): Ask => ({
   confirm: async (message) => {
@@ -353,7 +378,7 @@ export const confirming = (io: Io): Ask => ({
       message,
       initialValue: false,
       input: io.in,
-      output: writingTo(io),
+      output: writingTo(io, io.rows),
     })
 
     return !isCancel(answer) && answer
@@ -383,8 +408,6 @@ export const confirming = (io: Io): Ask => ({
  * way out look like a fault.
  */
 export const menu = async (io: Io, launch: Launch): Promise<number> => {
-  const asking: Asking = { input: io.in, output: writingTo(io) }
-
   // Two halves, and each covers what the other cannot.
   //
   // The library is where `NO_COLOR`, `--no-color` and a dumb terminal are
@@ -403,7 +426,19 @@ export const menu = async (io: Io, launch: Launch): Promise<number> => {
   // above folds in a second question. Whether a terminal can paint the mark
   // yellow says nothing about whether it can hold it still, so a `NO_COLOR`
   // console keeps its pinned header and a redirected one gets neither.
-  const release = pinning(header(io.columns, VERSION, colour), io.err, io.rows, io.stderrIsTty)
+  //
+  // Drawn before anything is asked, because what it answers with is what
+  // everything asked below is sized against. One call and one pair, so the
+  // rows the region fences and the rows a picker may fill cannot come apart --
+  // which is the whole of #110, and the reason this is not two questions.
+  const { room, release } = pinning(
+    header(io.columns, VERSION, colour),
+    io.err,
+    io.rows,
+    io.stderrIsTty,
+  )
+
+  const asking: Asking = { input: io.in, output: writingTo(io, room) }
 
   try {
     for (;;) {
