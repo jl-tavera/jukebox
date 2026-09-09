@@ -231,7 +231,8 @@ Bun is the pick because `bun:sqlite` is built into the runtime — no native mod
 | | |
 |---|---|
 | Framework | Next.js (static export) |
-| Styling | Tailwind + shadcn/ui |
+| Terminal | `@wterm/*` + `just-bash` |
+| Styling | Tailwind v4 |
 | Hosting | Cloudflare Workers static assets |
 
 ### Shared & ops
