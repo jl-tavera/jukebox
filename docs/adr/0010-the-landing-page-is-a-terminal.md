@@ -1,5 +1,13 @@
 # The landing page is a terminal, not a one-screen hero
 
+> **Superseded by ADR-0011 (`docs/adr/0011-the-terminal-is-bash.md`).** The page is still a terminal
+> and is now a real one, running bash in an emulator, so the decision below stands. Six of its claims
+> do not: both rules stated as constraints, the *"three things replace it"* count, the wordmark's
+> measured integrity, `demo`, the menu as a widget, and the requirement that replaced the
+> `<dialog>`'s four gifts. ADR-0011 names what replaced each and what each cost; read it first.
+> **Nothing below is edited.** A record that quietly corrected itself would be doing the thing this
+> one was written to end.
+
 The landing page is a live terminal emulator, full-bleed, wrapping at the viewport. The tagline and
 lede sit above the boot as `#` shell comments; the page then types `jukebox` and renders what the
 real binary renders — the wordmark, a version line, and the interactive menu. A prompt sits below
